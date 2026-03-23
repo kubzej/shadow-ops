@@ -5,12 +5,12 @@ import type { Agent } from '../db/schema';
 import { SAFE_HOUSE_UPKEEP_PER_HOUR } from '../data/costs';
 import type { AgentRank } from '../data/agentTypes';
 
-/** Salary multiplier per rank — senior agents cost more to maintain. */
+/** Salary multiplier per rank — senior agents cost more to maintain, but not overwhelmingly so. */
 const RANK_SALARY_MULT: Record<AgentRank, number> = {
   recruit: 1.0,
-  operative: 1.5,
-  specialist: 2.2,
-  veteran: 3.0,
+  operative: 1.3,
+  specialist: 1.7,
+  veteran: 2.2,
 };
 
 // ─────────────────────────────────────────────
@@ -36,12 +36,23 @@ const DIVISION_INCOME: Record<DivisionId, DivisionIncome> = {
   blackops: { money: 1.0, intel: 0, shadow: 1, influence: 0 },
 };
 
-/** Division level multiplier. */
+/** Division level multiplier — kept modest to avoid multiplicative explosion with many houses + slots. */
 const LEVEL_MULT: Record<number, number> = {
   1: 1.0,
-  2: 1.6,
-  3: 2.5,
+  2: 1.4,
+  3: 2.0,
 };
+
+/**
+ * Diminishing returns per additional division in the same safe house.
+ * 1st div = 100%, 2nd = 80%, 3rd = 65%, 4th+ = 50%.
+ */
+function divisionSlotMult(index: number): number {
+  if (index === 0) return 1.0;
+  if (index === 1) return 0.8;
+  if (index === 2) return 0.65;
+  return 0.5;
+}
 
 // ─────────────────────────────────────────────
 // Safe house passive tick
@@ -66,17 +77,18 @@ export function calculateSafeHouseIncome(
 ): IncomeResult {
   const income: IncomeResult = { money: 0, intel: 0, shadow: 0, influence: 0 };
 
-  // Division income
-  for (const divId of safeHouse.assignedDivisions) {
+  // Division income — with diminishing returns per additional slot
+  safeHouse.assignedDivisions.forEach((divId, slotIndex) => {
     const base = DIVISION_INCOME[divId];
     const level = divisionLevels[divId] ?? 1;
     const mult = LEVEL_MULT[Math.min(level, 3)] ?? 1;
+    const slotMult = divisionSlotMult(slotIndex);
 
-    income.money += base.money * mult;
-    income.intel += base.intel * mult;
-    income.shadow += base.shadow * mult;
-    income.influence += base.influence * mult;
-  }
+    income.money += base.money * mult * slotMult;
+    income.intel += base.intel * mult * slotMult;
+    income.shadow += base.shadow * mult * slotMult;
+    income.influence += base.influence * mult * slotMult;
+  });
 
   // Module bonuses
   if (safeHouse.modules.includes('server_room')) income.intel += 3;
@@ -110,11 +122,14 @@ export function calculatePassiveIncome(
 ): IncomeResult {
   const total: IncomeResult = { money: 0, intel: 0, shadow: 0, influence: 0 };
 
-  // +10% income per additional owned city beyond the first
+  // +10% income per additional owned city beyond the first, capped at +50%
   const activeSafeHouses = safeHouses.filter(
     (sh) => !sh.constructionInProgress,
   );
-  const cityBonus = 1 + 0.1 * Math.max(0, activeSafeHouses.length - 1);
+  const cityBonus = Math.min(
+    1.5,
+    1 + 0.1 * Math.max(0, activeSafeHouses.length - 1),
+  );
 
   for (const sh of activeSafeHouses) {
     const shIncome = calculateSafeHouseIncome(sh, divisionLevels, agents);
@@ -146,6 +161,6 @@ export function decayAlertLevel(
   hasSurveillanceDivision: boolean,
 ): number {
   if (currentAlert <= 0) return 0;
-  const decayRate = hasSurveillanceDivision ? 0.05 : 0.02;
+  const decayRate = hasSurveillanceDivision ? 0.2 : 0.08;
   return Math.max(0, currentAlert - decayRate);
 }

@@ -62,6 +62,7 @@ export function usePassiveIncome() {
     }
 
     // First tick after 30s delay
+    tick(); // run immediately on mount
     const id = setInterval(tick, TICK_INTERVAL);
     return () => clearInterval(id);
   }, [loaded, addCurrencies]);

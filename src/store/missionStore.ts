@@ -7,7 +7,7 @@ import type {
   Agent,
   MissionLogEntry,
 } from '../db/schema';
-import type { MissionResult } from '../engine/missionResolver';
+import type { MissionResult } from '../db/schema';
 import {
   dispatchMission as engineDispatch,
   resolveMission,
@@ -25,6 +25,9 @@ import {
 } from '../engine/missionGenerator';
 import { useGameStore } from './gameStore';
 import { randomId } from '../utils/rng';
+import { EQUIPMENT_CATALOG } from '../data/equipmentCatalog';
+
+const RESCUE_EQUIPMENT_SELL_REFUND = 0.3;
 
 // ─────────────────────────────────────────────
 // Types
@@ -247,18 +250,101 @@ export const useMissionStore = create<MissionStore>()(
             }
           }
 
-          // If this was a rescue mission and it didn't catastrophically fail,
-          // free the captured agent
-          if (
-            mission.isRescue &&
-            mission.capturedAgentId &&
-            (result === 'success' || result === 'partial')
-          ) {
-            await db.agents.update(mission.capturedAgentId, {
-              status: 'available',
-              capturedAt: undefined,
-              rescueMissionId: undefined,
-            });
+          // ── Rescue mission outcomes ──────────────────────────────────────
+          if (mission.isRescue && mission.capturedAgentId) {
+            const capturedAgent = await db.agents.get(mission.capturedAgentId);
+
+            if (result === 'success') {
+              // Agent freed, all equipment intact
+              await db.agents.update(mission.capturedAgentId, {
+                status: 'available',
+                capturedAt: undefined,
+                rescueMissionId: undefined,
+              });
+            } else if (result === 'partial') {
+              // Agent freed, but all equipment is lost — sold at 30% refund
+              if (capturedAgent) {
+                let refund = 0;
+                for (const slot of capturedAgent.equipment) {
+                  if (!slot.equipmentId) continue;
+                  const eq = EQUIPMENT_CATALOG.find(
+                    (e) => e.id === slot.equipmentId,
+                  );
+                  if (eq)
+                    refund += Math.ceil(
+                      (eq.costMoney ?? 0) * RESCUE_EQUIPMENT_SELL_REFUND,
+                    );
+                }
+                const cleared = capturedAgent.equipment.map(() => ({
+                  equipmentId: null,
+                }));
+                await db.agents.update(mission.capturedAgentId, {
+                  status: 'available',
+                  capturedAt: undefined,
+                  rescueMissionId: undefined,
+                  equipment: cleared,
+                  stats: capturedAgent.baseStats,
+                });
+                if (refund > 0) {
+                  useGameStore.getState().addCurrencies({ money: refund });
+                }
+              } else {
+                await db.agents.update(mission.capturedAgentId, {
+                  status: 'available',
+                  capturedAt: undefined,
+                  rescueMissionId: undefined,
+                });
+              }
+            } else {
+              // failure or catastrophe — escalate or kill
+              if (capturedAgent) {
+                const nextDiff = Math.min(
+                  5,
+                  (mission.difficulty as number) + 1,
+                ) as 1 | 2 | 3 | 4 | 5;
+                if ((mission.difficulty as number) >= 5) {
+                  // No escape — agent dies, equipment lost
+                  await db.agents.update(mission.capturedAgentId, {
+                    status: 'dead',
+                  });
+                  useGameStore.getState().incrementStat('agents');
+                } else {
+                  // Escalate: generate harder rescue mission
+                  const escalated = generateRescueMission(
+                    mission.regionId,
+                    mission.capturedAgentId,
+                    capturedAgent.name,
+                    Math.min(
+                      3,
+                      (await db.regions.get(mission.regionId))?.alertLevel ?? 0,
+                    ),
+                  );
+                  // Force difficulty to escalated level (overrides alert-based calc)
+                  const escalatedMission = {
+                    ...escalated,
+                    difficulty: nextDiff,
+                    baseSuccessChance: Math.max(
+                      0.05,
+                      0.7 - (nextDiff - 2) * 0.1,
+                    ),
+                    expiresAt: Date.now() + 15 * 60 * 1000,
+                  };
+                  await db.missions.add(escalatedMission);
+                  const r = await db.regions.get(mission.regionId);
+                  if (r) {
+                    await db.regions.update(mission.regionId, {
+                      availableMissionIds: [
+                        ...r.availableMissionIds,
+                        escalatedMission.id,
+                      ],
+                    });
+                  }
+                  await db.agents.update(mission.capturedAgentId, {
+                    rescueMissionId: escalatedMission.id,
+                  });
+                }
+              }
+            }
           }
 
           // Handle catastrophe: generate rescue mission
@@ -284,11 +370,30 @@ export const useMissionStore = create<MissionStore>()(
             }
           }
 
-          // Update region alert level
+          // Update region alert level + missionTier
           const region = await db.regions.get(mission.regionId);
           if (region) {
             const newAlert = Math.min(3, (region.alertLevel ?? 0) + alertGain);
-            await db.regions.update(mission.regionId, { alertLevel: newAlert });
+            const regionUpdates: Partial<typeof region> = {
+              alertLevel: newAlert,
+            };
+            // missionTier increases after success/partial — never decreases
+            // Each tier requires progressively more missions: tier 1 after 3, tier 2 after 8, tier 3 after 18, tier 4 after 35
+            if (result === 'success' || result === 'partial') {
+              const currentTier = region.missionTier ?? 0;
+              const missionsDone =
+                (await db.missionLog
+                  .where('regionId')
+                  .equals(mission.regionId)
+                  .count()) + 1;
+              const TIER_THRESHOLDS = [0, 3, 8, 18, 35];
+              const newTier = TIER_THRESHOLDS.reduce(
+                (t, threshold, i) => (missionsDone >= threshold ? i : t),
+                0,
+              );
+              if (newTier > currentTier) regionUpdates.missionTier = newTier;
+            }
+            await db.regions.update(mission.regionId, regionUpdates);
           }
 
           // Mission log
@@ -387,6 +492,25 @@ export const useMissionStore = create<MissionStore>()(
           });
         }
 
+        // Kill captured agents whose rescue mission has expired
+        const capturedAgents = await db.agents
+          .filter((a) => a.status === 'captured' && !!a.rescueMissionId)
+          .toArray();
+        for (const agent of capturedAgents) {
+          const rescueMission = await db.missions.get(agent.rescueMissionId!);
+          if (
+            !rescueMission ||
+            (rescueMission.expiresAt && rescueMission.expiresAt < now)
+          ) {
+            // Rescue expired or mission gone — agent dies, equipment lost
+            await db.agents.update(agent.id, {
+              status: 'dead',
+              rescueMissionId: undefined,
+            });
+            useGameStore.getState().incrementStat('agents');
+          }
+        }
+
         // Collect completed active missions
         const active = get().activeMissions;
         for (const am of active) {
@@ -442,6 +566,7 @@ export const useMissionStore = create<MissionStore>()(
       const availableDivisions = safehouse?.assignedDivisions?.filter(
         (d) => d !== 'medical',
       );
+      const missionTier = region.missionTier ?? 0;
 
       // Emergency: if no diff-1 mission exists, inject one immediately by
       // replacing the most recently added non-diff-1 mission (or adding if under MAX).
@@ -450,11 +575,12 @@ export const useMissionStore = create<MissionStore>()(
       if (!hasDiff1) {
         const easyMission = generateMissionsForRegion(
           regionId,
-          0, // force low alert so difficulty stays at 1
+          0,
           1,
           new Set(valid.map((m) => m.id)),
           availableDivisions,
           true,
+          undefined, // guaranteeEasy overrides minDifficulty
         )[0];
         // If at max capacity, drop the newest non-rescue mission to make room
         if (workingValid.length >= MAX_MISSIONS_PER_REGION) {
@@ -494,6 +620,8 @@ export const useMissionStore = create<MissionStore>()(
           generateCount,
           new Set(workingValid.map((m) => m.id)),
           availableDivisions,
+          false,
+          missionTier,
         );
         await db.missions.bulkAdd(newMissions);
         await db.regions.update(regionId, {

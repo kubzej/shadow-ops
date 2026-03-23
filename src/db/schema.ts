@@ -104,6 +104,8 @@ export interface RegionState {
   lastMissionGeneratedAt?: number;
   constructionInProgress?: boolean;
   constructionCompletesAt?: number;
+  /** Persistent minimum difficulty floor (0–4). Increases as missions are completed here, never decreases. */
+  missionTier?: number;
 }
 
 // ============ MISSION ============

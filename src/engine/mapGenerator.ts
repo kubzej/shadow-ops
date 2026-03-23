@@ -112,7 +112,8 @@ export function expansionCost(
   const region = REGION_MAP.get(regionId);
   const country = region ? COUNTRY_MAP.get(region.countryId) : undefined;
   const alertMod = country ? country.baseAlertLevel : 0;
-  const scaleMult = 1 + EXPANSION_COST_SCALE * totalExpansions;
+  // Cap the scale multiplier so costs don't grow unboundedly (max ×3)
+  const scaleMult = Math.min(3.0, 1 + EXPANSION_COST_SCALE * totalExpansions);
 
   return {
     money: Math.round(

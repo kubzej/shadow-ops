@@ -3,6 +3,7 @@ import type {
   Mission,
   ActiveMission,
   MissionRewards,
+  MissionResult,
 } from '../db/schema';
 import type { MissionCategory } from '../data/missionTemplates';
 import type { DivisionId } from '../data/agentTypes';
@@ -103,18 +104,18 @@ const CATEGORY_STAT_WEIGHTS: Record<
 // ─────────────────────────────────────────────
 
 /**
- * Calculate mission success probability [0.05, 0.95].
+ * Calculate mission success probability [0.05, 1.0].
  *
  * Formula:
  *   leaderScore = best individual weighted-stat score among assigned agents (0–99)
- *   statBonus   = (leaderScore - 50) / 100 * 0.4   → ±0.20 swing
+ *   statBonus   = (leaderScore - 50) / 100 * 0.4   → recruit is neutral, veteran gives ~+0.14
  *   teamBonus   = 3 pp per additional agent beyond the first, capped at 12 pp
+ *   equipBonus  = successBonus of the leader's equipped items only (3 slots max)
  *   Adding any agent never reduces the overall chance.
  */
 export function calculateSuccessChance(
   agents: Agent[],
   mission: Mission,
-  equippedIds: string[] = [],
   alertLevel = 0,
 ): number {
   if (agents.length === 0) return 0.05;
@@ -124,24 +125,32 @@ export function calculateSuccessChance(
     CATEGORY_STAT_WEIGHTS.surveillance;
 
   // Score each agent individually; best one leads the mission
-  const scores = agents.map(
-    (a) =>
+  let leaderIdx = 0;
+  let leaderScore = -Infinity;
+  for (let i = 0; i < agents.length; i++) {
+    const a = agents[i];
+    const score =
       a.stats.stealth * weights.stealth +
       a.stats.combat * weights.combat +
       a.stats.intel * weights.intel +
-      a.stats.tech * weights.tech,
-  );
-  const leaderScore = Math.max(...scores);
+      a.stats.tech * weights.tech;
+    if (score > leaderScore) {
+      leaderScore = score;
+      leaderIdx = i;
+    }
+  }
 
-  // +/- 20 pp swing based on leader stats vs neutral 50
   const statBonus = ((leaderScore - 50) / 100) * 0.4;
 
   // Each additional agent contributes a flat support bonus (never negative)
   const teamBonus = Math.min((agents.length - 1) * 0.03, 0.12);
 
-  // Equipment success bonuses
+  // Equipment success bonuses — only the leader's 3 slots count
   let equipBonus = 0;
-  for (const eqId of equippedIds) {
+  const leaderEquipIds = agents[leaderIdx].equipment
+    .map((s) => s.equipmentId)
+    .filter((id): id is string => id !== null);
+  for (const eqId of leaderEquipIds) {
     const eq = EQUIPMENT_CATALOG.find((e) => e.id === eqId);
     if (eq?.successBonus) equipBonus += eq.successBonus / 100;
   }
@@ -163,7 +172,7 @@ export function calculateSuccessChance(
     equipBonus -
     compPenalty -
     alertPenalty;
-  return clamp(raw, 0.05, 0.95);
+  return clamp(raw, 0.05, 1.0);
 }
 
 // ─────────────────────────────────────────────
@@ -217,12 +226,7 @@ export function dispatchMission(
   equippedIds: string[] = [],
   alertLevel = 0,
 ): ActiveMission {
-  const successChance = calculateSuccessChance(
-    agents,
-    mission,
-    equippedIds,
-    alertLevel,
-  );
+  const successChance = calculateSuccessChance(agents, mission, alertLevel);
   const duration = calculateDuration(mission, agents, equippedIds);
 
   return {
@@ -240,8 +244,6 @@ export function dispatchMission(
 // ─────────────────────────────────────────────
 // Mission resolution
 // ─────────────────────────────────────────────
-
-export type MissionResult = 'success' | 'partial' | 'failure' | 'catastrophe';
 
 /**
  * Resolve a completed mission.

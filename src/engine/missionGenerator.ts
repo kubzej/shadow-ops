@@ -124,6 +124,7 @@ export function generateMission(
   _existingMissionIds: Set<string> = new Set(),
   availableDivisions?: DivisionId[],
   maxDifficulty?: number,
+  minDifficulty?: number,
 ): Mission {
   const rng = createRng();
   const region = REGION_MAP.get(regionId);
@@ -139,16 +140,16 @@ export function generateMission(
   const targets = TARGET_POOLS.filter((t) => t.category === category);
   const target = pickRandom(targets, rng);
 
-  // 3. Difficulty: driven by alert + distance + random spread
+  // 3. Difficulty: driven by alert + random spread, optionally floored by minDifficulty
   const baseDiff =
     1 + Math.round(effectiveAlert * 1.2 + randFloat(-0.5, 0.5, rng));
   const difficulty = Math.max(
-    1,
+    minDifficulty ?? 1,
     Math.min(maxDifficulty ?? 5, Math.min(5, baseDiff)),
   ) as 1 | 2 | 3 | 4 | 5;
 
-  // 4. Optional complication (higher difficulty = more likely)
-  const complicationChance = 0.2 + difficulty * 0.1;
+  // 4. Optional complication — diff-1 has low chance, higher difficulties escalate
+  const complicationChance = difficulty === 1 ? 0.15 : 0.1 + difficulty * 0.1;
   let complication: MissionComplication | undefined;
   if (rng() < complicationChance) {
     complication = pickRandom(COMPLICATIONS, rng);
@@ -159,7 +160,7 @@ export function generateMission(
   const maxAgents = Math.min(6, minAgents + Math.floor(difficulty * 0.8));
 
   // 6. Base success chance
-  const baseSuccessChance = Math.max(0.1, 0.85 - (difficulty - 1) * 0.12);
+  const baseSuccessChance = Math.max(0.1, 0.85 - (difficulty - 1) * 0.09);
 
   // 7. Duration
   const baseDuration = BASE_DURATION[difficulty];
@@ -171,7 +172,9 @@ export function generateMission(
     : Math.max(MIN_DURATION, baseDuration);
 
   // 8. Rewards (scaled by difficulty + target)
-  const diffMult = [0, 1.0, 1.5, 2.5, 3.8, 5.5][difficulty] ?? 1.0;
+  // Multipliers tuned so $/agent-minute is roughly flat or slightly increasing with difficulty,
+  // making high-diff missions worth the agent investment vs spamming low-diff.
+  const diffMult = [0, 1.2, 2.5, 10.0, 15.0, 25.0][difficulty] ?? 1.2;
   const rewards: MissionRewards = {
     money: Math.round(
       target.baseRewardMoney * diffMult * randFloat(0.85, 1.15, rng),
@@ -192,7 +195,7 @@ export function generateMission(
   };
 
   // 10. Alert gain on success (higher for violent categories)
-  const alertGain = (target.alertGain + (complication ? 0.1 : 0)) * 0.6;
+  const alertGain = (target.alertGain + (complication ? 0.1 : 0)) * 1.5;
 
   // 11. Flavor text
   const flavorTemplates =
@@ -256,16 +259,39 @@ export function generateMissionsForRegion(
   availableDivisions?: DivisionId[],
   /** When true, the first generated mission is always difficulty 1. */
   guaranteeEasy = false,
+  /** When set, one mission in the batch is guaranteed at least this difficulty. */
+  missionTier?: number,
 ): Mission[] {
-  return Array.from({ length: count }, (_, i) =>
-    generateMission(
+  return Array.from({ length: count }, (_, i) => {
+    // First mission: either guaranteed easy (emergency topup) or guaranteed tier difficulty
+    if (i === 0 && guaranteeEasy) {
+      return generateMission(
+        regionId,
+        alertLevel,
+        existingMissionIds,
+        availableDivisions,
+        1,
+        1,
+      );
+    }
+    // Last mission in batch: guaranteed at missionTier difficulty so veterans always have something
+    if (i === count - 1 && missionTier && missionTier > 0) {
+      return generateMission(
+        regionId,
+        alertLevel,
+        existingMissionIds,
+        availableDivisions,
+        undefined,
+        missionTier + 1,
+      );
+    }
+    return generateMission(
       regionId,
       alertLevel,
       existingMissionIds,
       availableDivisions,
-      i === 0 && guaranteeEasy ? 1 : undefined,
-    ),
-  );
+    );
+  });
 }
 
 // ─────────────────────────────────────────────

@@ -20,15 +20,6 @@ export function useMissionTimer() {
 }
 
 /**
- * Returns remaining seconds for an active mission (updates every second via re-render trigger).
- * Pass completesAt timestamp.
- */
-export function useCountdown(completesAt: number): number {
-  const remaining = Math.max(0, Math.ceil((completesAt - Date.now()) / 1000));
-  return remaining;
-}
-
-/**
  * Formats seconds to "MM:SS" string.
  */
 export function formatDuration(seconds: number): string {

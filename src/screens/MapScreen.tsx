@@ -24,7 +24,6 @@ import {
   expansionCost,
   expansionBuildTime,
 } from '../engine/mapGenerator';
-import { generateMissionsForRegion } from '../engine/missionGenerator';
 import { useGameStore } from '../store/gameStore';
 import type { Currencies } from '../store/gameStore';
 import { useUIStore } from '../store/uiStore';
@@ -665,7 +664,6 @@ function ExpansionCardItem({
 export default function MapScreen() {
   const currencies = useGameStore((s) => s.currencies);
   const spendCurrencies = useGameStore((s) => s.spendCurrencies);
-  const incrementStat = useGameStore((s) => s.incrementStat);
   const totalExpansions = useGameStore((s) => s.totalExpansions);
   const selectRegion = useUIStore((s) => s.selectRegion);
   const selectedRegionId = useUIStore((s) => s.selectedRegionId);
@@ -694,39 +692,9 @@ export default function MapScreen() {
 
   useEffect(() => {
     load();
-
-    const id = setInterval(async () => {
-      const now = Date.now();
-      const done = await db.regions
-        .filter(
-          (r) =>
-            !!r.constructionInProgress &&
-            !!r.constructionCompletesAt &&
-            r.constructionCompletesAt <= now,
-        )
-        .toArray();
-      if (done.length === 0) return;
-      for (const r of done) {
-        const missions = generateMissionsForRegion(r.id, r.alertLevel, 3);
-        await db.missions.bulkAdd(missions);
-        await db.safeHouses.update(r.id, {
-          constructionInProgress: false,
-          constructionCompletesAt: undefined,
-        });
-        await db.regions.update(r.id, {
-          owned: true,
-          constructionInProgress: false,
-          constructionCompletesAt: undefined,
-          safeHouseId: r.id,
-          availableMissionIds: missions.map((m) => m.id),
-        });
-        incrementStat('expansions');
-      }
-      load();
-    }, 5000);
-
+    const id = setInterval(load, 5000);
     return () => clearInterval(id);
-  }, [load, incrementStat]);
+  }, [load]);
 
   async function handleExpand(regionId: string, pickedDiv: DivisionId) {
     const state = regions.find((r) => r.id === regionId);

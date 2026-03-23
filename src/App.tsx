@@ -15,6 +15,7 @@ import { useGameStore } from './store/gameStore';
 import { useUIStore, type Toast } from './store/uiStore';
 import { usePassiveIncome } from './hooks/usePassiveIncome';
 import { useMissionTimer } from './hooks/useMissionTimer';
+import { useConstructionTicker } from './hooks/useConstructionTicker';
 
 type AppState = 'loading' | 'landing' | 'onboarding' | 'game';
 
@@ -123,6 +124,7 @@ export default function App() {
 function GameShell() {
   usePassiveIncome();
   useMissionTimer();
+  useConstructionTicker();
 
   return (
     <div

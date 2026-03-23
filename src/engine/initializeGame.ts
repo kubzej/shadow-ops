@@ -157,6 +157,7 @@ export async function initializeGame(
     startCityId,
     logoId,
     createdAt: now,
+    totalPlayTime: 0,
     currencies: STARTING_CURRENCIES,
     unlockedDivisions: STARTING_DIVISIONS,
     divisionLevels: STARTING_DIVISION_LEVELS,
@@ -195,6 +196,7 @@ export async function loadGame(): Promise<boolean> {
     startCityId: state.startCityId,
     logoId: state.logoId ?? DEFAULT_LOGO_ID,
     createdAt: state.createdAt,
+    totalPlayTime: state.totalPlayTime ?? 0,
     currencies: {
       money: state.money,
       intel: state.intel,

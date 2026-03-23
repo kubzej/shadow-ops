@@ -6,8 +6,8 @@ export const SAFE_HOUSE_UPGRADE_COSTS: Record<
 > = {
   2: { money: 2000, intel: 20 },
   3: { money: 6000, intel: 50 },
-  4: { money: 16000, intel: 100 },
-  5: { money: 40000, intel: 200 },
+  4: { money: 20000, intel: 120 },
+  5: { money: 60000, intel: 250 },
 };
 
 /** Fixed hourly upkeep per safe house level (deducted each 30s tick = value / 120). */
@@ -62,13 +62,13 @@ export const DIVISION_UNLOCK_COSTS: Record<
 };
 
 // Division level upgrade costs (per level 1→2, 2→3)
-// High cost is intentional — upgrades are global and apply to every safe house.
+// Global upgrades benefit every safe house — lv3 should be a late-game milestone.
 export const DIVISION_LEVEL_COSTS: Record<
   number,
   { money: number; intel: number; influence?: number }
 > = {
   2: { money: 4000, intel: 60 },
-  3: { money: 12000, intel: 150, influence: 20 },
+  3: { money: 25000, intel: 200, influence: 30 },
 };
 
 // Cost to assign an additional division to a safe house (multiplied by safehouse index)

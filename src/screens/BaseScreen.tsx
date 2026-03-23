@@ -18,7 +18,7 @@ import type {
   RecruitmentOffer,
 } from '../db/schema';
 import type { DivisionId, AgentRank } from '../data/agentTypes';
-import { DIVISIONS } from '../data/agentTypes';
+import { AGENT_TYPES, DIVISIONS } from '../data/agentTypes';
 import { EQUIPMENT_CATALOG } from '../data/equipmentCatalog';
 import type { Equipment } from '../data/equipmentCatalog';
 import { REGION_MAP } from '../data/regions';
@@ -97,10 +97,7 @@ function regionDisplayName(shId: string): string {
 }
 
 function inferDiv(typeId: string): DivisionId {
-  const found = DIVISIONS.find((d) => typeId.startsWith(d.id));
-  if (found) return found.id;
-  const partial = DIVISIONS.find((d) => typeId.includes(d.id.slice(0, 5)));
-  return partial?.id ?? 'surveillance';
+  return AGENT_TYPES.find((t) => t.id === typeId)?.division ?? 'surveillance';
 }
 
 // ─────────────────────────────────────────────
@@ -253,62 +250,68 @@ function RecruitmentTab() {
               </button>
             </div>
 
-            {pool?.offers.length ? (
+            {pool?.offers.filter((o) => o.expiresAt > Date.now()).length ? (
               <div className="flex flex-col gap-2">
-                {pool.offers.map((o) => {
-                  const c = divColor(inferDiv(o.agentTypeId));
-                  const avg = Math.round(
-                    (o.stats.stealth +
-                      o.stats.combat +
-                      o.stats.intel +
-                      o.stats.tech) /
-                      4,
-                  );
-                  const ok = currencies.money >= o.cost && !full;
+                {pool.offers
+                  .filter((o) => o.expiresAt > Date.now())
+                  .map((o) => {
+                    const c = divColor(inferDiv(o.agentTypeId));
+                    const avg = Math.round(
+                      (o.stats.stealth +
+                        o.stats.combat +
+                        o.stats.intel +
+                        o.stats.tech) /
+                        4,
+                    );
+                    const ok = currencies.money >= o.cost && !full;
 
-                  return (
-                    <div
-                      key={o.id}
-                      className="rounded-xl p-3 flex items-center gap-3"
-                      style={{
-                        background: '#111',
-                        border: '1px solid #2a2a2a',
-                      }}
-                    >
+                    return (
                       <div
-                        className="w-10 h-10 rounded-xl flex items-center justify-center font-bold flex-shrink-0"
-                        style={{ background: `${c}22`, color: c, fontSize: 13 }}
-                      >
-                        {o.name.slice(0, 2).toUpperCase()}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p
-                          className="text-sm font-medium truncate"
-                          style={{ color: '#e8e8e8' }}
-                        >
-                          {o.name}
-                        </p>
-                        <p className="text-xs" style={{ color: '#666' }}>
-                          {o.agentTypeId} · {o.rank} · avg {avg}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => hire(o, sh.id)}
-                        disabled={!ok || hiring === o.id}
-                        className="px-3 py-2 rounded-lg text-xs font-bold flex-shrink-0"
+                        key={o.id}
+                        className="rounded-xl p-3 flex items-center gap-3"
                         style={{
-                          background: ok ? '#4ade8022' : '#1a1a1a',
-                          color: ok ? '#4ade80' : '#444',
-                          border: `1px solid ${ok ? '#4ade8044' : '#1a1a1a'}`,
-                          cursor: ok ? 'pointer' : 'not-allowed',
+                          background: '#111',
+                          border: '1px solid #2a2a2a',
                         }}
                       >
-                        <span style={{ color: '#4ade80' }}>$</span>
-                        {o.cost}
-                      </button>
-                    </div>
-                  );
-                })}
+                        <div
+                          className="w-10 h-10 rounded-xl flex items-center justify-center font-bold flex-shrink-0"
+                          style={{
+                            background: `${c}22`,
+                            color: c,
+                            fontSize: 13,
+                          }}
+                        >
+                          {o.name.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className="text-sm font-medium truncate"
+                            style={{ color: '#e8e8e8' }}
+                          >
+                            {o.name}
+                          </p>
+                          <p className="text-xs" style={{ color: '#666' }}>
+                            {o.agentTypeId} · {o.rank} · avg {avg}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => hire(o, sh.id)}
+                          disabled={!ok || hiring === o.id}
+                          className="px-3 py-2 rounded-lg text-xs font-bold flex-shrink-0"
+                          style={{
+                            background: ok ? '#4ade8022' : '#1a1a1a',
+                            color: ok ? '#4ade80' : '#444',
+                            border: `1px solid ${ok ? '#4ade8044' : '#1a1a1a'}`,
+                            cursor: ok ? 'pointer' : 'not-allowed',
+                          }}
+                        >
+                          <span style={{ color: '#4ade80' }}>$</span>
+                          {o.cost}
+                        </button>
+                      </div>
+                    );
+                  })}
               </div>
             ) : (
               <button
@@ -361,23 +364,7 @@ function SafeHouseTab() {
   }, [load]);
 
   useEffect(() => {
-    const id = setInterval(async () => {
-      const done = await db.safeHouses
-        .filter(
-          (sh) =>
-            !!sh.upgradeInProgress &&
-            !!sh.upgradeCompletesAt &&
-            sh.upgradeCompletesAt <= Date.now(),
-        )
-        .toArray();
-      for (const sh of done)
-        await db.safeHouses.update(sh.id, {
-          level: sh.level + 1,
-          upgradeInProgress: false,
-          upgradeCompletesAt: undefined,
-        });
-      if (done.length) load();
-    }, 3000);
+    const id = setInterval(load, 3000);
     return () => clearInterval(id);
   }, [load]);
 

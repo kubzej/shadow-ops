@@ -8,6 +8,7 @@ import {
   Clock,
   Shield,
   Skull,
+  TriangleAlert,
   Users,
   XCircle,
   Zap,
@@ -18,13 +19,14 @@ import { useUIStore } from '../store/uiStore';
 import { db } from '../db/db';
 import type { Agent, Mission, ActiveMission } from '../db/schema';
 import { REGION_MAP } from '../data/regions';
+import { COMPLICATIONS } from '../data/missionTemplates';
 import {
   calculateSuccessChance,
   checkAgentEligibility,
   checkTeamEligibility,
   type AgentEligibility,
 } from '../engine/missionResolver';
-import type { MissionResult } from '../engine/missionResolver';
+import type { MissionResult } from '../db/schema';
 import type { CompletedMissionResult } from '../store/missionStore';
 import { formatDuration } from '../hooks/useMissionTimer';
 import { DIVISIONS } from '../data/agentTypes';
@@ -347,6 +349,28 @@ function MissionCard({
         </div>
       )}
 
+      {/* Complication warning */}
+      {mission.complicationId &&
+        (() => {
+          const comp = COMPLICATIONS.find(
+            (c) => c.id === mission.complicationId,
+          );
+          return comp ? (
+            <div
+              className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg"
+              style={{
+                background: '#2a1a00',
+                color: '#f97316',
+                border: '1px solid #f9731633',
+              }}
+            >
+              <TriangleAlert size={11} />
+              <span className="font-medium">Komplikace:</span>{' '}
+              {comp.description}
+            </div>
+          ) : null;
+        })()}
+
       {/* Expiry warning */}
       {mission.expiresAt && (
         <div
@@ -530,12 +554,7 @@ function AgentSelectorModal({
 
   const successChance = useMemo(() => {
     if (selectedAgents.length === 0) return null;
-    return calculateSuccessChance(
-      selectedAgents,
-      mission,
-      [],
-      regionAlertLevel,
-    );
+    return calculateSuccessChance(selectedAgents, mission, regionAlertLevel);
   }, [selectedAgents, mission, regionAlertLevel]);
 
   const teamEligible = useMemo(
@@ -652,27 +671,16 @@ function AgentSelectorModal({
             </span>
           </div>
 
-          {/* Success chance preview */}
-          {successChance !== null && (
-            <div className="flex items-center gap-2 mt-2">
-              <span className="text-xs" style={{ color: '#666' }}>
-                Šance:
+          {/* Team eligibility warning */}
+          {!teamEligible && selected.size > 0 && (
+            <div
+              className="flex items-center gap-1 mt-2"
+              style={{ color: '#f97316' }}
+            >
+              <AlertTriangle size={11} />
+              <span className="text-xs">
+                Potřeba specialista z požadované divize
               </span>
-              <span
-                className="text-xs font-semibold"
-                style={{ color: chanceColor(successChance) }}
-              >
-                {Math.round(successChance * 100)} %
-              </span>
-              {!teamEligible && selected.size > 0 && (
-                <span
-                  className="text-xs flex items-center gap-1 ml-2"
-                  style={{ color: '#f97316' }}
-                >
-                  <AlertTriangle size={11} />
-                  Potřeba specialista z požadované divize
-                </span>
-              )}
             </div>
           )}
         </div>
@@ -1109,18 +1117,29 @@ export default function MissionsScreen() {
 
       <div className="flex-1 px-4 flex flex-col gap-5">
         {/* ── Active missions ─────────────── */}
-        {activeMissions.length > 0 && (
+        {activeMissions.some((am) => {
+          const m = activeMissionData.get(am.missionId);
+          return m?.regionId === currentRegionId;
+        }) && (
           <section>
             <p
               className="text-xs font-medium tracking-widest uppercase mb-2"
               style={{ color: '#555' }}
             >
-              Probíhající ({activeMissions.length})
+              Probíhající (
+              {
+                activeMissions.filter(
+                  (am) =>
+                    activeMissionData.get(am.missionId)?.regionId ===
+                    currentRegionId,
+                ).length
+              }
+              )
             </p>
             <div className="flex flex-col gap-2">
               {activeMissions.map((am) => {
                 const m = activeMissionData.get(am.missionId);
-                if (!m) return null;
+                if (!m || m.regionId !== currentRegionId) return null;
                 return (
                   <ActiveMissionCard key={am.id} active={am} mission={m} />
                 );

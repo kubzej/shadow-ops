@@ -2,18 +2,6 @@ import { create } from 'zustand';
 
 export type TabId = 'map' | 'missions' | 'agents' | 'base' | 'menu';
 
-export type ModalId =
-  | 'agent_detail'
-  | 'agent_selector'
-  | 'mission_result'
-  | 'region_detail'
-  | 'expansion_dialog'
-  | 'safe_house_detail'
-  | 'division_detail'
-  | 'equipment_picker'
-  | 'confirm'
-  | null;
-
 export interface Toast {
   id: string;
   type: 'success' | 'error' | 'warning' | 'info';
@@ -46,19 +34,12 @@ let toastCounter = 0;
 
 export const useUIStore = create<UIStore>((set, get) => ({
   activeTab: 'map',
-  activeModal: null,
-  modalData: null,
   selectedRegionId: null,
   selectedAgentId: null,
   toasts: [],
   saveSwitchRequested: false,
 
   setActiveTab: (tab) => set({ activeTab: tab }),
-
-  openModal: (modal, data = null) =>
-    set({ activeModal: modal, modalData: data }),
-
-  closeModal: () => set({ activeModal: null, modalData: null }),
 
   selectRegion: (regionId) => set({ selectedRegionId: regionId }),
 

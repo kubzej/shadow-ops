@@ -4,6 +4,10 @@ import type { DivisionId } from '../data/agentTypes';
 import { db } from '../db/db';
 import { metaDb } from '../db/saveSlots';
 
+// Session-level play time tracking
+let _loadedPlayTime = 0;
+let _sessionStartedAt = Date.now();
+
 export interface Currencies {
   money: number; // $
   intel: number; // ◈
@@ -41,6 +45,7 @@ interface GameStore {
     startCityId: string;
     logoId: string;
     createdAt: number;
+    totalPlayTime: number;
     currencies: Currencies;
     unlockedDivisions: DivisionId[];
     divisionLevels: Record<DivisionId, number>;
@@ -101,6 +106,9 @@ export const useGameStore = create<GameStore>()(
         state.totalMissionsAttempted = meta.totalMissionsAttempted;
         state.totalAgentsLost = meta.totalAgentsLost;
         state.totalExpansions = meta.totalExpansions;
+        // Reset session tracking for this load
+        _loadedPlayTime = meta.totalPlayTime ?? 0;
+        _sessionStartedAt = Date.now();
       }),
 
     addCurrencies: (delta) => {
@@ -169,15 +177,13 @@ export const useGameStore = create<GameStore>()(
 
     incrementStat: (stat) => {
       set((state) => {
-        if (stat === 'missions') {
-          state.totalMissionsCompleted++;
-          state.totalMissionsAttempted++;
-        } else if (stat === 'agents') {
+        if (stat === 'agents') {
           state.totalAgentsLost++;
         } else {
           state.totalExpansions++;
         }
       });
+      get()._persist();
     },
     incrementMissionAttempted: () => {
       set((state) => {
@@ -220,7 +226,8 @@ export const useGameStore = create<GameStore>()(
         logoId: s.logoId,
         createdAt: s.createdAt,
         lastSavedAt: Date.now(),
-        totalPlayTime: 0,
+        totalPlayTime:
+          _loadedPlayTime + Math.round((Date.now() - _sessionStartedAt) / 1000),
         money: s.currencies.money,
         intel: s.currencies.intel,
         shadow: s.currencies.shadow,
