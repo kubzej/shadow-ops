@@ -146,6 +146,6 @@ export function decayAlertLevel(
   hasSurveillanceDivision: boolean,
 ): number {
   if (currentAlert <= 0) return 0;
-  const decayRate = hasSurveillanceDivision ? 0.02 : 0.005;
+  const decayRate = hasSurveillanceDivision ? 0.05 : 0.02;
   return Math.max(0, currentAlert - decayRate);
 }

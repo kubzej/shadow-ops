@@ -360,9 +360,9 @@ export default function OnboardingScreen() {
                   icon="$"
                   color="#4ade80"
                   label="Peníze"
-                  value="1 000"
+                  value="1 500"
                 />
-                <Resource icon="◈" color="#60a5fa" label="Intel" value="20" />
+                <Resource icon="◈" color="#60a5fa" label="Intel" value="30" />
                 <Resource icon="◆" color="#a78bfa" label="Shadow" value="0" />
                 <Resource icon="✦" color="#f97316" label="Vliv" value="0" />
               </div>

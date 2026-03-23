@@ -192,7 +192,7 @@ export function generateMission(
   };
 
   // 10. Alert gain on success (higher for violent categories)
-  const alertGain = target.alertGain + (complication ? 0.1 : 0);
+  const alertGain = (target.alertGain + (complication ? 0.1 : 0)) * 0.6;
 
   // 11. Flavor text
   const flavorTemplates =

@@ -1,6 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { db } from '../db/db';
-import { calculatePassiveIncome, decayAlertLevel } from '../engine/passiveIncome';
+import {
+  calculatePassiveIncome,
+  decayAlertLevel,
+} from '../engine/passiveIncome';
 import { useGameStore } from '../store/gameStore';
 import type { DivisionId } from '../data/agentTypes';
 
@@ -29,7 +32,11 @@ export function usePassiveIncome() {
       ]);
 
       // Calculate + apply income
-      const income = calculatePassiveIncome(safeHouses, divLevelsRef.current, agents);
+      const income = calculatePassiveIncome(
+        safeHouses,
+        divLevelsRef.current,
+        agents,
+      );
       if (income.money || income.intel || income.shadow || income.influence) {
         addCurrencies({
           money: Math.round(income.money),
@@ -39,12 +46,14 @@ export function usePassiveIncome() {
         });
       }
 
-      // Decay alert levels for owned regions
-      const ownedRegions = await db.regions.filter((r) => r.owned).toArray();
-      for (const region of ownedRegions) {
-        if (region.alertLevel <= 0) continue;
+      // Decay alert levels for all regions with elevated alert
+      const alertedRegions = await db.regions
+        .filter((r) => r.alertLevel > 0)
+        .toArray();
+      for (const region of alertedRegions) {
         const sh = safeHouses.find((s) => s.id === region.id);
-        const hasSurv = sh?.assignedDivisions.includes('surveillance' as DivisionId) ?? false;
+        const hasSurv =
+          sh?.assignedDivisions.includes('surveillance' as DivisionId) ?? false;
         const newAlert = decayAlertLevel(region.alertLevel, hasSurv);
         if (Math.abs(newAlert - region.alertLevel) > 0.001) {
           await db.regions.update(region.id, { alertLevel: newAlert });

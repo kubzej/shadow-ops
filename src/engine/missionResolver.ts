@@ -263,17 +263,17 @@ export function resolveMission(
     // Critical success (top 15% of success window) — bonus rewards
     result = 'success';
     rewards = scaleRewards(mission.rewards, 1.3);
-    alertGain = mission.alertGain * 0.5; // very discreet
+    alertGain = mission.alertGain * 0.2; // very discreet
   } else if (roll < sc) {
     // Normal success
     result = 'success';
     rewards = { ...mission.rewards };
-    alertGain = mission.alertGain;
+    alertGain = mission.alertGain * 0.5;
   } else if (roll < sc + (1 - sc) * 0.4) {
     // Partial failure (40% of failure window) — partial rewards
     result = 'partial';
     rewards = scaleRewards(mission.rewards, 0.4);
-    alertGain = mission.alertGain * 1.5;
+    alertGain = mission.alertGain * 1.0;
   } else {
     // Catastrophe chance scales with difficulty: 0% on diff 1, up to 16% on diff 5
     // This prevents agent capture on easy missions (death-spiral protection)
@@ -284,12 +284,12 @@ export function resolveMission(
     ) {
       result = 'catastrophe';
       rewards = scaleRewards(mission.failurePenalty, 1.5);
-      alertGain = mission.alertGain * 3;
+      alertGain = mission.alertGain * 2.0;
     } else {
       // Full failure
       result = 'failure';
       rewards = mission.failurePenalty;
-      alertGain = mission.alertGain * 2;
+      alertGain = mission.alertGain * 1.5;
     }
   }
 
