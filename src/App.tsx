@@ -133,7 +133,7 @@ function GameShell() {
         className="flex-1 overflow-y-auto"
         style={{
           paddingTop: 'env(safe-area-inset-top)',
-          paddingBottom: 'calc(4rem + env(safe-area-inset-bottom))',
+          paddingBottom: '4rem',
         }}
       >
         <Routes>

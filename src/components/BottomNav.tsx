@@ -16,7 +16,6 @@ export default function BottomNav() {
       style={{
         background: '#111111',
         borderColor: '#2a2a2a',
-        paddingBottom: 'env(safe-area-inset-bottom)',
         paddingLeft: 'env(safe-area-inset-left)',
         paddingRight: 'env(safe-area-inset-right)',
       }}
@@ -26,7 +25,7 @@ export default function BottomNav() {
           key={to}
           to={to}
           className={({ isActive }) =>
-            `flex flex-col items-center justify-center gap-1 flex-1 py-2 text-xs transition-colors ${
+            `flex flex-col items-center justify-center gap-0.5 flex-1 pt-2 pb-1 text-xs transition-colors ${
               isActive ? 'text-green-400' : 'text-gray-500'
             }`
           }
