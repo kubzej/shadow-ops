@@ -1862,7 +1862,7 @@ export default function BaseScreen() {
       style={{ background: '#0a0a0a', color: '#e8e8e8' }}
     >
       {/* Header */}
-      <div className="px-4 pt-10 pb-3">
+      <div className="px-4 pt-4 pb-3">
         <h1 className="text-lg font-bold tracking-tight mb-3">Základna</h1>
 
         {/* Currencies */}

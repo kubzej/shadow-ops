@@ -792,7 +792,7 @@ export default function MapScreen() {
     >
       {/* Header */}
       <div
-        className="px-4 pt-10 pb-3"
+        className="px-4 pt-4 pb-3"
         style={{ borderBottom: '1px solid #1a1a1a' }}
       >
         <div className="flex items-end justify-between mb-2">

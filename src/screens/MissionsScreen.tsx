@@ -1096,7 +1096,7 @@ export default function MissionsScreen() {
       style={{ background: '#0a0a0a', color: '#e8e8e8' }}
     >
       {/* Header */}
-      <div className="px-4 pt-10 pb-4">
+      <div className="px-4 pt-4 pb-4">
         <h1 className="text-lg font-bold tracking-tight mb-3">Operace</h1>
 
         {/* Currencies */}

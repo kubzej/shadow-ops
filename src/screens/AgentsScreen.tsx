@@ -1256,7 +1256,7 @@ export default function AgentsScreen() {
       style={{ background: '#0a0a0a', color: '#e8e8e8' }}
     >
       {/* Header */}
-      <div className="px-4 pt-10 pb-4">
+      <div className="px-4 pt-4 pb-4">
         <div className="flex items-center justify-between mb-3">
           <h1 className="text-lg font-bold tracking-tight">Agenti</h1>
           <div

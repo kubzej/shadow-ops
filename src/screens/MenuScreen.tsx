@@ -122,7 +122,7 @@ export default function MenuScreen() {
       style={{ background: '#0a0a0a', color: '#e8e8e8' }}
     >
       {/* Header */}
-      <div className="px-4 pt-10 pb-6">
+      <div className="px-4 pt-4 pb-6">
         {/* Logo */}
         <div className="flex items-center gap-3 mb-5">
           <div

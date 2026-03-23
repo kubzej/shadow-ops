@@ -1,5 +1,5 @@
-import { NavLink } from 'react-router-dom'
-import { Map, Target, Users, Building2, Menu } from 'lucide-react'
+import { NavLink } from 'react-router-dom';
+import { Map, Target, Users, Building2, Menu } from 'lucide-react';
 
 const tabs = [
   { to: '/map', icon: Map, label: 'Mapa' },
@@ -7,7 +7,7 @@ const tabs = [
   { to: '/agents', icon: Users, label: 'Agenti' },
   { to: '/base', icon: Building2, label: 'Základna' },
   { to: '/menu', icon: Menu, label: 'Menu' },
-]
+];
 
 export default function BottomNav() {
   return (
@@ -17,6 +17,8 @@ export default function BottomNav() {
         background: '#111111',
         borderColor: '#2a2a2a',
         paddingBottom: 'env(safe-area-inset-bottom)',
+        paddingLeft: 'env(safe-area-inset-left)',
+        paddingRight: 'env(safe-area-inset-right)',
       }}
     >
       {tabs.map(({ to, icon: Icon, label }) => (
@@ -34,5 +36,5 @@ export default function BottomNav() {
         </NavLink>
       ))}
     </nav>
-  )
+  );
 }
