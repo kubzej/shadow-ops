@@ -1,0 +1,133 @@
+export type WorldRegion = 'europe' | 'north_america' | 'south_america' | 'asia' | 'middle_east' | 'africa'
+
+export interface Country {
+  id: string
+  name: string
+  worldRegion: WorldRegion
+  baseAlertLevel: number
+  cityIds: string[]
+}
+
+export const COUNTRIES: Country[] = [
+  // ===== EUROPE =====
+  { id: 'de', name: 'Německo',     worldRegion: 'europe', baseAlertLevel: 1, cityIds: ['berlin', 'frankfurt', 'munich', 'hamburg', 'cologne', 'stuttgart', 'dresden'] },
+  { id: 'fr', name: 'Francie',     worldRegion: 'europe', baseAlertLevel: 1, cityIds: ['paris', 'lyon', 'marseille', 'bordeaux', 'toulouse', 'lille', 'nice', 'strasbourg'] },
+  { id: 'gb', name: 'Británie',    worldRegion: 'europe', baseAlertLevel: 1, cityIds: ['london', 'manchester', 'edinburgh', 'birmingham', 'glasgow'] },
+  { id: 'cz', name: 'Česko',       worldRegion: 'europe', baseAlertLevel: 0, cityIds: ['prague', 'brno', 'ostrava'] },
+  { id: 'pl', name: 'Polsko',      worldRegion: 'europe', baseAlertLevel: 0, cityIds: ['warsaw', 'krakow', 'gdansk', 'wroclaw', 'poznan'] },
+  { id: 'it', name: 'Itálie',      worldRegion: 'europe', baseAlertLevel: 1, cityIds: ['rome', 'milan', 'naples', 'turin', 'palermo', 'bologna'] },
+  { id: 'es', name: 'Španělsko',   worldRegion: 'europe', baseAlertLevel: 0, cityIds: ['madrid', 'barcelona', 'seville', 'valencia', 'bilbao', 'malaga'] },
+  { id: 'nl', name: 'Nizozemsko',  worldRegion: 'europe', baseAlertLevel: 0, cityIds: ['amsterdam', 'rotterdam', 'the_hague'] },
+  { id: 'ch', name: 'Švýcarsko',   worldRegion: 'europe', baseAlertLevel: 1, cityIds: ['zurich', 'geneva', 'bern', 'basel'] },
+  { id: 'at', name: 'Rakousko',    worldRegion: 'europe', baseAlertLevel: 0, cityIds: ['vienna', 'graz', 'salzburg'] },
+  { id: 'be', name: 'Belgie',      worldRegion: 'europe', baseAlertLevel: 0, cityIds: ['brussels', 'antwerp', 'ghent'] },
+  { id: 'se', name: 'Švédsko',     worldRegion: 'europe', baseAlertLevel: 0, cityIds: ['stockholm', 'gothenburg', 'malmo'] },
+  { id: 'no', name: 'Norsko',      worldRegion: 'europe', baseAlertLevel: 0, cityIds: ['oslo', 'bergen'] },
+  { id: 'dk', name: 'Dánsko',      worldRegion: 'europe', baseAlertLevel: 0, cityIds: ['copenhagen', 'aarhus'] },
+  { id: 'fi', name: 'Finsko',      worldRegion: 'europe', baseAlertLevel: 0, cityIds: ['helsinki', 'tampere'] },
+  { id: 'ie', name: 'Irsko',       worldRegion: 'europe', baseAlertLevel: 0, cityIds: ['dublin', 'cork'] },
+  { id: 'pt', name: 'Portugalsko', worldRegion: 'europe', baseAlertLevel: 0, cityIds: ['lisbon', 'porto'] },
+  { id: 'ro', name: 'Rumunsko',    worldRegion: 'europe', baseAlertLevel: 1, cityIds: ['bucharest', 'cluj', 'timisoara'] },
+  { id: 'hu', name: 'Maďarsko',    worldRegion: 'europe', baseAlertLevel: 0, cityIds: ['budapest', 'debrecen'] },
+  { id: 'sk', name: 'Slovensko',   worldRegion: 'europe', baseAlertLevel: 0, cityIds: ['bratislava', 'kosice'] },
+  { id: 'hr', name: 'Chorvatsko',  worldRegion: 'europe', baseAlertLevel: 0, cityIds: ['zagreb', 'split', 'dubrovnik'] },
+  { id: 'si', name: 'Slovinsko',   worldRegion: 'europe', baseAlertLevel: 0, cityIds: ['ljubljana'] },
+  { id: 'ba', name: 'Bosna',       worldRegion: 'europe', baseAlertLevel: 1, cityIds: ['sarajevo'] },
+  { id: 'rs', name: 'Srbsko',      worldRegion: 'europe', baseAlertLevel: 1, cityIds: ['belgrade', 'novi_sad'] },
+  { id: 'mk', name: 'S. Makedonie',worldRegion: 'europe', baseAlertLevel: 1, cityIds: ['skopje'] },
+  { id: 'al', name: 'Albánie',     worldRegion: 'europe', baseAlertLevel: 1, cityIds: ['tirana'] },
+  { id: 'bg', name: 'Bulharsko',   worldRegion: 'europe', baseAlertLevel: 1, cityIds: ['sofia', 'plovdiv'] },
+  { id: 'gr', name: 'Řecko',       worldRegion: 'europe', baseAlertLevel: 1, cityIds: ['athens', 'thessaloniki'] },
+  { id: 'md', name: 'Moldavsko',   worldRegion: 'europe', baseAlertLevel: 1, cityIds: ['chisinau'] },
+  { id: 'ua', name: 'Ukrajina',    worldRegion: 'europe', baseAlertLevel: 2, cityIds: ['kyiv', 'kharkiv', 'odessa', 'lviv'] },
+  { id: 'by', name: 'Bělorusko',   worldRegion: 'europe', baseAlertLevel: 2, cityIds: ['minsk'] },
+  { id: 'lt', name: 'Litva',       worldRegion: 'europe', baseAlertLevel: 0, cityIds: ['vilnius', 'kaunas'] },
+  { id: 'lv', name: 'Lotyšsko',    worldRegion: 'europe', baseAlertLevel: 0, cityIds: ['riga'] },
+  { id: 'ee', name: 'Estonsko',    worldRegion: 'europe', baseAlertLevel: 0, cityIds: ['tallinn'] },
+  { id: 'ge', name: 'Gruzie',      worldRegion: 'europe', baseAlertLevel: 2, cityIds: ['tbilisi', 'batumi'] },
+  { id: 'tr', name: 'Turecko',     worldRegion: 'europe', baseAlertLevel: 2, cityIds: ['istanbul', 'ankara', 'izmir', 'antalya'] },
+  { id: 'ru', name: 'Rusko',       worldRegion: 'europe', baseAlertLevel: 3, cityIds: ['moscow', 'st_petersburg', 'novosibirsk', 'yekaterinburg', 'vladivostok'] },
+  { id: 'cy', name: 'Kypr',        worldRegion: 'europe', baseAlertLevel: 1, cityIds: ['nicosia'] },
+
+  // ===== NORTH AMERICA =====
+  { id: 'us', name: 'USA',          worldRegion: 'north_america', baseAlertLevel: 2, cityIds: ['new_york', 'washington', 'chicago', 'los_angeles', 'miami', 'san_francisco', 'las_vegas', 'boston', 'seattle', 'houston', 'dallas', 'atlanta'] },
+  { id: 'ca', name: 'Kanada',       worldRegion: 'north_america', baseAlertLevel: 1, cityIds: ['toronto', 'vancouver', 'montreal', 'calgary', 'ottawa'] },
+  { id: 'mx', name: 'Mexiko',       worldRegion: 'north_america', baseAlertLevel: 2, cityIds: ['mexico_city', 'guadalajara', 'monterrey', 'tijuana'] },
+  { id: 'cu', name: 'Kuba',         worldRegion: 'north_america', baseAlertLevel: 2, cityIds: ['havana'] },
+  { id: 'pa', name: 'Panama',       worldRegion: 'north_america', baseAlertLevel: 1, cityIds: ['panama_city'] },
+  { id: 'cr', name: 'Kostarika',    worldRegion: 'north_america', baseAlertLevel: 1, cityIds: ['san_jose_cr'] },
+  { id: 'gt', name: 'Guatemala',    worldRegion: 'north_america', baseAlertLevel: 2, cityIds: ['guatemala_city'] },
+
+  // ===== SOUTH AMERICA =====
+  { id: 'br', name: 'Brazílie',     worldRegion: 'south_america', baseAlertLevel: 1, cityIds: ['sao_paulo', 'rio', 'brasilia', 'belo_horizonte', 'recife', 'manaus'] },
+  { id: 'ar', name: 'Argentina',    worldRegion: 'south_america', baseAlertLevel: 1, cityIds: ['buenos_aires', 'cordoba', 'rosario', 'mendoza'] },
+  { id: 'co', name: 'Kolumbie',     worldRegion: 'south_america', baseAlertLevel: 2, cityIds: ['bogota', 'medellin', 'cali', 'cartagena'] },
+  { id: 'cl', name: 'Chile',        worldRegion: 'south_america', baseAlertLevel: 1, cityIds: ['santiago', 'valparaiso'] },
+  { id: 'pe', name: 'Peru',         worldRegion: 'south_america', baseAlertLevel: 1, cityIds: ['lima', 'cusco'] },
+  { id: 've', name: 'Venezuela',    worldRegion: 'south_america', baseAlertLevel: 2, cityIds: ['caracas', 'maracaibo'] },
+  { id: 'ec', name: 'Ekvádor',      worldRegion: 'south_america', baseAlertLevel: 1, cityIds: ['quito', 'guayaquil'] },
+  { id: 'uy', name: 'Uruguay',      worldRegion: 'south_america', baseAlertLevel: 0, cityIds: ['montevideo'] },
+  { id: 'py', name: 'Paraguay',     worldRegion: 'south_america', baseAlertLevel: 1, cityIds: ['asuncion'] },
+  { id: 'bo', name: 'Bolívie',      worldRegion: 'south_america', baseAlertLevel: 2, cityIds: ['la_paz'] },
+
+  // ===== ASIA =====
+  { id: 'jp', name: 'Japonsko',     worldRegion: 'asia', baseAlertLevel: 1, cityIds: ['tokyo', 'osaka', 'kyoto', 'fukuoka', 'sapporo'] },
+  { id: 'cn', name: 'Čína',         worldRegion: 'asia', baseAlertLevel: 3, cityIds: ['beijing', 'shanghai', 'hong_kong', 'guangzhou', 'shenzhen', 'chengdu', 'wuhan', 'tianjin'] },
+  { id: 'kr', name: 'J. Korea',     worldRegion: 'asia', baseAlertLevel: 1, cityIds: ['seoul', 'busan', 'incheon'] },
+  { id: 'tw', name: 'Tchaj-wan',    worldRegion: 'asia', baseAlertLevel: 2, cityIds: ['taipei', 'kaohsiung'] },
+  { id: 'sg', name: 'Singapur',     worldRegion: 'asia', baseAlertLevel: 1, cityIds: ['singapore'] },
+  { id: 'in', name: 'Indie',        worldRegion: 'asia', baseAlertLevel: 1, cityIds: ['mumbai', 'delhi', 'bangalore', 'hyderabad', 'chennai', 'kolkata'] },
+  { id: 'pk', name: 'Pákistán',     worldRegion: 'asia', baseAlertLevel: 3, cityIds: ['karachi', 'lahore', 'islamabad', 'peshawar'] },
+  { id: 'th', name: 'Thajsko',      worldRegion: 'asia', baseAlertLevel: 1, cityIds: ['bangkok', 'chiang_mai', 'pattaya'] },
+  { id: 'my', name: 'Malajsie',     worldRegion: 'asia', baseAlertLevel: 1, cityIds: ['kuala_lumpur', 'penang', 'johor_bahru'] },
+  { id: 'id', name: 'Indonésie',    worldRegion: 'asia', baseAlertLevel: 1, cityIds: ['jakarta', 'surabaya', 'bali', 'medan'] },
+  { id: 'vn', name: 'Vietnam',      worldRegion: 'asia', baseAlertLevel: 1, cityIds: ['hanoi', 'ho_chi_minh', 'da_nang'] },
+  { id: 'ph', name: 'Filipíny',     worldRegion: 'asia', baseAlertLevel: 1, cityIds: ['manila', 'cebu', 'davao'] },
+  { id: 'kz', name: 'Kazachstán',   worldRegion: 'asia', baseAlertLevel: 2, cityIds: ['almaty', 'nur_sultan'] },
+  { id: 'uz', name: 'Uzbekistán',   worldRegion: 'asia', baseAlertLevel: 2, cityIds: ['tashkent', 'samarkand'] },
+  { id: 'mn', name: 'Mongolsko',    worldRegion: 'asia', baseAlertLevel: 1, cityIds: ['ulaanbaatar'] },
+  { id: 'mm', name: 'Myanmar',      worldRegion: 'asia', baseAlertLevel: 2, cityIds: ['yangon', 'naypyidaw'] },
+  { id: 'kh', name: 'Kambodža',     worldRegion: 'asia', baseAlertLevel: 1, cityIds: ['phnom_penh'] },
+  { id: 'np', name: 'Nepál',        worldRegion: 'asia', baseAlertLevel: 1, cityIds: ['kathmandu'] },
+  { id: 'bd', name: 'Bangladéš',    worldRegion: 'asia', baseAlertLevel: 2, cityIds: ['dhaka'] },
+  { id: 'lk', name: 'Srí Lanka',    worldRegion: 'asia', baseAlertLevel: 1, cityIds: ['colombo'] },
+
+  // ===== MIDDLE EAST =====
+  { id: 'ae', name: 'SAE',          worldRegion: 'middle_east', baseAlertLevel: 1, cityIds: ['dubai', 'abu_dhabi', 'sharjah'] },
+  { id: 'sa', name: 'S. Arábie',    worldRegion: 'middle_east', baseAlertLevel: 2, cityIds: ['riyadh', 'jeddah', 'mecca'] },
+  { id: 'il', name: 'Izrael',       worldRegion: 'middle_east', baseAlertLevel: 3, cityIds: ['tel_aviv', 'jerusalem', 'haifa'] },
+  { id: 'ir', name: 'Írán',         worldRegion: 'middle_east', baseAlertLevel: 3, cityIds: ['tehran', 'mashhad', 'isfahan', 'tabriz'] },
+  { id: 'iq', name: 'Irák',         worldRegion: 'middle_east', baseAlertLevel: 3, cityIds: ['baghdad', 'basra', 'erbil'] },
+  { id: 'jo', name: 'Jordánsko',    worldRegion: 'middle_east', baseAlertLevel: 1, cityIds: ['amman', 'aqaba'] },
+  { id: 'lb', name: 'Libanon',      worldRegion: 'middle_east', baseAlertLevel: 2, cityIds: ['beirut', 'tripoli_lb'] },
+  { id: 'sy', name: 'Sýrie',        worldRegion: 'middle_east', baseAlertLevel: 3, cityIds: ['damascus', 'aleppo'] },
+  { id: 'kw', name: 'Kuvajt',       worldRegion: 'middle_east', baseAlertLevel: 1, cityIds: ['kuwait_city'] },
+  { id: 'qa', name: 'Katar',        worldRegion: 'middle_east', baseAlertLevel: 1, cityIds: ['doha'] },
+  { id: 'bh', name: 'Bahrajn',      worldRegion: 'middle_east', baseAlertLevel: 1, cityIds: ['manama'] },
+  { id: 'om', name: 'Omán',         worldRegion: 'middle_east', baseAlertLevel: 1, cityIds: ['muscat'] },
+  { id: 'ye', name: 'Jemen',        worldRegion: 'middle_east', baseAlertLevel: 3, cityIds: ['sanaa', 'aden'] },
+  { id: 'af', name: 'Afghánistán',  worldRegion: 'middle_east', baseAlertLevel: 3, cityIds: ['kabul', 'kandahar'] },
+
+  // ===== AFRICA =====
+  { id: 'eg', name: 'Egypt',        worldRegion: 'africa', baseAlertLevel: 2, cityIds: ['cairo', 'alexandria', 'luxor'] },
+  { id: 'ma', name: 'Maroko',       worldRegion: 'africa', baseAlertLevel: 1, cityIds: ['casablanca', 'rabat', 'marrakech', 'tangier'] },
+  { id: 'tn', name: 'Tunisko',      worldRegion: 'africa', baseAlertLevel: 1, cityIds: ['tunis', 'sfax'] },
+  { id: 'dz', name: 'Alžírsko',     worldRegion: 'africa', baseAlertLevel: 2, cityIds: ['algiers', 'oran'] },
+  { id: 'ly', name: 'Libye',        worldRegion: 'africa', baseAlertLevel: 3, cityIds: ['tripoli', 'benghazi'] },
+  { id: 'ng', name: 'Nigérie',      worldRegion: 'africa', baseAlertLevel: 2, cityIds: ['lagos', 'abuja', 'kano', 'ibadan'] },
+  { id: 'gh', name: 'Ghana',        worldRegion: 'africa', baseAlertLevel: 1, cityIds: ['accra', 'kumasi'] },
+  { id: 'sn', name: 'Senegal',      worldRegion: 'africa', baseAlertLevel: 1, cityIds: ['dakar'] },
+  { id: 'ci', name: 'Pobřeží slonoviny', worldRegion: 'africa', baseAlertLevel: 1, cityIds: ['abidjan'] },
+  { id: 'cm', name: 'Kamerun',      worldRegion: 'africa', baseAlertLevel: 2, cityIds: ['douala', 'yaounde'] },
+  { id: 'ke', name: 'Keňa',         worldRegion: 'africa', baseAlertLevel: 1, cityIds: ['nairobi', 'mombasa'] },
+  { id: 'tz', name: 'Tanzanie',     worldRegion: 'africa', baseAlertLevel: 1, cityIds: ['dar_es_salaam', 'zanzibar'] },
+  { id: 'et', name: 'Etiopie',      worldRegion: 'africa', baseAlertLevel: 2, cityIds: ['addis_ababa'] },
+  { id: 'sd', name: 'Súdán',        worldRegion: 'africa', baseAlertLevel: 3, cityIds: ['khartoum'] },
+  { id: 'ao', name: 'Angola',       worldRegion: 'africa', baseAlertLevel: 2, cityIds: ['luanda'] },
+  { id: 'cd', name: 'D. R. Kongo',  worldRegion: 'africa', baseAlertLevel: 3, cityIds: ['kinshasa', 'lubumbashi'] },
+  { id: 'za', name: 'J. Afrika',    worldRegion: 'africa', baseAlertLevel: 1, cityIds: ['johannesburg', 'cape_town', 'durban', 'pretoria'] },
+  { id: 'mz', name: 'Mozambik',     worldRegion: 'africa', baseAlertLevel: 2, cityIds: ['maputo'] },
+  { id: 'zw', name: 'Zimbabwe',     worldRegion: 'africa', baseAlertLevel: 2, cityIds: ['harare'] },
+]
+
+export const COUNTRY_MAP = new Map(COUNTRIES.map(c => [c.id, c]))
