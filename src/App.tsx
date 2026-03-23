@@ -28,21 +28,35 @@ export default function App() {
   // On startup: try to auto-resume the last active slot, else show slot picker
   useEffect(() => {
     async function init() {
-      try {
-        const lastSlotId = localStorage.getItem('shadow-ops-active-slot');
-        if (lastSlotId) {
+      const lastSlotId = localStorage.getItem('shadow-ops-active-slot');
+
+      // Try to resume the last active slot
+      if (lastSlotId) {
+        try {
           activateSlot(lastSlotId);
           const found = await loadGame();
           if (found) {
             setAppState('game');
             return;
           }
+        } catch (err) {
+          console.warn(
+            '[App] Failed to load active slot, falling back to slot picker:',
+            err,
+          );
+          // Don't clear lastSlotId — might be a transient error (e.g. SW update)
+          // Fall through to slot picker so user doesn't lose progress
         }
-        // No resumable slot — check if any saves exist
+      }
+
+      // Check if any saves exist at all
+      try {
         const slots = await listSaveSlots();
         setAppState(slots.length > 0 ? 'landing' : 'onboarding');
-      } catch {
-        setAppState('onboarding');
+      } catch (err) {
+        console.warn('[App] Failed to list save slots:', err);
+        // If we know a slot existed (lastSlotId), show landing rather than nuking to onboarding
+        setAppState(lastSlotId ? 'landing' : 'onboarding');
       }
     }
     init();
