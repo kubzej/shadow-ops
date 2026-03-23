@@ -988,12 +988,9 @@ function ResultModal({
 export default function MissionsScreen() {
   const startCityId = useGameStore((s) => s.startCityId);
   const selectedRegionId = useUIStore((s) => s.selectedRegionId);
-  const selectRegion = useUIStore((s) => s.selectRegion);
 
   // Current region = uiStore selection or start city
-  const [ownedRegions, setOwnedRegions] = useState<
-    Array<{ id: string; name: string }>
-  >([]);
+  const [, setOwnedRegions] = useState<Array<{ id: string; name: string }>>([]);
   const currentRegionId = selectedRegionId ?? startCityId;
 
   const availableMissions = useMissionStore((s) => s.availableMissions);

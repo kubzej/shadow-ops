@@ -1852,7 +1852,6 @@ function SafeHousePickerModal({
 // ─────────────────────────────────────────────
 
 export default function BaseScreen() {
-  const currencies = useGameStore((s) => s.currencies);
   const blackMarketUnlocked = useGameStore((s) => s.blackMarketUnlocked);
   const totalMissions = useGameStore((s) => s.totalMissionsCompleted);
   const [tab, setTab] = useState<Tab>('recruit');
