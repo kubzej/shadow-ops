@@ -1000,7 +1000,7 @@ function SafeHouseTab() {
                               {mod.name}
                             </p>
                             <p
-                              className="text-[10px] truncate"
+                              className="text-[10px]"
                               style={{ color: '#888' }}
                             >
                               {mod.description}
