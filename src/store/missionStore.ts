@@ -31,6 +31,7 @@ import {
   FLASH_MISSION_MIN_TIER,
   FLASH_MISSION_SHADOW_BONUS,
 } from '../engine/missionGenerator';
+import { createRng } from '../utils/rng';
 import { useGameStore } from './gameStore';
 import { useUIStore } from './uiStore';
 import { randomId } from '../utils/rng';

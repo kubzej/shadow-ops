@@ -122,6 +122,7 @@ export function createAgent(
     ],
     missionsCompleted: 0,
     missionsAttempted: 0,
+    missionStreak: 0,
     recruitedAt: Date.now(),
   };
 }
