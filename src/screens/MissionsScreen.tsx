@@ -1120,6 +1120,14 @@ function ResultModal({
               </span>
               {difficultyDots(result.mission.difficulty, meta.color)}
             </div>
+            {result.mission.flavor && (
+              <p
+                className="text-xs text-center italic px-2"
+                style={{ color: '#666' }}
+              >
+                {result.mission.flavor}
+              </p>
+            )}
           </div>
 
           {/* Rewards */}
@@ -1229,6 +1237,11 @@ function ResultModal({
                     {RANK_LABEL[a.newRank as keyof typeof RANK_LABEL] ??
                       a.newRank}
                   </span>
+                  {a.nickname && (
+                    <span className="text-xs italic" style={{ color: '#aaa' }}>
+                      {a.nickname}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>

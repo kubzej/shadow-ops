@@ -39,13 +39,17 @@ CATEGORY_STAT_WEIGHTS = {
 5. equipBonus = sum(leader.equipment.successBonus) / 100
               → pouze sloty lídra (3 sloty max)
 
-6. compPenalty = complication.difficultyMod × 0.06
+6. streakBonus = floor(leader.missionStreak / 5) × 0.02, max 0.10
+               → +2% za každých 5 čistých misí v řadě (bez injury ani failure)
+               → pouze leader's streak se počítá
 
-7. alertPenalty = (alertLevel / 3) × 0.2
+7. compPenalty = complication.difficultyMod × 0.06
+
+8. alertPenalty = (alertLevel / 3) × 0.2
                → max −0.20 při alertLevel 3.0
 
-8. raw = baseSuccessChance + statBonus + teamBonus + equipBonus − compPenalty − alertPenalty
-9. final = clamp(raw × APPROACH_MODS[approach].successMult, 0.05, 1.0)
+9. raw = baseSuccessChance + statBonus + teamBonus + equipBonus + streakBonus − compPenalty − alertPenalty
+10. final = clamp(raw × APPROACH_MODS[approach].successMult, 0.05, 1.0)
 ```
 
 **Příklad:** diff-3 mise, 1 operativa (score 60), žádný equipment, alert=0, standard:
@@ -266,6 +270,18 @@ stat = clamp(round((base + randInt(−variance, variance)) × mult), 1, 99)
 
 `agent.rank !== 'veteran' AND agent.xp >= agent.xpToNextRank`
 
+### generateNickname(agentId: string) → string
+
+Deterministická funkce — vrátí vždy stejnou přezdívku pro dané `agentId`.
+
+```
+1. Hash agentId → 32-bit seed (Mulberry32)
+2. pickRandom(AGENT_NICKNAMES, seededRng)
+3. Vrátí: "the {slovo}"  (např. "the Ghost", "the Fixer")
+```
+
+`AGENT_NICKNAMES` je 55-položkový seznam v `src/data/names.ts`. Seed je odvozen z ID agenta, takže přezdívka je stabilní při každém volání.
+
 ### rankUp(agent)
 
 ```
@@ -278,6 +294,7 @@ rankedAgent = {
   xpToNextRank: XP_TO_RANK[newRank],
   baseStats: newStats,
   stats: applyEquipmentBonuses(newStats, agent.equipment, newRank),
+  nickname: newRank === 'veteran' ? generateNickname(agent.id) : agent.nickname,
 }
 ```
 

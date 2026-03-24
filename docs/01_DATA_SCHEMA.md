@@ -122,12 +122,14 @@ interface Agent {
   // Mise statistiky
   missionsCompleted: number;
   missionsAttempted: number;
+  missionStreak: number; // po sobě jdoucí úspěchy bez injury/failure (reset při failure/partial/injury)
 
   // Zajetí
   capturedAt?: number;
   rescueMissionId?: string; // ID rescue mise (pokud existuje)
 
   recruitedAt: number; // timestamp
+  nickname?: string; // udělena při postupu na Vetán; formát "the X" (např. "the Ghost")
 }
 ```
 

@@ -15,6 +15,7 @@ import {
   ChevronRight,
   Clock,
   Coins,
+  Flame,
   Heart,
   Shield,
   Skull,
@@ -180,7 +181,12 @@ function StatBar({
         <div className="h-full flex">
           <div style={{ width: `${base}%`, background: color }} />
           {bonus && bonus > 0 && (
-            <div style={{ width: `${bonus}%`, background: 'rgba(255,255,255,0.4)' }} />
+            <div
+              style={{
+                width: `${bonus}%`,
+                background: 'rgba(255,255,255,0.4)',
+              }}
+            />
           )}
         </div>
       </div>
@@ -296,6 +302,11 @@ function AgentCard({
           <span className="text-xs" style={{ color: '#888' }}>
             {RANK_LABEL[agent.rank]}
           </span>
+          {agent.nickname && (
+            <span className="text-xs italic" style={{ color: '#666' }}>
+              {agent.nickname}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-1 mt-0.5">
           <span className="text-xs" style={{ color: '#777' }}>
@@ -312,9 +323,20 @@ function AgentCard({
         >
           {statusMeta.label}
         </span>
-        <span className="text-xs font-mono" style={{ color: '#888' }}>
-          avg {avg}
-        </span>
+        <div className="flex items-center gap-1.5">
+          {(agent.missionStreak ?? 0) >= 5 && (
+            <span
+              className="flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded"
+              style={{ background: '#f9731622', color: '#f97316' }}
+            >
+              <Flame size={10} />
+              {agent.missionStreak}
+            </span>
+          )}
+          <span className="text-xs font-mono" style={{ color: '#888' }}>
+            avg {avg}
+          </span>
+        </div>
       </div>
 
       <ChevronRight size={16} style={{ color: '#999', flexShrink: 0 }} />
@@ -514,6 +536,11 @@ function AgentDetailModal({
                 <h3 className="text-lg font-bold" style={{ color: '#e8e8e8' }}>
                   {agent.name}
                 </h3>
+                {agent.nickname && (
+                  <p className="text-xs italic" style={{ color: '#aaa' }}>
+                    {agent.nickname}
+                  </p>
+                )}
                 <div className="flex items-center gap-2 mt-0.5">
                   <span
                     className="text-xs px-1.5 py-0.5 rounded"

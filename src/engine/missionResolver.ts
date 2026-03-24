@@ -182,6 +182,12 @@ export function calculateSuccessChance(
     if (eq?.successBonus) equipBonus += eq.successBonus / 100;
   }
 
+  // Streak bonus: leader's consecutive clean missions (+2% per 5, max +10%)
+  const streakBonus = Math.min(
+    0.1,
+    Math.floor((agents[leaderIdx].missionStreak ?? 0) / 5) * 0.02,
+  );
+
   // Complication penalty
   let compPenalty = 0;
   if (mission.complicationId) {
@@ -196,7 +202,8 @@ export function calculateSuccessChance(
     mission.baseSuccessChance +
     statBonus +
     teamBonus +
-    equipBonus -
+    equipBonus +
+    streakBonus -
     compPenalty -
     alertPenalty;
   return clamp(raw * APPROACH_MODS[approach].successMult, 0.05, 1.0);

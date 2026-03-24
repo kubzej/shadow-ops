@@ -4,8 +4,14 @@ import {
   type DivisionId,
   type AgentRank,
 } from '../data/agentTypes';
-import { FIRST_NAMES, LAST_NAMES } from '../data/names';
-import { createRng, pickRandom, randInt, clamp } from '../utils/rng';
+import { FIRST_NAMES, LAST_NAMES, AGENT_NICKNAMES } from '../data/names';
+import {
+  mulberry32,
+  createRng,
+  pickRandom,
+  randInt,
+  clamp,
+} from '../utils/rng';
 import type { Agent, AgentStats } from '../db/schema';
 import { randomId } from '../utils/rng';
 import { EQUIPMENT_CATALOG } from '../data/equipmentCatalog';
@@ -34,6 +40,22 @@ export const HEALING_TIME_PER_MISSION = 30; // +30s per completed mission (wear)
 // ─────────────────────────────────────────────
 // Name generation
 // ─────────────────────────────────────────────
+
+/** Hash an agent ID string to a stable 32-bit integer for seeding. */
+function hashAgentId(id: string): number {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) {
+    h = (Math.imul(31, h) + id.charCodeAt(i)) | 0;
+  }
+  return h >>> 0;
+}
+
+/** Generate a deterministic nickname from agent ID — always "the X". */
+export function generateNickname(agentId: string): string {
+  const rng = mulberry32(hashAgentId(agentId));
+  const word = pickRandom(AGENT_NICKNAMES, rng);
+  return `the ${word}`;
+}
 
 export function generateAgentName(): string {
   const rng = createRng();
@@ -212,6 +234,8 @@ export function rankUp(agent: Agent): Agent {
     xpToNextRank: XP_TO_RANK[newRank],
     baseStats: newStats,
     stats: applyEquipmentBonuses(newStats, agent.equipment, newRank),
+    nickname:
+      newRank === 'veteran' ? generateNickname(agent.id) : agent.nickname,
   };
 }
 

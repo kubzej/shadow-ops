@@ -6,13 +6,13 @@
 
 `BottomNav` je pevně fixován dole (5 tabů). Každý tab = route.
 
-| Tab     | Route      | Ikona (lucide) | Funkce                        |
-|---------|------------|----------------|-------------------------------|
-| Mapa    | /map       | Map            | Globální mapa, expanze        |
-| Mise    | /missions  | Target         | Mise, dispatch, výsledky      |
-| Agenti  | /agents    | Users          | Přehled agentů, detail        |
-| Základna| /base      | Building        | Nábor, upgrade, divize, shop |
-| Menu    | /menu      | Settings       | Statistiky, reset, switch     |
+| Tab      | Route     | Ikona (lucide) | Funkce                       |
+| -------- | --------- | -------------- | ---------------------------- |
+| Mapa     | /map      | Map            | Globální mapa, expanze       |
+| Mise     | /missions | Target         | Mise, dispatch, výsledky     |
+| Agenti   | /agents   | Users          | Přehled agentů, detail       |
+| Základna | /base     | Building       | Nábor, upgrade, divize, shop |
+| Menu     | /menu     | Settings       | Statistiky, reset, switch    |
 
 Default route: `/` → redirect na `/map`.
 
@@ -25,6 +25,7 @@ Default route: `/` → redirect na `/map`.
 **Vstup:** appState='landing'
 
 **Obsah:**
+
 - Logo + název hry
 - Seznam existujících save slotů (ze `listSaveSlots()`)
   - Každý slot: agency name, boss name, logo, lastSavedAt, money snapshot, mise snapshot
@@ -38,11 +39,11 @@ Default route: `/` → redirect na `/map`.
 
 **Vstup:** appState='onboarding'
 
-| Krok | Obsah |
-|------|-------|
-| 1    | Textové inputy: jméno agentury + jméno ředitele. Validace: neprázdné. |
-| 2    | Výběr loga ze 16 SVG variant (`orgLogos.ts`). Grid karet, highlight vybrané. |
-| 3    | Výběr startovního města z 11 možností. Každá karta: název, země, typ města. |
+| Krok | Obsah                                                                                            |
+| ---- | ------------------------------------------------------------------------------------------------ |
+| 1    | Textové inputy: jméno agentury + jméno ředitele. Validace: neprázdné.                            |
+| 2    | Výběr loga ze 16 SVG variant (`orgLogos.ts`). Grid karet, highlight vybrané.                     |
+| 3    | Výběr startovního města z 11 možností. Každá karta: název, země, typ města.                      |
 | 4    | Shrnutí: název, logo, ředitel, město, startovní zdroje (1500$, 30◈). Tlačítko "Zahájit operaci". |
 
 Po potvrzení kroku 4: `initializeGame(agencyName, bossName, startCityId, logoId, slotId)` → store.loaded=true → appState='game'.
@@ -55,19 +56,21 @@ Po potvrzení kroku 4: `initializeGame(agencyName, bossName, startCityId, logoId
 
 **Vizuální stavy regionů:**
 
-| Stav                | Barva/ikona         | Podmínka                                    |
-|--------------------|---------------------|---------------------------------------------|
-| Owned              | Zelený kruh + název | region.owned = true                         |
-| Construction       | Žlutý + animace     | constructionInProgress = true               |
-| Available          | Modrý obrys         | soused owned regionu, ne under construction |
-| Locked             | Šedý, slabý         | zbytek                                      |
-| Alert indicator    | Barevná tečka       | alertLevel dle `alertColor()`               |
+| Stav            | Barva/ikona         | Podmínka                                    |
+| --------------- | ------------------- | ------------------------------------------- |
+| Owned           | Zelený kruh + název | region.owned = true                         |
+| Construction    | Žlutý + animace     | constructionInProgress = true               |
+| Available       | Modrý obrys         | soused owned regionu, ne under construction |
+| Locked          | Šedý, slabý         | zbytek                                      |
+| Alert indicator | Barevná tečka       | alertLevel dle `alertColor()`               |
 
 **Klik na region:**
+
 - Aktualizuje `selectedRegionId` v uiStore
 - Zobrazí `CityBar` (název, typ, alert badge, safe house level pokud owned)
 
 **Expansion dialog** (klik na available region):
+
 - Zobrazí cenu (money + intel), build time, level sousedního SH
 - Tlačítko "Expandovat" → `spendCurrencies()` → `db.regions.update(constructionInProgress=true, constructionCompletesAt)` → `db.safeHouses.add(constructionInProgress=true)`
 
@@ -97,6 +100,7 @@ Nejkomplexnější obrazovka. 3 části: mission list, active missions, collecti
 Bottom sheet (modalOverlay + modalSheet).
 
 **Sekce:**
+
 1. **Header:** název mise, flavor text, difficulty, kategorie
 2. **Approach selector:** standard / aggressive / covert (3 tlačítka, live preview šance)
 3. **Agent výběr:**
@@ -126,6 +130,7 @@ Fixní sekce v horní části MissionsScreen.
 Bottom sheet, animovaný.
 
 **Obsah:**
+
 - Accent bar: barva dle výsledku (success=zelená, partial=žlutá, failure=červená, catastrophe=rose)
 - Název výsledku (z `RESULT_META`)
 - Odměny (každá měna s ikonkou, xp)
@@ -146,19 +151,20 @@ Bottom sheet, animovaný.
 - Každá karta:
   - Avatar (divisionColor, iniciály nebo ikona)
   - Jméno, division chip (barva + název)
-  - Rank stars (1–4)
-  - Stats mini-bar (stealth/combat/intel/tech jako tečkový progress)
+  - Rank stars (1–4) - Pokud `rank === 'veteran'` a `agent.nickname`: přezdívka kurzivou (např. _the Ghost_) - Stats mini-bar (stealth/combat/intel/tech jako tečkový progress)
   - Status badge (`STATUS_META[status]`)
   - XP progress bar
   - Pokud injured: countdown timer do uzdravení
   - Pokud captured: "ZAJAT" červeně
+  - Pokud `missionStreak >= 5`: oranžový streak badge (🔥 N) vedle avg skóre
 
 ### Agent Detail Modal
 
 Klik na agenta → bottom sheet.
 
 **Sekce:**
-1. **Header:** avatar velký, jméno, divize, rank, status
+
+1. **Header:** avatar velký, jméno, (přezdívka kurzivou pod jménem pokud `nickname` existuje), divize, rank, status
 2. **Stats detail:** 4 řádky (stealth/combat/intel/tech), progress bar 0–99, číslo. Pokud agent nese equipment s bonusem, bar má dvě části: base v barvě divize + bonus segment v zelené (#4ade80)
 3. **XP progress:** "XP: {xp} / {xpToNextRank}" + progress bar
 4. **Mise statistiky:** missionsCompleted / missionsAttempted
@@ -261,6 +267,7 @@ Max najednou: 3 toasty (nejstarší odstraněn)
 ```
 
 Kde se toasty zobrazují:
+
 - `tickMissions()`: agent zabit při capture expiry
 - `useConstructionTicker()`: expanze dokončena
 - (budoucí): reward collection, upgrade completed atd.

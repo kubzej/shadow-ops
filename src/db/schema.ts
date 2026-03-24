@@ -87,11 +87,13 @@ export interface Agent {
   // Mission stats
   missionsCompleted: number;
   missionsAttempted: number;
+  missionStreak: number; // consecutive successes without injury or failure
   // Capture
   capturedAt?: number;
   rescueMissionId?: string;
   // Meta
   recruitedAt: number;
+  nickname?: string; // awarded on promotion to veteran rank
 }
 
 // ============ REGION STATE ============

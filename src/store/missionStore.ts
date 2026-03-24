@@ -53,7 +53,12 @@ export interface CompletedMissionResult {
   alertGain: number;
   affectedAgentIds: string[];
   injuredAgents: InjuredAgentInfo[];
-  rankedUpAgents: Array<{ id: string; name: string; newRank: string }>;
+  rankedUpAgents: Array<{
+    id: string;
+    name: string;
+    newRank: string;
+    nickname?: string;
+  }>;
   killedAgent?: { id: string; name: string };
   lostEquipment?: Array<{ id: string; name: string }>;
 }
@@ -247,6 +252,7 @@ export const useMissionStore = create<MissionStore>()(
         id: string;
         name: string;
         newRank: string;
+        nickname?: string;
       }> = [];
       let killedAgent: { id: string; name: string } | undefined;
       let lostEquipment: Array<{ id: string; name: string }> | undefined;
@@ -291,6 +297,12 @@ export const useMissionStore = create<MissionStore>()(
                 (agent.missionsCompleted ?? 0) + 1;
             }
 
+            // Streak: increment only on clean success (no injury), reset otherwise
+            updatedAgent.missionStreak =
+              result === 'success' && injury === 'none'
+                ? (agent.missionStreak ?? 0) + 1
+                : 0;
+
             if (injury !== 'none') {
               const injuryDesc = rollInjuryDescription(
                 mission.category,
@@ -332,6 +344,7 @@ export const useMissionStore = create<MissionStore>()(
                 id: agent.id,
                 name: agent.name,
                 newRank: ranked.rank,
+                nickname: ranked.nickname,
               });
             } else {
               await db.agents.update(agent.id, updatedAgent);
