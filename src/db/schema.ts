@@ -127,6 +127,9 @@ export interface Mission {
   complicationId?: string;
   intelCost?: number; // intel required to dispatch
   chainNextTargetId?: string; // on success, auto-generate follow-up with this target
+  chainStep?: number; // 1-based position in tc chain (e.g. 2)
+  chainTotal?: number; // total tc steps in this chain (e.g. 3)
+  lockedByDivision?: string; // chain mission blocked until this division is assigned
   title: string;
   flavor: string;
   difficulty: number; // 1–5

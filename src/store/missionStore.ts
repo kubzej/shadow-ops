@@ -26,6 +26,7 @@ import {
   MAX_MISSIONS_PER_REGION,
 } from '../engine/missionGenerator';
 import { useGameStore } from './gameStore';
+import { useUIStore } from './uiStore';
 import { randomId } from '../utils/rng';
 import { EQUIPMENT_CATALOG } from '../data/equipmentCatalog';
 
@@ -51,6 +52,8 @@ export interface CompletedMissionResult {
   affectedAgentIds: string[];
   injuredAgents: InjuredAgentInfo[];
   rankedUpAgents: Array<{ id: string; name: string; newRank: string }>;
+  killedAgent?: { id: string; name: string };
+  lostEquipment?: Array<{ id: string; name: string }>;
 }
 
 interface MissionStore {
@@ -134,11 +137,19 @@ export const useMissionStore = create<MissionStore>()(
     },
 
     // ── Dispatch a mission ─────────────────────
-    dispatch: async (mission, agents, equippedIds = [], approach = 'standard') => {
-      // Deduct intel cost if required
-      if (mission.intelCost && mission.intelCost > 0) {
-        const ok = useGameStore.getState().spendCurrencies({ intel: mission.intelCost });
-        if (!ok) return; // not enough intel
+    dispatch: async (
+      mission,
+      agents,
+      equippedIds = [],
+      approach = 'standard',
+    ) => {
+      // Check intel affordability before touching DB
+      if (
+        mission.intelCost &&
+        mission.intelCost > 0 &&
+        !useGameStore.getState().canAfford({ intel: mission.intelCost })
+      ) {
+        return;
       }
 
       // Read current alert level for the region before dispatching
@@ -152,7 +163,7 @@ export const useMissionStore = create<MissionStore>()(
         approach,
       );
 
-      // Persist
+      // Persist — intel is deducted only after the transaction succeeds
       await db.transaction(
         'rw',
         [db.activeMissions, db.agents, db.missions, db.regions],
@@ -176,6 +187,11 @@ export const useMissionStore = create<MissionStore>()(
           }
         },
       );
+
+      // Deduct intel only after DB transaction succeeded
+      if (mission.intelCost && mission.intelCost > 0) {
+        useGameStore.getState().spendCurrencies({ intel: mission.intelCost });
+      }
 
       // Update store
       set((s) => {
@@ -203,10 +219,11 @@ export const useMissionStore = create<MissionStore>()(
         mission,
       );
 
-      // Fetch agents
+      // Fetch agents — if none found (DB corruption), abort to avoid stuck on_mission state
       const agents = (await db.agents.bulkGet(activeMission.agentIds)).filter(
         Boolean,
       ) as Agent[];
+      if (agents.length === 0) return null;
 
       // Fetch safe house modules for this region
       const missionSafeHouse = await db.safeHouses.get(mission.regionId);
@@ -229,6 +246,21 @@ export const useMissionStore = create<MissionStore>()(
         name: string;
         newRank: string;
       }> = [];
+      let killedAgent: { id: string; name: string } | undefined;
+      let lostEquipment: Array<{ id: string; name: string }> | undefined;
+
+      // Pre-generate rescue mission for catastrophe so captured agent always
+      // gets rescueMissionId in the same update that sets status: 'captured'
+      let catastropheRescueMission: Mission | null = null;
+      if (result === 'catastrophe' && agents.length > 0) {
+        const captureRegion = await db.regions.get(mission.regionId);
+        catastropheRescueMission = generateRescueMission(
+          mission.regionId,
+          agents[0].id,
+          agents[0].name,
+          captureRegion?.alertLevel ?? 0,
+        );
+      }
 
       await db.transaction(
         'rw',
@@ -271,9 +303,13 @@ export const useMissionStore = create<MissionStore>()(
             }
 
             // Catastrophe: capture one agent (first in list)
+            // rescueMissionId is set atomically here to avoid stuck captured state
             if (result === 'catastrophe' && agent.id === agents[0].id) {
               updatedAgent.status = 'captured';
               updatedAgent.capturedAt = Date.now();
+              if (catastropheRescueMission) {
+                updatedAgent.rescueMissionId = catastropheRescueMission.id;
+              }
               affectedAgentIds.push(agent.id);
             }
 
@@ -308,16 +344,20 @@ export const useMissionStore = create<MissionStore>()(
               // Agent freed, but all equipment is lost — sold at 30% refund
               if (capturedAgent) {
                 let refund = 0;
+                const lost: Array<{ id: string; name: string }> = [];
                 for (const slot of capturedAgent.equipment) {
                   if (!slot.equipmentId) continue;
                   const eq = EQUIPMENT_CATALOG.find(
                     (e) => e.id === slot.equipmentId,
                   );
-                  if (eq)
+                  if (eq) {
                     refund += Math.ceil(
                       (eq.costMoney ?? 0) * RESCUE_EQUIPMENT_SELL_REFUND,
                     );
+                    lost.push({ id: eq.id, name: eq.name });
+                  }
                 }
+                if (lost.length > 0) lostEquipment = lost;
                 const cleared = capturedAgent.equipment.map(() => ({
                   equipmentId: null,
                 }));
@@ -347,6 +387,10 @@ export const useMissionStore = create<MissionStore>()(
                 ) as 1 | 2 | 3 | 4 | 5;
                 if ((mission.difficulty as number) >= 5) {
                   // No escape — agent dies, equipment lost
+                  killedAgent = {
+                    id: capturedAgent.id,
+                    name: capturedAgent.name,
+                  };
                   await db.agents.update(mission.capturedAgentId, {
                     status: 'dead',
                   });
@@ -390,27 +434,14 @@ export const useMissionStore = create<MissionStore>()(
             }
           }
 
-          // Handle catastrophe: generate rescue mission
-          if (result === 'catastrophe') {
-            const captured = agents[0];
-            if (captured) {
-              const region = await db.regions.get(mission.regionId);
-              const rescueMission = generateRescueMission(
-                mission.regionId,
-                captured.id,
-                captured.name,
-                region?.alertLevel ?? 0,
-              );
-              await db.missions.add(rescueMission);
-              const regionIds = region?.availableMissionIds ?? [];
-              await db.regions.update(mission.regionId, {
-                availableMissionIds: [...regionIds, rescueMission.id],
-              });
-              // Mark agent's rescue mission
-              await db.agents.update(captured.id, {
-                rescueMissionId: rescueMission.id,
-              });
-            }
+          // Persist the pre-generated rescue mission (agent already has rescueMissionId set above)
+          if (catastropheRescueMission) {
+            await db.missions.add(catastropheRescueMission);
+            const captureRegion = await db.regions.get(mission.regionId);
+            const regionIds = captureRegion?.availableMissionIds ?? [];
+            await db.regions.update(mission.regionId, {
+              availableMissionIds: [...regionIds, catastropheRescueMission.id],
+            });
           }
 
           // Update region alert level + missionTier
@@ -461,12 +492,18 @@ export const useMissionStore = create<MissionStore>()(
       // Chain follow-up on success
       if (result === 'success' && mission.chainNextTargetId) {
         const chainRegion = await db.regions.get(mission.regionId);
+        const chainSafehouse = await db.safeHouses.get(mission.regionId);
+        const chainAssignedDivisions =
+          chainSafehouse?.assignedDivisions?.filter((d) => d !== 'medical');
         const currentIds = chainRegion?.availableMissionIds ?? [];
         if (currentIds.length < MAX_MISSIONS_PER_REGION) {
           const followUp = generateChainMission(
             mission.regionId,
             chainRegion?.alertLevel ?? 0,
             mission.chainNextTargetId,
+            (mission.chainStep ?? 0) + 1,
+            mission.chainTotal,
+            chainAssignedDivisions,
           );
           if (followUp) {
             await db.missions.add(followUp);
@@ -516,6 +553,8 @@ export const useMissionStore = create<MissionStore>()(
         affectedAgentIds,
         injuredAgents,
         rankedUpAgents,
+        killedAgent,
+        lostEquipment,
       };
 
       set((s) => {
@@ -574,6 +613,12 @@ export const useMissionStore = create<MissionStore>()(
               rescueMissionId: undefined,
             });
             useGameStore.getState().incrementStat('agents');
+            useUIStore
+              .getState()
+              .showToast(
+                'error',
+                `${agent.name} byl zabit — záchranná mise vypršela.`,
+              );
           }
         }
 
@@ -716,9 +761,11 @@ export const useMissionStore = create<MissionStore>()(
       const missions = (await db.missions.bulkGet(ids)).filter(
         Boolean,
       ) as Mission[];
-      // Keep rescue missions intact, delete everything else
-      const toDelete = missions.filter((m) => !m.isRescue);
-      const toKeep = missions.filter((m) => m.isRescue);
+      // Keep rescue missions and locked chain missions intact, delete everything else
+      const toDelete = missions.filter(
+        (m) => !m.isRescue && !m.lockedByDivision,
+      );
+      const toKeep = missions.filter((m) => m.isRescue || !!m.lockedByDivision);
       if (toDelete.length > 0) {
         await db.missions.bulkDelete(toDelete.map((m) => m.id));
       }

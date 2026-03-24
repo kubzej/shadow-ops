@@ -17,6 +17,8 @@ import {
   Coins,
   Eye,
   Ghost,
+  Link,
+  Lock,
   Radio,
   Shield,
   Skull,
@@ -331,15 +333,19 @@ function MissionCard({
   regionAgents: Agent[];
 }) {
   const meta = CATEGORY_META[mission.category] ?? CATEGORY_META.surveillance;
+  const isLocked = !!mission.lockedByDivision;
   const eligibleCount = regionAgents.filter(
     (a) =>
       a.status === 'available' && checkAgentEligibility(a, mission).eligible,
   ).length;
   const freeCount = regionAgents.filter((a) => a.status === 'available').length;
-  const canStart = eligibleCount > 0;
+  const canStart = !isLocked && eligibleCount > 0;
 
   return (
-    <div className="rounded-xl p-3 flex flex-col gap-2.5" style={cardBase}>
+    <div
+      className="rounded-xl p-3 flex flex-col gap-2.5"
+      style={{ ...cardBase, opacity: isLocked ? 0.6 : 1 }}
+    >
       {/* Top row */}
       <div className="flex items-start gap-2">
         <span
@@ -408,15 +414,18 @@ function MissionCard({
             {mission.intelCost}
           </span>
         )}
-        {mission.chainNextTargetId && (
+        {(mission.chainStep || mission.chainNextTargetId) && (
           <span
-            className="text-xs px-1.5 py-0.5 rounded font-semibold"
+            className="text-xs px-1.5 py-0.5 rounded font-semibold flex items-center gap-1"
             style={{
               background: '#2a200a',
               color: '#facc15',
             }}
           >
-            ⛓ pokračování
+            <Link size={10} />
+            {mission.chainStep && mission.chainTotal
+              ? `Část ${mission.chainStep}/${mission.chainTotal}`
+              : 'pokračování'}
           </span>
         )}
       </div>
@@ -503,26 +512,40 @@ function MissionCard({
       )}
 
       {/* Start button */}
-      <button
-        onClick={() => onStart(mission)}
-        disabled={!canStart}
-        className="w-full py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 transition-all"
-        style={{
-          background: canStart ? meta.color : C.bgSurface2,
-          color: canStart ? '#141414' : C.textDisabled,
-          cursor: canStart ? 'pointer' : 'not-allowed',
-        }}
-      >
-        {canStart ? (
-          <>
-            Zahájit <ChevronRight size={14} />
-          </>
-        ) : freeCount > 0 ? (
-          'Žádní kompetentní agenti'
-        ) : (
-          'Žádní volní agenti'
-        )}
-      </button>
+      {isLocked ? (
+        <div
+          className="w-full py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5"
+          style={{ background: C.bgSurface2, color: '#888' }}
+        >
+          <Lock size={12} />
+          Vyžaduje divizi{' '}
+          <span style={{ color: '#aaa', fontWeight: 600 }}>
+            {DIVISIONS.find((d) => d.id === mission.lockedByDivision)?.name ??
+              mission.lockedByDivision}
+          </span>
+        </div>
+      ) : (
+        <button
+          onClick={() => onStart(mission)}
+          disabled={!canStart}
+          className="w-full py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 transition-all"
+          style={{
+            background: canStart ? meta.color : C.bgSurface2,
+            color: canStart ? '#141414' : C.textDisabled,
+            cursor: canStart ? 'pointer' : 'not-allowed',
+          }}
+        >
+          {canStart ? (
+            <>
+              Zahájit <ChevronRight size={14} />
+            </>
+          ) : freeCount > 0 ? (
+            'Žádní kompetentní agenti'
+          ) : (
+            'Žádní volní agenti'
+          )}
+        </button>
+      )}
     </div>
   );
 }
@@ -786,8 +809,8 @@ function AgentSelectorModal({
                   key={stat}
                   className="text-xs px-1.5 py-0.5 rounded"
                   style={{
-                    background: '#666666',
-                    color: C.textMuted,
+                    background: '#1e2a1e',
+                    color: '#a3c4a3',
                   }}
                 >
                   {STAT_LABELS[stat] ?? stat} ≥ {val}
@@ -1264,6 +1287,53 @@ function ResultModal({
                   {result.affectedAgentIds.length} agent(ů) zajat(o).
                 </p>
               )}
+            </div>
+          )}
+
+          {/* Killed agent */}
+          {result.killedAgent && (
+            <div
+              className="rounded-xl p-3 flex items-center gap-3"
+              style={{ background: '#1a0a0a' }}
+            >
+              <Skull size={16} color="#ef4444" />
+              <div>
+                <p
+                  className="text-xs font-semibold"
+                  style={{ color: '#ef4444' }}
+                >
+                  Agent zabit
+                </p>
+                <p className="text-sm" style={{ color: '#e8e8e8' }}>
+                  {result.killedAgent.name}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Lost equipment (partial rescue) */}
+          {result.lostEquipment && result.lostEquipment.length > 0 && (
+            <div
+              className="rounded-xl p-3 flex flex-col gap-2"
+              style={{ background: '#1a1208' }}
+            >
+              <p className="text-xs font-medium" style={{ color: '#f97316' }}>
+                Ztracené vybavení
+              </p>
+              {result.lostEquipment.map((eq) => (
+                <div key={eq.id} className="flex items-center gap-2">
+                  <span
+                    className="w-1 h-1 rounded-full flex-shrink-0"
+                    style={{ background: '#f97316' }}
+                  />
+                  <span className="text-sm" style={{ color: '#e8e8e8' }}>
+                    {eq.name}
+                  </span>
+                </div>
+              ))}
+              <p className="text-xs" style={{ color: '#888' }}>
+                Prodáno za 30 % hodnoty.
+              </p>
             </div>
           )}
 

@@ -12,16 +12,20 @@ import {
 import {
   Building2,
   ChevronRight,
+  Clock,
   Coins,
   Eye,
   Ghost,
   House,
   Lock,
+  Map,
+  Package,
   Radio,
   RefreshCcw,
   ShieldCheck,
   TrendingUp,
   User,
+  UserPlus,
   Users,
   Wrench,
   XCircle,
@@ -32,6 +36,7 @@ import type {
   SafeHouse,
   RecruitmentPool,
   RecruitmentOffer,
+  Mission,
 } from '../db/schema';
 import type { DivisionId, AgentRank } from '../data/agentTypes';
 import { AGENT_TYPES, DIVISIONS } from '../data/agentTypes';
@@ -64,6 +69,7 @@ import {
   isExpansionSkipListing,
   parseSpecialAgentListing,
 } from '../engine/blackMarket';
+import { getAvailableExpansions } from '../engine/mapGenerator';
 import { mulberry32, randomId } from '../utils/rng';
 import { useGameStore } from '../store/gameStore';
 import { useMissionStore } from '../store/missionStore';
@@ -390,6 +396,7 @@ function SafeHouseTab() {
   );
   const [assigningTo, setAssigningTo] = useState<string | null>(null);
   const [assignPicked, setAssignPicked] = useState<DivisionId | null>(null);
+  const [confirmUpgrade, setConfirmUpgrade] = useState<string | null>(null);
   const [confirmDemolish, setConfirmDemolish] = useState<{
     shId: string;
     moduleId: string;
@@ -432,6 +439,7 @@ function SafeHouseTab() {
       upgradeInProgress: true,
       upgradeCompletesAt: Date.now() + dur * 1000,
     });
+    setConfirmUpgrade(null);
     load();
   }
 
@@ -475,6 +483,18 @@ function SafeHouseTab() {
     await db.safeHouses.update(sh.id, {
       assignedDivisions: [...sh.assignedDivisions, divId],
     });
+    // Unlock any chain missions waiting for this division
+    const region = await db.regions.get(sh.id);
+    const missionIds = region?.availableMissionIds ?? [];
+    if (missionIds.length) {
+      const allMissions = (await db.missions.bulkGet(missionIds)).filter(
+        Boolean,
+      ) as Mission[];
+      const toUnlock = allMissions.filter((m) => m.lockedByDivision === divId);
+      for (const m of toUnlock) {
+        await db.missions.update(m.id, { lockedByDivision: undefined });
+      }
+    }
     setAssigningTo(null);
     setAssignPicked(null);
     load();
@@ -839,14 +859,24 @@ function SafeHouseTab() {
                             background: isConfirming ? '#2a1a1a' : '#1a2e1a',
                           }}
                         >
-                          <span
-                            className="text-xs font-medium"
-                            style={{
-                              color: isConfirming ? '#ef4444' : '#4ade80',
-                            }}
-                          >
-                            {mod?.name ?? mId}
-                          </span>
+                          <div className="min-w-0">
+                            <span
+                              className="text-xs font-medium block"
+                              style={{
+                                color: isConfirming ? '#ef4444' : '#4ade80',
+                              }}
+                            >
+                              {mod?.name ?? mId}
+                            </span>
+                            {mod?.description && (
+                              <span
+                                className="text-[10px] block"
+                                style={{ color: '#888' }}
+                              >
+                                {mod.description}
+                              </span>
+                            )}
+                          </div>
                           {isConfirming ? (
                             <div className="flex items-center gap-2">
                               <span
@@ -1018,22 +1048,42 @@ function SafeHouseTab() {
                   Upgrade probíhá…
                 </div>
               ) : nextCost ? (
-                <button
-                  onClick={() => upgrade(sh)}
-                  disabled={!canUpg}
-                  className="w-full py-2.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5"
-                  style={btn.action(C.green, !canUpg)}
-                >
-                  <TrendingUp size={12} /> Upgrade na {sh.level + 1}
-                  <span className="flex items-center gap-0.5 ml-1">
-                    <Coins size={11} color={C.green} />
-                    {nextCost.money}
-                  </span>
-                  <span className="flex items-center gap-0.5">
-                    <Eye size={11} color={C.blue} />
-                    {nextCost.intel}
-                  </span>
-                </button>
+                confirmUpgrade === sh.id ? (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setConfirmUpgrade(null)}
+                      className="flex-1 py-2.5 rounded-lg text-xs font-semibold"
+                      style={btn.secondary()}
+                    >
+                      Zrušit
+                    </button>
+                    <button
+                      onClick={() => upgrade(sh)}
+                      disabled={!canUpg}
+                      className="flex-1 py-2.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5"
+                      style={btn.action(C.green, !canUpg)}
+                    >
+                      Potvrdit upgrade
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setConfirmUpgrade(sh.id)}
+                    disabled={!canUpg}
+                    className="w-full py-2.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5"
+                    style={btn.action(C.green, !canUpg)}
+                  >
+                    <TrendingUp size={12} /> Upgrade na {sh.level + 1}
+                    <span className="flex items-center gap-0.5 ml-1">
+                      <Coins size={11} color={C.green} />
+                      {nextCost.money}
+                    </span>
+                    <span className="flex items-center gap-0.5">
+                      <Eye size={11} color={C.blue} />
+                      {nextCost.intel}
+                    </span>
+                  </button>
+                )
               ) : (
                 <p
                   className="text-center text-xs py-2"
@@ -1233,6 +1283,18 @@ function DivisionsTab() {
       await db.safeHouses.update(sh.id, {
         assignedDivisions: [...sh.assignedDivisions, id],
       });
+      // Unlock any chain missions waiting for this division
+      const region = await db.regions.get(sh.id);
+      const missionIds = region?.availableMissionIds ?? [];
+      if (missionIds.length) {
+        const allMissions = (await db.missions.bulkGet(missionIds)).filter(
+          Boolean,
+        ) as Mission[];
+        const toUnlock = allMissions.filter((m) => m.lockedByDivision === id);
+        for (const m of toUnlock) {
+          await db.missions.update(m.id, { lockedByDivision: undefined });
+        }
+      }
       invalidateRegionMissions(sh.id);
       const divName = DIVISIONS.find((d) => d.id === id)?.name ?? id;
       showToast(
@@ -1497,17 +1559,21 @@ function ShopTab() {
     <div className="flex flex-col gap-3">
       {/* Rotation header */}
       <div className="flex items-center justify-between">
-        <p className="text-xs" style={{ color: '#888' }}>
+        <p className="text-xs" style={{ color: C.textSecondary }}>
           6 položek · rotace každou hodinu
         </p>
-        <p className="text-xs font-mono" style={{ color: '#777' }}>
-          🕐 {formatCountdown(countdown)}
-        </p>
+        <div
+          className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg"
+          style={{ background: C.bgSurface2, color: C.textSecondary }}
+        >
+          <Clock size={11} />
+          {formatCountdown(countdown)}
+        </div>
       </div>
 
       {/* Tier hint */}
       {totalMissions < 10 && (
-        <p className="text-xs" style={{ color: '#777' }}>
+        <p className="text-xs" style={{ color: C.textMuted }}>
           Na rare itemy potřebuješ 10+ splněných misí · legendary 30+ misí +
           černý trh
         </p>
@@ -1516,17 +1582,14 @@ function ShopTab() {
       {notif && (
         <div
           className="rounded-xl p-2.5 text-sm text-center"
-          style={{
-            background: '#1a2e1a',
-            color: '#4ade80',
-          }}
+          style={{ background: C.bgSurface2, color: C.green }}
         >
           {notif}
         </div>
       )}
 
       {items.map((eq) => {
-        const rc = RARITY_COLOR[eq.rarity] ?? '#888';
+        const rc = RARITY_COLOR[eq.rarity] ?? C.textSecondary;
         const canBuy =
           currencies.money >= eq.costMoney &&
           (!eq.costIntel || currencies.intel >= (eq.costIntel ?? 0)) &&
@@ -1541,14 +1604,17 @@ function ShopTab() {
             style={cardBase}
           >
             <div
-              className="w-9 h-9 rounded-lg flex items-center justify-center text-base flex-shrink-0"
+              className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
               style={{ background: `${rc}22` }}
             >
-              🎒
+              <Package size={18} style={{ color: rc }} />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 mb-0.5">
-                <p className="text-sm font-medium" style={{ color: '#e8e8e8' }}>
+                <p
+                  className="text-sm font-medium"
+                  style={{ color: C.textPrimary }}
+                >
                   {eq.name}
                 </p>
                 <span
@@ -1560,14 +1626,17 @@ function ShopTab() {
               </div>
               <p
                 className="text-xs line-clamp-1 mb-1"
-                style={{ color: '#999' }}
+                style={{ color: C.textSecondary }}
               >
                 {eq.description}
               </p>
               {eq.minRank && (
                 <span
                   className="text-[10px] px-1.5 py-0.5 rounded inline-block mb-1"
-                  style={{ background: '#2e1a00', color: '#f97316' }}
+                  style={{
+                    background: `${C.divExtraction}18`,
+                    color: C.divExtraction,
+                  }}
                 >
                   Vyžaduje {RANK_LABEL[eq.minRank]}
                 </span>
@@ -1575,17 +1644,19 @@ function ShopTab() {
               {eq.requiredDivision && (
                 <span
                   className="text-[10px] px-1.5 py-0.5 rounded inline-block mb-1 ml-1"
-                  style={{ background: '#0a1a2e', color: '#60a5fa' }}
+                  style={{ background: `${C.blue}18`, color: C.blue }}
                 >
                   {divName(eq.requiredDivision)}
                 </span>
               )}
               <div
                 className="flex gap-2 flex-wrap text-xs"
-                style={{ color: '#888' }}
+                style={{ color: C.textSecondary }}
               >
-                {eq.bonusStealth ? <span>+{eq.bonusStealth} Stlth</span> : null}
-                {eq.bonusCombat ? <span>+{eq.bonusCombat} Cmbt</span> : null}
+                {eq.bonusStealth ? (
+                  <span>+{eq.bonusStealth} Stealth</span>
+                ) : null}
+                {eq.bonusCombat ? <span>+{eq.bonusCombat} Combat</span> : null}
                 {eq.bonusIntel ? <span>+{eq.bonusIntel} Intel</span> : null}
                 {eq.bonusTech ? <span>+{eq.bonusTech} Tech</span> : null}
                 {eq.successBonus ? (
@@ -1596,35 +1667,44 @@ function ShopTab() {
             <button
               onClick={() => canBuy && setBuying(eq)}
               disabled={!canBuy}
-              className="px-2.5 py-2 rounded-lg text-xs font-bold flex-shrink-0 whitespace-nowrap"
+              className="px-2 py-2 rounded-lg text-xs font-semibold flex-shrink-0 flex items-center gap-1.5"
               style={btn.action(C.green, !canBuy)}
             >
               {eq.costMoney > 0 && (
-                <>
-                  <span style={{ color: '#4ade80' }}>$</span>
+                <span className="flex items-center gap-0.5">
+                  <Coins
+                    size={10}
+                    style={{ color: canBuy ? C.green : 'inherit' }}
+                  />
                   {eq.costMoney}
-                </>
+                </span>
               )}
               {eq.costIntel ? (
-                <>
-                  {' '}
-                  <span style={{ color: '#60a5fa' }}>◈</span>
+                <span className="flex items-center gap-0.5">
+                  <Eye
+                    size={10}
+                    style={{ color: canBuy ? C.blue : 'inherit' }}
+                  />
                   {eq.costIntel}
-                </>
+                </span>
               ) : null}
               {eq.costShadow ? (
-                <>
-                  {' '}
-                  <span style={{ color: '#a855f7' }}>◆</span>
+                <span className="flex items-center gap-0.5">
+                  <Ghost
+                    size={10}
+                    style={{ color: canBuy ? C.bm : 'inherit' }}
+                  />
                   {eq.costShadow}
-                </>
+                </span>
               ) : null}
               {eq.costInfluence ? (
-                <>
-                  {' '}
-                  <span style={{ color: '#f59e0b' }}>✦</span>
+                <span className="flex items-center gap-0.5">
+                  <Radio
+                    size={10}
+                    style={{ color: canBuy ? C.divExtraction : 'inherit' }}
+                  />
                   {eq.costInfluence}
-                </>
+                </span>
               ) : null}
             </button>
           </div>
@@ -1751,6 +1831,13 @@ function BlackMarketTab() {
   const [safeHouses, setSafeHouses] = useState<SafeHouse[]>([]);
   const [agentCounts, setAgentCounts] = useState<Record<string, number>>({});
   const [notif, setNotif] = useState('');
+  const [pendingExpansionSkip, setPendingExpansionSkip] = useState<
+    import('../db/schema').BlackMarketListing | null
+  >(null);
+  const [availableExpansions, setAvailableExpansions] = useState<
+    import('../db/schema').RegionState[]
+  >([]);
+  const unlockedDivisions = useGameStore((s) => s.unlockedDivisions);
 
   // Load or generate BM offer
   const loadOffer = useCallback(async () => {
@@ -1796,9 +1883,20 @@ function BlackMarketTab() {
     listing: import('../db/schema').BlackMarketListing,
   ) {
     if (isExpansionSkipListing(listing.equipmentId)) {
-      setBuying(null);
-      setNotif('Expanzní zkratka zatím není implementována');
-      setTimeout(() => setNotif(''), 2500);
+      // Load available expansion targets and show picker
+      const allRegions = await db.regions.toArray();
+      const ownedIds = allRegions.filter((r) => r.owned).map((r) => r.id);
+      const expansionIds = getAvailableExpansions(ownedIds, allRegions);
+      const expansionRegions = allRegions.filter((r) =>
+        expansionIds.includes(r.id),
+      );
+      if (expansionRegions.length === 0) {
+        setNotif('Žádné dostupné regiony k expanzi');
+        setTimeout(() => setNotif(''), 2500);
+        return;
+      }
+      setAvailableExpansions(expansionRegions);
+      setPendingExpansionSkip(listing);
       return;
     }
 
@@ -1820,6 +1918,52 @@ function BlackMarketTab() {
 
     // Equipment listing — pick an agent
     setBuying(listing);
+  }
+
+  async function doExpansionSkip(regionId: string) {
+    const listing = pendingExpansionSkip!;
+    setPendingExpansionSkip(null);
+    if (
+      !spendCurrencies({
+        shadow: listing.costShadow,
+        influence: listing.costInfluence,
+        money: listing.costMoney ?? 0,
+      })
+    ) {
+      setNotif('Nedostatek zdrojů');
+      setTimeout(() => setNotif(''), 2000);
+      return;
+    }
+    const allRegions = await db.regions.toArray();
+    const ownedCount = allRegions.filter((r) => r.owned).length;
+    const pickedDiv = (unlockedDivisions[0] ??
+      'surveillance') as import('../data/agentTypes').DivisionId;
+    const now = Date.now();
+    const existing = await db.safeHouses.get(regionId);
+    if (existing) {
+      await db.safeHouses.update(regionId, {
+        constructionInProgress: true,
+        constructionCompletesAt: now - 1,
+      });
+    } else {
+      await db.safeHouses.add({
+        id: regionId,
+        regionId,
+        level: 1,
+        index: ownedCount + 1,
+        assignedDivisions: [pickedDiv],
+        modules: [],
+        constructionInProgress: true,
+        constructionCompletesAt: now - 1,
+        createdAt: now,
+      });
+    }
+    await db.regions.update(regionId, {
+      constructionInProgress: true,
+      constructionCompletesAt: now - 1,
+    });
+    setNotif('Expanze zahájena — dokončí se za moment');
+    setTimeout(() => setNotif(''), 3500);
   }
 
   async function assignToAgent(
@@ -1855,8 +1999,8 @@ function BlackMarketTab() {
     const remaining = Math.max(0, 15 - totalMissions);
     return (
       <div className="flex flex-col items-center justify-center gap-4 pt-16 text-center px-6">
-        <div className="text-4xl">🔒</div>
-        <p className="text-base font-semibold" style={{ color: '#e8e8e8' }}>
+        <Lock size={40} style={{ color: C.textMuted }} />
+        <p className="text-base font-semibold" style={{ color: C.textPrimary }}>
           Černý trh uzamčen
         </p>
         <p className="text-sm" style={{ color: '#888' }}>
@@ -1883,28 +2027,26 @@ function BlackMarketTab() {
       {/* Header */}
       <div className="flex items-center justify-between mb-1">
         <div>
-          <p className="text-sm font-semibold" style={{ color: '#a855f7' }}>
+          <p className="text-sm font-semibold" style={{ color: C.bm }}>
             Černý trh
           </p>
-          <p className="text-xs" style={{ color: '#888' }}>
+          <p className="text-xs" style={{ color: C.textSecondary }}>
             Exkluzivní vybavení a agenti
           </p>
         </div>
         <div
           className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg"
-          style={{ background: '#1a0a2e', color: '#a855f7' }}
+          style={{ background: C.bgSurface2, color: C.bm }}
         >
-          ⏱ {fmtCountdown(countdown)}
+          <Clock size={11} />
+          {fmtCountdown(countdown)}
         </div>
       </div>
 
       {notif && (
         <div
           className="text-xs px-3 py-2 rounded-xl text-center"
-          style={{
-            background: '#0a1a0a',
-            color: '#4ade80',
-          }}
+          style={{ background: C.bgSurface2, color: C.green }}
         >
           {notif}
         </div>
@@ -1946,15 +2088,19 @@ function BlackMarketTab() {
           <div
             key={i}
             className="rounded-xl p-3 flex gap-3 items-start"
-            style={{
-              background: `${rc}0d`,
-            }}
+            style={cardBase}
           >
             <div
-              className="w-9 h-9 rounded-lg flex items-center justify-center text-base flex-shrink-0"
+              className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
               style={{ background: `${rc}22` }}
             >
-              {isAgent ? '🕵' : isExpansion ? '🗺' : '🎒'}
+              {isAgent ? (
+                <UserPlus size={18} style={{ color: rc }} />
+              ) : isExpansion ? (
+                <Map size={18} style={{ color: rc }} />
+              ) : (
+                <Package size={18} style={{ color: rc }} />
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 mb-0.5">
@@ -1987,12 +2133,14 @@ function BlackMarketTab() {
               {eq && (
                 <div
                   className="flex gap-2 flex-wrap text-xs"
-                  style={{ color: '#888' }}
+                  style={{ color: C.textSecondary }}
                 >
                   {eq.bonusStealth ? (
-                    <span>+{eq.bonusStealth} Stlth</span>
+                    <span>+{eq.bonusStealth} Stealth</span>
                   ) : null}
-                  {eq.bonusCombat ? <span>+{eq.bonusCombat} Cmbt</span> : null}
+                  {eq.bonusCombat ? (
+                    <span>+{eq.bonusCombat} Combat</span>
+                  ) : null}
                   {eq.bonusIntel ? <span>+{eq.bonusIntel} Intel</span> : null}
                   {eq.bonusTech ? <span>+{eq.bonusTech} Tech</span> : null}
                   {eq.successBonus ? (
@@ -2004,33 +2152,49 @@ function BlackMarketTab() {
             <button
               onClick={() => canAfford && buyListing(listing)}
               disabled={!canAfford}
-              className="px-2.5 py-2 rounded-lg text-xs font-bold flex-shrink-0 whitespace-nowrap"
+              className="px-2 py-2 rounded-lg text-xs font-semibold flex-shrink-0 flex items-center gap-1.5"
               style={btn.action(C.bm, !canAfford)}
             >
               {listing.costShadow > 0 && (
-                <>
-                  <span style={{ color: '#a855f7' }}>◆</span>
+                <span className="flex items-center gap-0.5">
+                  <Ghost
+                    size={10}
+                    style={{ color: canAfford ? C.bm : 'inherit' }}
+                  />
                   {listing.costShadow}
-                </>
+                </span>
               )}
               {listing.costInfluence > 0 && (
-                <>
-                  {' '}
-                  <span style={{ color: '#f59e0b' }}>✦</span>
+                <span className="flex items-center gap-0.5">
+                  <Radio
+                    size={10}
+                    style={{ color: canAfford ? C.divExtraction : 'inherit' }}
+                  />
                   {listing.costInfluence}
-                </>
+                </span>
               )}
               {(listing.costMoney ?? 0) > 0 && (
-                <>
-                  {' '}
-                  <span style={{ color: '#4ade80' }}>$</span>
+                <span className="flex items-center gap-0.5">
+                  <Coins
+                    size={10}
+                    style={{ color: canAfford ? C.green : 'inherit' }}
+                  />
                   {listing.costMoney}
-                </>
+                </span>
               )}
             </button>
           </div>
         );
       })}
+
+      {/* Expansion skip picker */}
+      {pendingExpansionSkip && (
+        <ExpansionSkipPickerModal
+          regions={availableExpansions}
+          onClose={() => setPendingExpansionSkip(null)}
+          onConfirm={doExpansionSkip}
+        />
+      )}
 
       {/* Agent picker modal */}
       {buying &&
@@ -2095,6 +2259,78 @@ function BlackMarketTab() {
   );
 }
 
+// ─────────────────────────────────────────────
+// Expansion skip — region picker modal
+// ─────────────────────────────────────────────
+
+function ExpansionSkipPickerModal({
+  regions,
+  onClose,
+  onConfirm,
+}: {
+  regions: import('../db/schema').RegionState[];
+  onClose: () => void;
+  onConfirm: (regionId: string) => void;
+}) {
+  return (
+    <div style={modalOverlay}>
+      <div style={modalSheet}>
+        <div className="flex justify-center pt-3 pb-1">
+          <div
+            className="w-10 h-1 rounded-full"
+            style={{ background: C.borderStrong }}
+          />
+        </div>
+        <div className="px-4 pt-2 pb-6">
+          <div className="flex items-center justify-between mb-1">
+            <p
+              className="text-sm font-semibold"
+              style={{ color: C.textPrimary }}
+            >
+              Kam expandovat?
+            </p>
+            <button onClick={onClose} style={{ color: C.textSecondary }}>
+              <XCircle size={20} />
+            </button>
+          </div>
+          <p className="text-xs mb-3" style={{ color: C.textSecondary }}>
+            Region bude okamžitě připraven k provozu.
+          </p>
+          <div className="flex flex-col gap-2">
+            {regions.map((r) => (
+              <button
+                key={r.id}
+                onClick={() => onConfirm(r.id)}
+                className="flex items-center gap-3 p-3 rounded-xl"
+                style={cardBase}
+              >
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold"
+                  style={{ background: `${C.bm}22`, color: C.bm }}
+                >
+                  {regionDisplayName(r.id).slice(0, 2).toUpperCase()}
+                </div>
+                <div className="flex-1 text-left">
+                  <p
+                    className="text-sm font-medium"
+                    style={{ color: C.textPrimary }}
+                  >
+                    {regionDisplayName(r.id)}
+                  </p>
+                  <p className="text-xs" style={{ color: C.textSecondary }}>
+                    Vzdálenost {r.distanceFromStart}
+                  </p>
+                </div>
+                <ChevronRight size={13} style={{ color: C.textMuted }} />
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AgentPickerModal({
   listing,
   onClose,
@@ -2129,20 +2365,26 @@ function AgentPickerModal({
         <div className="flex justify-center pt-3 pb-1">
           <div
             className="w-10 h-1 rounded-full"
-            style={{ background: '#999' }}
+            style={{ background: C.borderStrong }}
           />
         </div>
         <div className="px-4 pt-2 pb-6">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-semibold" style={{ color: '#e8e8e8' }}>
+            <p
+              className="text-sm font-semibold"
+              style={{ color: C.textPrimary }}
+            >
               Přiřadit agentovi
             </p>
-            <button onClick={onClose} style={{ color: '#888' }}>
+            <button onClick={onClose} style={{ color: C.textSecondary }}>
               <XCircle size={20} />
             </button>
           </div>
           {agents.length === 0 ? (
-            <p className="text-sm text-center py-4" style={{ color: '#888' }}>
+            <p
+              className="text-sm text-center py-4"
+              style={{ color: C.textSecondary }}
+            >
               Žádný dostupný agent s volným slotem
             </p>
           ) : (
@@ -2166,15 +2408,15 @@ function AgentPickerModal({
                   <div className="flex-1 text-left">
                     <p
                       className="text-sm font-medium"
-                      style={{ color: '#e8e8e8' }}
+                      style={{ color: C.textPrimary }}
                     >
                       {a.name}
                     </p>
-                    <p className="text-xs" style={{ color: '#999' }}>
+                    <p className="text-xs" style={{ color: C.textSecondary }}>
                       {RANK_LABEL[a.rank]} · volný slot
                     </p>
                   </div>
-                  <ChevronRight size={13} style={{ color: '#777' }} />
+                  <ChevronRight size={13} style={{ color: C.textMuted }} />
                 </button>
               ))}
             </div>
@@ -2212,19 +2454,22 @@ function SafeHousePickerModal({
         <div className="flex justify-center pt-3 pb-1">
           <div
             className="w-10 h-1 rounded-full"
-            style={{ background: '#999' }}
+            style={{ background: C.borderStrong }}
           />
         </div>
         <div className="px-4 pt-2 pb-6">
           <div className="flex items-center justify-between mb-1">
-            <p className="text-sm font-semibold" style={{ color: '#e8e8e8' }}>
+            <p
+              className="text-sm font-semibold"
+              style={{ color: C.textPrimary }}
+            >
               Kam umístit agenta?
             </p>
-            <button onClick={onClose} style={{ color: '#888' }}>
+            <button onClick={onClose} style={{ color: C.textSecondary }}>
               <XCircle size={20} />
             </button>
           </div>
-          <p className="text-xs mb-3" style={{ color: '#999' }}>
+          <p className="text-xs mb-3" style={{ color: C.textSecondary }}>
             {pending.agentName} · {RANK_LABEL[pending.rank]} ·{' '}
             {DIVISIONS.find((d) => d.id === pending.division)?.name ??
               pending.division}
@@ -2248,23 +2493,23 @@ function SafeHousePickerModal({
                 >
                   <div
                     className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold"
-                    style={{ background: '#a855f722', color: '#a855f7' }}
+                    style={{ background: `${C.bm}22`, color: C.bm }}
                   >
                     {regionDisplayName(sh.id).slice(0, 2).toUpperCase()}
                   </div>
                   <div className="flex-1 text-left">
                     <p
                       className="text-sm font-medium"
-                      style={{ color: '#e8e8e8' }}
+                      style={{ color: C.textPrimary }}
                     >
                       {regionDisplayName(sh.id)}
                     </p>
-                    <p className="text-xs" style={{ color: '#999' }}>
+                    <p className="text-xs" style={{ color: C.textSecondary }}>
                       {count}/{cap} agentů {full ? '· plno' : ''}
                     </p>
                   </div>
                   {!full && (
-                    <ChevronRight size={13} style={{ color: '#777' }} />
+                    <ChevronRight size={13} style={{ color: C.textMuted }} />
                   )}
                 </button>
               );

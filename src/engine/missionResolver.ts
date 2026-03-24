@@ -388,8 +388,17 @@ export function rollInjury(
   const chance = baseChance[result] + (difficulty - 1) * 0.02;
 
   if (roll > chance) return 'none';
-  if (roll > chance * 0.5) return 'light';
-  if (roll > chance * 0.2) return 'serious';
+
+  // Severity shifts toward serious/critical at higher difficulty.
+  // lightMult = lower bound of light zone as fraction of chance:
+  //   diff 1: light 50% / serious 30% / critical 20%
+  //   diff 3: light 38% / serious 34% / critical 28%
+  //   diff 5: light 26% / serious 38% / critical 36%
+  const lightMult = 0.5 + (difficulty - 1) * 0.06;   // 0.50 → 0.74
+  const seriousMult = 0.2 + (difficulty - 1) * 0.04; // 0.20 → 0.36
+
+  if (roll > chance * lightMult) return 'light';
+  if (roll > chance * seriousMult) return 'serious';
   return 'critical';
 }
 

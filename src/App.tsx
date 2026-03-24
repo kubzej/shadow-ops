@@ -126,6 +126,17 @@ function GameShell() {
   useMissionTimer();
   useConstructionTicker();
 
+  const startCityId = useGameStore((s) => s.startCityId);
+  const selectedRegionId = useUIStore((s) => s.selectedRegionId);
+  const selectRegion = useUIStore((s) => s.selectRegion);
+
+  // Auto-select home city on first load / save slot switch if nothing is selected
+  useEffect(() => {
+    if (!selectedRegionId && startCityId) {
+      selectRegion(startCityId);
+    }
+  }, [startCityId, selectedRegionId, selectRegion]);
+
   return (
     <div
       className="flex flex-col"

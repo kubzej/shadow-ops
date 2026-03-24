@@ -91,7 +91,7 @@ function categoryWeights(
     // If specific divisions are available in this city, strongly prefer their categories
     if (availableDivisions && availableDivisions.length > 0) {
       const cat = CATEGORY_ORDER[i] as unknown as DivisionId;
-      weight *= availableDivisions.includes(cat) ? 4.0 : 0.15;
+      weight *= availableDivisions.includes(cat) ? 4.0 : 0;
     }
     return weight;
   });
@@ -209,9 +209,11 @@ export function generateMission(
   // 12. Title
   const title = `${target.name} — ${region?.name ?? regionId}`;
 
-  // 13. Expiry for non-trivial missions (difficulty 3+)
+  // 13. Expiry — all missions expire; low difficulty gets a longer window (4h base)
   const expiresAt =
-    difficulty >= 3 ? Date.now() + MISSION_EXPIRY_MS * difficulty : undefined;
+    difficulty >= 3
+      ? Date.now() + MISSION_EXPIRY_MS * difficulty
+      : Date.now() + 4 * 60 * 60 * 1000;
 
   const id = randomId();
 
@@ -244,6 +246,10 @@ export function generateMission(
     isRescue: false,
     intelCost: target.intelCost,
     chainNextTargetId: target.chainNextTargetId,
+    chainStep: target.chainNextTargetId ? 1 : undefined,
+    chainTotal: target.chainNextTargetId
+      ? 1 + computeChainTotal(target.chainNextTargetId)
+      : undefined,
     expiresAt,
     createdAt: Date.now(),
   };
@@ -253,10 +259,28 @@ export function generateMission(
 // Chain mission generation
 // ─────────────────────────────────────────────
 
+/** Count total tc-steps in a chain by traversing forward from startTargetId. */
+function computeChainTotal(startTargetId: string): number {
+  let count = 0;
+  let currentId: string | undefined = startTargetId;
+  const seen = new Set<string>();
+  while (currentId && !seen.has(currentId)) {
+    seen.add(currentId);
+    const target = TARGET_POOLS.find((t) => t.id === currentId);
+    if (!target) break;
+    count++;
+    currentId = target.chainNextTargetId;
+  }
+  return count;
+}
+
 export function generateChainMission(
   regionId: string,
   alertLevel: number,
   chainTargetId: string,
+  chainStep = 1,
+  chainTotal?: number,
+  assignedDivisions?: DivisionId[],
 ): Mission | null {
   const chainTarget = TARGET_POOLS.find((t) => t.id === chainTargetId);
   if (!chainTarget) return null;
@@ -268,17 +292,20 @@ export function generateChainMission(
   const effectiveAlert = Math.min(3, alertLevel + countryAlertBonus * 0.3);
 
   // Difficulty: chain missions are slightly harder than the region's current level
-  const baseDiff = 2 + Math.round(effectiveAlert * 0.8 + randFloat(-0.5, 0.5, rng));
+  const baseDiff =
+    2 + Math.round(effectiveAlert * 0.8 + randFloat(-0.5, 0.5, rng));
   const difficulty = Math.max(2, Math.min(5, baseDiff)) as 1 | 2 | 3 | 4 | 5;
 
   const minAgents = difficulty <= 2 ? 1 : difficulty <= 4 ? 2 : 3;
   const maxAgents = Math.min(6, minAgents + Math.floor(difficulty * 0.8));
-  const baseSuccessChance = Math.max(0.1, 0.80 - (difficulty - 1) * 0.09);
+  const baseSuccessChance = Math.max(0.1, 0.8 - (difficulty - 1) * 0.09);
   const baseDuration = BASE_DURATION[difficulty];
   const diffMult = [0, 1.2, 2.5, 10.0, 15.0, 25.0][difficulty] ?? 1.2;
 
   const rewards: MissionRewards = {
-    money: Math.round(chainTarget.baseRewardMoney * diffMult * randFloat(0.85, 1.15, rng)),
+    money: Math.round(
+      chainTarget.baseRewardMoney * diffMult * randFloat(0.85, 1.15, rng),
+    ),
     intel: Math.round(chainTarget.baseRewardIntel * diffMult),
     shadow: Math.round(chainTarget.baseRewardShadow * diffMult),
     influence: Math.round(chainTarget.baseRewardInfluence * diffMult),
@@ -296,7 +323,8 @@ export function generateChainMission(
   const alertGain = (chainTarget.alertGain + 0.1) * 1.5;
 
   const flavorTemplates =
-    FLAVOR_TEMPLATES.find((f) => f.category === chainTarget.category)?.templates ?? [];
+    FLAVOR_TEMPLATES.find((f) => f.category === chainTarget.category)
+      ?.templates ?? [];
   const flavorTemplate =
     flavorTemplates.length > 0
       ? pickRandom(flavorTemplates, rng)
@@ -331,6 +359,14 @@ export function generateChainMission(
     failurePenalty,
     alertGain,
     isRescue: false,
+    chainStep,
+    chainTotal: chainTotal ?? computeChainTotal(chainTargetId),
+    lockedByDivision:
+      assignedDivisions &&
+      assignedDivisions.length > 0 &&
+      !assignedDivisions.includes(chainTarget.category as unknown as DivisionId)
+        ? (chainTarget.category as string)
+        : undefined,
     expiresAt: Date.now() + MISSION_EXPIRY_MS * difficulty,
     createdAt: Date.now(),
   };

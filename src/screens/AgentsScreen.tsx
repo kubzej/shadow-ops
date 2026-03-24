@@ -1263,6 +1263,26 @@ export default function AgentsScreen() {
 
         <CityBar />
 
+        {/* Healing timers for injured agents */}
+        {agents.some((a) => a.status === 'injured' && a.healsAt) && (
+          <div className="flex flex-col gap-1 mb-2">
+            {agents
+              .filter((a) => a.status === 'injured' && a.healsAt)
+              .map((a) => (
+                <div
+                  key={a.id}
+                  className="flex items-center gap-2 py-1.5 px-3 rounded-lg text-xs"
+                  style={{ background: '#1a1208' }}
+                >
+                  <Clock size={11} color="#f97316" />
+                  <span style={{ color: '#f97316' }}>{a.name}</span>
+                  <span style={{ color: '#999' }}>se léčí —</span>
+                  <HealingCountdown healsAt={a.healsAt!} />
+                </div>
+              ))}
+          </div>
+        )}
+
         {/* Filter tabs */}
         <div className="flex gap-1.5 overflow-x-auto pb-1">
           {FILTER_TABS.map((tab) => {
@@ -1328,26 +1348,6 @@ export default function AgentsScreen() {
           ))
         )}
       </div>
-
-      {/* Healing timers for injured agents */}
-      {agents.some((a) => a.status === 'injured' && a.healsAt) && (
-        <div className="px-4 pb-2 mt-2">
-          {agents
-            .filter((a) => a.status === 'injured' && a.healsAt)
-            .map((a) => (
-              <div
-                key={a.id}
-                className="flex items-center gap-2 py-1.5 px-3 rounded-lg mb-1.5 text-xs"
-                style={{ background: '#1a1208' }}
-              >
-                <Clock size={11} color="#f97316" />
-                <span style={{ color: '#f97316' }}>{a.name}</span>
-                <span style={{ color: '#999' }}>se léčí —</span>
-                <HealingCountdown healsAt={a.healsAt!} />
-              </div>
-            ))}
-        </div>
-      )}
 
       {/* Detail modal */}
       {selected && (
