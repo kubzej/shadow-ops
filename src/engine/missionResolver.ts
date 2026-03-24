@@ -14,6 +14,18 @@ import { clamp, createRng } from '../utils/rng';
 import { randomId } from '../utils/rng';
 
 // ─────────────────────────────────────────────
+// Approach modifiers
+// ─────────────────────────────────────────────
+
+export type MissionApproach = 'standard' | 'aggressive' | 'covert';
+
+export const APPROACH_MODS: Record<MissionApproach, { successMult: number; durationMult: number; alertMult: number }> = {
+  standard:   { successMult: 1.00, durationMult: 1.00, alertMult: 1.00 },
+  aggressive: { successMult: 1.15, durationMult: 0.75, alertMult: 1.50 },
+  covert:     { successMult: 0.90, durationMult: 1.30, alertMult: 0.50 },
+};
+
+// ─────────────────────────────────────────────
 // Eligibility checks
 // ─────────────────────────────────────────────
 
@@ -117,6 +129,7 @@ export function calculateSuccessChance(
   agents: Agent[],
   mission: Mission,
   alertLevel = 0,
+  approach: MissionApproach = 'standard',
 ): number {
   if (agents.length === 0) return 0.05;
 
@@ -142,8 +155,14 @@ export function calculateSuccessChance(
 
   const statBonus = ((leaderScore - 50) / 100) * 0.4;
 
-  // Each additional agent contributes a flat support bonus (never negative)
-  const teamBonus = Math.min((agents.length - 1) * 0.03, 0.12);
+  // Team bonus scales by fill ratio AND difficulty.
+  // Full team on diff 1 = +4 pp, diff 5 = +12 pp (linearly).
+  const MAX_TEAM_BONUS_BY_DIFF: Record<number, number> = { 1: 0.06, 2: 0.07, 3: 0.08, 4: 0.10, 5: 0.12 };
+  const maxTeamBonus = MAX_TEAM_BONUS_BY_DIFF[mission.difficulty] ?? 0.08;
+  const maxAgents = mission.maxAgents ?? agents.length;
+  const fillRatio =
+    maxAgents > 1 ? (agents.length - 1) / (maxAgents - 1) : 0;
+  const teamBonus = fillRatio * maxTeamBonus;
 
   // Equipment success bonuses — only the leader's 3 slots count
   let equipBonus = 0;
@@ -172,7 +191,7 @@ export function calculateSuccessChance(
     equipBonus -
     compPenalty -
     alertPenalty;
-  return clamp(raw, 0.05, 1.0);
+  return clamp(raw * APPROACH_MODS[approach].successMult, 0.05, 1.0);
 }
 
 // ─────────────────────────────────────────────
@@ -188,6 +207,7 @@ export function calculateDuration(
   mission: Mission,
   agents: Agent[],
   equippedIds: string[] = [],
+  approach: MissionApproach = 'standard',
 ): number {
   if (agents.length === 0) return mission.baseDuration;
 
@@ -212,7 +232,7 @@ export function calculateDuration(
     if (eq?.durationMult) equipMult *= eq.durationMult;
   }
 
-  const duration = Math.round(mission.baseDuration * speedFactor * equipMult);
+  const duration = Math.round(mission.baseDuration * speedFactor * equipMult * APPROACH_MODS[approach].durationMult);
   return Math.max(30, duration); // minimum 30 seconds
 }
 
@@ -225,9 +245,10 @@ export function dispatchMission(
   agents: Agent[],
   equippedIds: string[] = [],
   alertLevel = 0,
+  approach: MissionApproach = 'standard',
 ): ActiveMission {
-  const successChance = calculateSuccessChance(agents, mission, alertLevel);
-  const duration = calculateDuration(mission, agents, equippedIds);
+  const successChance = calculateSuccessChance(agents, mission, alertLevel, approach);
+  const duration = calculateDuration(mission, agents, equippedIds, approach);
 
   return {
     id: randomId(),
@@ -237,6 +258,7 @@ export function dispatchMission(
     startedAt: Date.now(),
     completesAt: Date.now() + duration * 1000,
     successChance,
+    approach,
     collected: false,
   };
 }
@@ -256,6 +278,8 @@ export function resolveMission(
   const rng = createRng();
   const roll = rng();
   const sc = activeMission.successChance;
+  const approach: MissionApproach = activeMission.approach ?? 'standard';
+  const alertMult = APPROACH_MODS[approach].alertMult;
 
   let result: MissionResult;
   let rewards: MissionRewards;
@@ -265,17 +289,17 @@ export function resolveMission(
     // Critical success (top 15% of success window) — bonus rewards
     result = 'success';
     rewards = scaleRewards(mission.rewards, 1.3);
-    alertGain = mission.alertGain * 0.2; // very discreet
+    alertGain = mission.alertGain * 0.2 * alertMult; // very discreet
   } else if (roll < sc) {
     // Normal success
     result = 'success';
     rewards = { ...mission.rewards };
-    alertGain = mission.alertGain * 0.5;
+    alertGain = mission.alertGain * 0.5 * alertMult;
   } else if (roll < sc + (1 - sc) * 0.4) {
     // Partial failure (40% of failure window) — partial rewards
     result = 'partial';
     rewards = scaleRewards(mission.rewards, 0.4);
-    alertGain = mission.alertGain * 1.0;
+    alertGain = mission.alertGain * 1.0 * alertMult;
   } else {
     // Catastrophe chance scales with difficulty: 0% on diff 1, up to 16% on diff 5
     // This prevents agent capture on easy missions (death-spiral protection)
@@ -286,12 +310,12 @@ export function resolveMission(
     ) {
       result = 'catastrophe';
       rewards = scaleRewards(mission.failurePenalty, 1.5);
-      alertGain = mission.alertGain * 2.0;
+      alertGain = mission.alertGain * 2.0 * alertMult;
     } else {
       // Full failure
       result = 'failure';
       rewards = mission.failurePenalty;
-      alertGain = mission.alertGain * 1.5;
+      alertGain = mission.alertGain * 1.5 * alertMult;
     }
   }
 

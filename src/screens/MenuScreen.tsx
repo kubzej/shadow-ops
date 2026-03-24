@@ -14,10 +14,9 @@ import { db } from '../db/db';
 // Helpers
 // ─────────────────────────────────────────────
 
-function formatPlayTime(createdAt: number): string {
-  const sec = Math.floor((Date.now() - createdAt) / 1000);
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
+function formatPlayTimeSecs(totalSec: number): string {
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
   if (h > 0) return `${h}h ${m}m`;
   return `${m}m`;
 }
@@ -61,7 +60,7 @@ export default function MenuScreen() {
   const agencyName = useGameStore((s) => s.agencyName);
   const bossName = useGameStore((s) => s.bossName);
   const currencies = useGameStore((s) => s.currencies);
-  const createdAt = useGameStore((s) => s.createdAt);
+  const getPlayTimeSecs = useGameStore((s) => s.getPlayTimeSecs);
 
   const totalMissionsCompleted = useGameStore((s) => s.totalMissionsCompleted);
   const totalMissionsAttempted = useGameStore((s) => s.totalMissionsAttempted);
@@ -73,7 +72,9 @@ export default function MenuScreen() {
   const [agentCount, setAgentCount] = useState(0);
   const [regionCount, setRegionCount] = useState(0);
   const [showReset, setShowReset] = useState(false);
-  const [playTime, setPlayTime] = useState(formatPlayTime(createdAt));
+  const [playTime, setPlayTime] = useState(
+    formatPlayTimeSecs(getPlayTimeSecs()),
+  );
 
   useEffect(() => {
     db.agents
@@ -89,11 +90,11 @@ export default function MenuScreen() {
   // Update play time every minute
   useEffect(() => {
     const id = setInterval(
-      () => setPlayTime(formatPlayTime(createdAt)),
+      () => setPlayTime(formatPlayTimeSecs(getPlayTimeSecs())),
       60_000,
     );
     return () => clearInterval(id);
-  }, [createdAt]);
+  }, [getPlayTimeSecs]);
 
   const successRate =
     totalMissionsAttempted > 0
@@ -119,7 +120,7 @@ export default function MenuScreen() {
   return (
     <div
       className="flex flex-col min-h-full pb-20"
-      style={{ background: '#0a0a0a', color: '#e8e8e8' }}
+      style={{ background: '#222222', color: '#e8e8e8' }}
     >
       {/* Header */}
       <div className="px-4 pt-4 pb-6">
@@ -127,7 +128,7 @@ export default function MenuScreen() {
         <div className="flex items-center gap-3 mb-5">
           <div
             className="w-12 h-12 rounded-xl flex items-center justify-center"
-            style={{ background: '#111', border: '1px solid #2a2a2a' }}
+            style={{ background: '#2b2b2b', border: '1px solid #2a2a2a' }}
           >
             <Shield size={24} color="#4ade80" />
           </div>
@@ -172,7 +173,7 @@ export default function MenuScreen() {
             <div
               key={label}
               className="rounded-xl p-2.5 flex flex-col items-center gap-0.5"
-              style={{ background: '#111', border: '1px solid #1a1a1a' }}
+              style={{ background: '#2b2b2b', border: '1px solid #1a1a1a' }}
             >
               <span className="text-base" style={{ color: iconColor }}>
                 {icon}
@@ -190,7 +191,7 @@ export default function MenuScreen() {
         {/* Agency stats */}
         <div
           className="rounded-xl"
-          style={{ background: '#111', border: '1px solid #2a2a2a' }}
+          style={{ background: '#2b2b2b', border: '1px solid #2a2a2a' }}
         >
           <div className="flex items-center gap-2 px-3 pt-3 pb-2">
             <BarChart3 size={15} color="#4ade80" />
@@ -208,7 +209,12 @@ export default function MenuScreen() {
               value={totalMissionsCompleted}
             />
             <StatRow
-              icon="📊"
+              icon="�"
+              label="Mise celkem"
+              value={totalMissionsAttempted}
+            />
+            <StatRow
+              icon="�📊"
               label="Úspěšnost"
               value={successRate !== null ? `${successRate} %` : '—'}
             />
@@ -257,7 +263,7 @@ export default function MenuScreen() {
             onClick={() => setShowReset(true)}
             className="w-full py-3 rounded-xl text-sm font-medium"
             style={{
-              background: '#0f0f0f',
+              background: '#262626',
               color: '#555',
               border: '1px solid #1a1a1a',
             }}
@@ -283,7 +289,7 @@ export default function MenuScreen() {
                 onClick={() => setShowReset(false)}
                 className="flex-1 py-2.5 rounded-xl text-sm font-medium"
                 style={{
-                  background: '#1a1a1a',
+                  background: '#333333',
                   color: '#888',
                   border: '1px solid #2a2a2a',
                 }}

@@ -114,7 +114,7 @@ function ExpansionDialog({
     >
       <div
         className="rounded-t-2xl"
-        style={{ background: '#0f0f0f', border: '1px solid #2a2a2a' }}
+        style={{ background: '#262626', border: '1px solid #2a2a2a' }}
       >
         <div className="h-1 rounded-t-2xl" style={{ background: '#facc15' }} />
         <div className="flex justify-center pt-3 pb-1">
@@ -149,7 +149,7 @@ function ExpansionDialog({
             <>
               <div
                 className="rounded-xl p-3 mb-3 flex gap-6"
-                style={{ background: '#111' }}
+                style={{ background: '#2b2b2b' }}
               >
                 {[
                   {
@@ -182,7 +182,7 @@ function ExpansionDialog({
 
               <div
                 className="rounded-xl p-3 mb-4 flex items-center gap-2"
-                style={{ background: '#111' }}
+                style={{ background: '#2b2b2b' }}
               >
                 <Clock size={13} color="#888" />
                 <span className="text-sm" style={{ color: '#888' }}>
@@ -210,7 +210,7 @@ function ExpansionDialog({
                   onClick={onClose}
                   className="flex-1 py-3 rounded-xl text-sm font-medium"
                   style={{
-                    background: '#1a1a1a',
+                    background: '#333333',
                     color: '#888',
                     border: '1px solid #2a2a2a',
                   }}
@@ -222,8 +222,8 @@ function ExpansionDialog({
                   disabled={!canAfford}
                   className="flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-1.5"
                   style={{
-                    background: canAfford ? '#facc15' : '#1a1a1a',
-                    color: canAfford ? '#0a0a0a' : '#444',
+                    background: canAfford ? '#facc15' : '#333333',
+                    color: canAfford ? '#222222' : '#444',
                     cursor: canAfford ? 'pointer' : 'not-allowed',
                   }}
                 >
@@ -247,8 +247,8 @@ function ExpansionDialog({
                       onClick={() => setPicked(divId)}
                       className="flex items-center gap-3 p-3 rounded-xl text-left w-full"
                       style={{
-                        background: sel ? `${div.color}22` : '#111',
-                        border: `1px solid ${sel ? `${div.color}55` : '#2a2a2a'}`,
+                        background: sel ? `${div.color}22` : '#2b2b2b',
+                        border: `1px solid ${sel ? `${div.color}55` : '#444444'}`,
                       }}
                     >
                       <div
@@ -281,7 +281,7 @@ function ExpansionDialog({
                   onClick={() => setStep('confirm')}
                   className="flex-1 py-3 rounded-xl text-sm font-medium"
                   style={{
-                    background: '#1a1a1a',
+                    background: '#333333',
                     color: '#888',
                     border: '1px solid #2a2a2a',
                   }}
@@ -295,8 +295,8 @@ function ExpansionDialog({
                   disabled={!picked}
                   className="flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-1.5"
                   style={{
-                    background: picked ? '#facc15' : '#1a1a1a',
-                    color: picked ? '#0a0a0a' : '#444',
+                    background: picked ? '#facc15' : '#333333',
+                    color: picked ? '#222222' : '#444',
                     cursor: picked ? 'pointer' : 'not-allowed',
                   }}
                 >
@@ -337,8 +337,8 @@ function CityCard({
     <div
       className="rounded-2xl overflow-hidden"
       style={{
-        background: isActive ? '#0d1a0d' : '#0f0f0f',
-        border: `1px solid ${isActive ? '#4ade8033' : '#1a1a1a'}`,
+        background: isActive ? '#0d1a0d' : '#262626',
+        border: `1px solid ${isActive ? '#4ade8033' : '#333333'}`,
       }}
     >
       {/* Title row */}
@@ -392,7 +392,7 @@ function CityCard({
               <span
                 key={i}
                 className="w-1.5 h-1.5 rounded-full inline-block"
-                style={{ background: i < sh.level ? '#4ade80' : '#2a2a2a' }}
+                style={{ background: i < sh.level ? '#4ade80' : '#444444' }}
               />
             ))}
           </span>
@@ -411,6 +411,19 @@ function CityCard({
             {missionCount}
           </span>
         </div>
+        {/* Mission Tier */}
+        {(state.missionTier ?? 0) > 0 && (
+          <div
+            className="flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold"
+            style={{
+              background: '#2a1a00',
+              color: '#f97316',
+              border: '1px solid #f9731633',
+            }}
+          >
+            T{state.missionTier}
+          </div>
+        )}
         {/* Divisions */}
         <div className="flex flex-wrap gap-1 ml-auto">
           {sh.assignedDivisions.slice(0, 3).map((d) => {
@@ -428,7 +441,7 @@ function CityCard({
           {sh.assignedDivisions.length > 3 && (
             <span
               className="text-[10px] px-1.5 py-0.5 rounded"
-              style={{ background: '#1a1a1a', color: '#555' }}
+              style={{ background: '#333333', color: '#555' }}
             >
               +{sh.assignedDivisions.length - 3}
             </span>
@@ -442,9 +455,9 @@ function CityCard({
           onClick={onSelect}
           className="flex-1 py-2 rounded-xl text-xs font-semibold"
           style={{
-            background: isActive ? '#4ade8022' : '#111',
+            background: isActive ? '#4ade8022' : '#2b2b2b',
             color: isActive ? '#4ade80' : '#666',
-            border: `1px solid ${isActive ? '#4ade8033' : '#1a1a1a'}`,
+            border: `1px solid ${isActive ? '#4ade8033' : '#333333'}`,
           }}
         >
           {isActive ? '✓ Aktivní základna' : 'Nastavit jako aktivní'}
@@ -456,7 +469,7 @@ function CityCard({
           }}
           className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-medium flex-shrink-0"
           style={{
-            background: '#111',
+            background: '#2b2b2b',
             color: '#666',
             border: '1px solid #1a1a1a',
           }}
@@ -550,7 +563,7 @@ function ExpansionCardItem({
   return (
     <div
       className="rounded-2xl overflow-hidden"
-      style={{ background: '#0f0f0f', border: '1px solid #1a1a1a' }}
+      style={{ background: '#262626', border: '1px solid #1a1a1a' }}
     >
       <div className="px-4 pt-3 pb-2 flex items-start justify-between">
         <div className="flex-1 min-w-0">
@@ -616,9 +629,9 @@ function ExpansionCardItem({
           disabled={!canAfford}
           className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold"
           style={{
-            background: canAfford ? '#facc1522' : '#111',
+            background: canAfford ? '#facc1522' : '#2b2b2b',
             color: canAfford ? '#facc15' : '#444',
-            border: `1px solid ${canAfford ? '#facc1544' : '#1a1a1a'}`,
+            border: `1px solid ${canAfford ? '#facc1544' : '#333333'}`,
             cursor: canAfford ? 'pointer' : 'not-allowed',
           }}
         >
@@ -640,7 +653,7 @@ function ExpansionCardItem({
               <span
                 key={name}
                 className="text-[10px] px-1.5 py-0.5 rounded"
-                style={{ background: '#1a1a1a', color: '#666' }}
+                style={{ background: '#333333', color: '#666' }}
               >
                 {name}
               </span>
@@ -752,7 +765,7 @@ export default function MapScreen() {
   return (
     <div
       style={{
-        background: '#0a0a0a',
+        background: '#222222',
         color: '#e8e8e8',
         minHeight: '100%',
         paddingBottom: '5rem',
@@ -780,15 +793,15 @@ export default function MapScreen() {
       {/* Tabs */}
       <div
         className="sticky top-0 z-10 flex gap-1 px-4 py-2"
-        style={{ background: '#0a0a0a', borderBottom: '1px solid #1a1a1a' }}
+        style={{ background: '#222222', borderBottom: '1px solid #1a1a1a' }}
       >
         <button
           onClick={() => setTab('bases')}
           className="flex-1 py-1.5 rounded-xl text-sm font-medium transition-all"
           style={{
-            background: tab === 'bases' ? '#4ade8022' : '#111',
+            background: tab === 'bases' ? '#4ade8022' : '#2b2b2b',
             color: tab === 'bases' ? '#4ade80' : '#666',
-            border: `1px solid ${tab === 'bases' ? '#4ade8044' : '#1a1a1a'}`,
+            border: `1px solid ${tab === 'bases' ? '#4ade8044' : '#333333'}`,
           }}
         >
           Základny ({ownedRegions.length + constructingRegions.length})
@@ -797,9 +810,9 @@ export default function MapScreen() {
           onClick={() => setTab('expand')}
           className="flex-1 py-1.5 rounded-xl text-sm font-medium transition-all"
           style={{
-            background: tab === 'expand' ? '#facc1522' : '#111',
+            background: tab === 'expand' ? '#facc1522' : '#2b2b2b',
             color: tab === 'expand' ? '#facc15' : '#666',
-            border: `1px solid ${tab === 'expand' ? '#facc1544' : '#1a1a1a'}`,
+            border: `1px solid ${tab === 'expand' ? '#facc1544' : '#333333'}`,
           }}
         >
           Expanze ({availableIds.size})
@@ -834,7 +847,7 @@ export default function MapScreen() {
 
             {ownedRegions.length === 0 && constructingRegions.length === 0 && (
               <div className="flex flex-col items-center justify-center py-16 gap-3">
-                <Globe size={40} style={{ color: '#1a1a1a' }} />
+                <Globe size={40} style={{ color: '#333333' }} />
                 <p className="text-sm" style={{ color: '#555' }}>
                   Žádné základny
                 </p>
@@ -856,7 +869,7 @@ export default function MapScreen() {
             ))}
             {availableIds.size === 0 && (
               <div className="flex flex-col items-center justify-center py-16 gap-3">
-                <Globe size={40} style={{ color: '#1a1a1a' }} />
+                <Globe size={40} style={{ color: '#333333' }} />
                 <p className="text-sm" style={{ color: '#555' }}>
                   Žádné dostupné expanze
                 </p>

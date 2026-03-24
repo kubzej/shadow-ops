@@ -242,7 +242,96 @@ export function generateMission(
     failurePenalty,
     alertGain,
     isRescue: false,
+    intelCost: target.intelCost,
+    chainNextTargetId: target.chainNextTargetId,
     expiresAt,
+    createdAt: Date.now(),
+  };
+}
+
+// ─────────────────────────────────────────────
+// Chain mission generation
+// ─────────────────────────────────────────────
+
+export function generateChainMission(
+  regionId: string,
+  alertLevel: number,
+  chainTargetId: string,
+): Mission | null {
+  const chainTarget = TARGET_POOLS.find((t) => t.id === chainTargetId);
+  if (!chainTarget) return null;
+
+  const rng = createRng();
+  const region = REGION_MAP.get(regionId);
+  const country = region ? COUNTRY_MAP.get(region.countryId) : undefined;
+  const countryAlertBonus = country?.baseAlertLevel ?? 0;
+  const effectiveAlert = Math.min(3, alertLevel + countryAlertBonus * 0.3);
+
+  // Difficulty: chain missions are slightly harder than the region's current level
+  const baseDiff = 2 + Math.round(effectiveAlert * 0.8 + randFloat(-0.5, 0.5, rng));
+  const difficulty = Math.max(2, Math.min(5, baseDiff)) as 1 | 2 | 3 | 4 | 5;
+
+  const minAgents = difficulty <= 2 ? 1 : difficulty <= 4 ? 2 : 3;
+  const maxAgents = Math.min(6, minAgents + Math.floor(difficulty * 0.8));
+  const baseSuccessChance = Math.max(0.1, 0.80 - (difficulty - 1) * 0.09);
+  const baseDuration = BASE_DURATION[difficulty];
+  const diffMult = [0, 1.2, 2.5, 10.0, 15.0, 25.0][difficulty] ?? 1.2;
+
+  const rewards: MissionRewards = {
+    money: Math.round(chainTarget.baseRewardMoney * diffMult * randFloat(0.85, 1.15, rng)),
+    intel: Math.round(chainTarget.baseRewardIntel * diffMult),
+    shadow: Math.round(chainTarget.baseRewardShadow * diffMult),
+    influence: Math.round(chainTarget.baseRewardInfluence * diffMult),
+    xp: Math.round(40 + difficulty * 25),
+  };
+
+  const failurePenalty: MissionRewards = {
+    money: 0,
+    intel: -Math.round(rewards.intel * 0.5),
+    shadow: 0,
+    influence: -Math.round(rewards.influence * 0.3),
+    xp: Math.round(10 + difficulty * 5),
+  };
+
+  const alertGain = (chainTarget.alertGain + 0.1) * 1.5;
+
+  const flavorTemplates =
+    FLAVOR_TEMPLATES.find((f) => f.category === chainTarget.category)?.templates ?? [];
+  const flavorTemplate =
+    flavorTemplates.length > 0
+      ? pickRandom(flavorTemplates, rng)
+      : '{target} v {region}.';
+  const flavor = interpolateFlavor(flavorTemplate, chainTarget, regionId);
+  const title = `${chainTarget.name} — ${region?.name ?? regionId}`;
+
+  return {
+    id: randomId(),
+    regionId,
+    category: chainTarget.category,
+    targetId: chainTarget.id,
+    chainNextTargetId: chainTarget.chainNextTargetId,
+    intelCost: chainTarget.intelCost,
+    title,
+    flavor,
+    difficulty,
+    minAgents,
+    maxAgents,
+    requiredDivisions:
+      difficulty === 1 ? [] : [chainTarget.category as unknown as DivisionId],
+    minStats:
+      MIN_STAT_BY_DIFFICULTY[difficulty] > 0
+        ? {
+            [CATEGORY_PRIMARY_STAT[chainTarget.category]]:
+              MIN_STAT_BY_DIFFICULTY[difficulty],
+          }
+        : undefined,
+    baseSuccessChance,
+    baseDuration,
+    rewards,
+    failurePenalty,
+    alertGain,
+    isRescue: false,
+    expiresAt: Date.now() + MISSION_EXPIRY_MS * difficulty,
     createdAt: Date.now(),
   };
 }

@@ -61,7 +61,7 @@ export default function LandingScreen({ onLoadSlot, onNewGame }: Props) {
   return (
     <div
       className="flex flex-col min-h-full"
-      style={{ background: '#0a0a0a', color: '#e8e8e8' }}
+      style={{ background: '#222222', color: '#e8e8e8' }}
     >
       {/* Header */}
       <div className="px-5 pt-12 pb-4 text-center">
@@ -108,7 +108,7 @@ export default function LandingScreen({ onLoadSlot, onNewGame }: Props) {
           onClick={onNewGame}
           className="w-full py-4 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 mt-2"
           style={{
-            background: '#111',
+            background: '#2b2b2b',
             color: '#4ade80',
             border: '1px solid #1f3d1f',
           }}
@@ -127,7 +127,7 @@ export default function LandingScreen({ onLoadSlot, onNewGame }: Props) {
         >
           <div
             className="w-full max-w-md rounded-t-3xl p-6"
-            style={{ background: '#111', border: '1px solid #2a2a2a' }}
+            style={{ background: '#2b2b2b', border: '1px solid #2a2a2a' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-2 mb-2">
@@ -145,7 +145,7 @@ export default function LandingScreen({ onLoadSlot, onNewGame }: Props) {
                 disabled={deleting}
                 className="flex-1 py-3 rounded-xl text-sm font-medium"
                 style={{
-                  background: '#1a1a1a',
+                  background: '#333333',
                   color: '#888',
                   border: '1px solid #2a2a2a',
                 }}
@@ -200,7 +200,7 @@ function SlotCard({
   return (
     <div
       className="rounded-2xl p-4 flex items-center gap-3"
-      style={{ background: '#111', border: '1px solid #1e1e1e' }}
+      style={{ background: '#2b2b2b', border: '1px solid #1e1e1e' }}
     >
       {/* Logo */}
       <div
@@ -244,7 +244,7 @@ function SlotCard({
           className="px-4 py-2 rounded-xl text-xs font-bold"
           style={{
             background: '#4ade80',
-            color: '#0a0a0a',
+            color: '#222222',
             opacity: loading ? 0.6 : 1,
           }}
         >

@@ -5,7 +5,10 @@
       "Bash(npm install:*)",
       "Bash(npm view:*)",
       "Bash(npm run:*)",
-      "Bash(cat dist/assets/*.js)"
+      "Bash(cat dist/assets/*.js)",
+      "Bash(npx tsc:*)",
+      "Bash(npx vite:*)",
+      "Bash(grep -c \"{ id: ''t[0-9]\\\\|{ id: ''tc[0-9]\" /Users/jakubmares/Documents/Projects/shadow-ops/src/data/missionTemplates.ts)"
     ]
   }
 }

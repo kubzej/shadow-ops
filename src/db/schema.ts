@@ -125,6 +125,8 @@ export interface Mission {
   category: string; // MissionCategory
   targetId: string; // MissionTarget.id
   complicationId?: string;
+  intelCost?: number; // intel required to dispatch
+  chainNextTargetId?: string; // on success, auto-generate follow-up with this target
   title: string;
   flavor: string;
   difficulty: number; // 1–5
@@ -152,6 +154,7 @@ export interface ActiveMission {
   startedAt: number;
   completesAt: number; // timestamp
   successChance: number;
+  approach: 'standard' | 'aggressive' | 'covert';
   result?: MissionResult; // set when complete, pending collection
   collected?: boolean;
 }

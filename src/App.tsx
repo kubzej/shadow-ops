@@ -129,7 +129,7 @@ function GameShell() {
   return (
     <div
       className="flex flex-col"
-      style={{ height: '100%', background: '#0a0a0a' }}
+      style={{ height: '100%', background: '#222222' }}
     >
       <main
         className="flex-1 overflow-y-auto"
@@ -180,7 +180,7 @@ function ToastContainer() {
           key={t.id}
           className="rounded-xl px-3 py-2.5 text-sm font-medium shadow-lg pointer-events-auto flex items-center gap-2"
           style={{
-            background: '#0f0f0f',
+            background: '#262626',
             border: `1px solid ${TOAST_COLORS[t.type]}40`,
             color: TOAST_COLORS[t.type],
           }}
@@ -197,7 +197,7 @@ function LoadingScreen() {
   return (
     <div
       className="flex items-center justify-center h-full flex-col gap-3"
-      style={{ background: '#0a0a0a', color: '#e8e8e8' }}
+      style={{ background: '#222222', color: '#e8e8e8' }}
     >
       <div
         className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"

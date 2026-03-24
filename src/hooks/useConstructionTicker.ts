@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { db } from '../db/db';
 import { generateMissionsForRegion } from '../engine/missionGenerator';
+import { generateRecruitmentPool } from '../engine/agentGenerator';
 import { REGION_MAP } from '../data/regions';
 import { useGameStore } from '../store/gameStore';
 import { useUIStore } from '../store/uiStore';
@@ -19,7 +20,6 @@ const TICK_MS = 5_000;
 export function useConstructionTicker() {
   const incrementStat = useGameStore((s) => s.incrementStat);
   const showToast = useUIStore((s) => s.showToast);
-
   useEffect(() => {
     async function tick() {
       const now = Date.now();
@@ -56,6 +56,16 @@ export function useConstructionTicker() {
           safeHouseId: r.id,
           availableMissionIds: missions.map((m) => m.id),
         });
+        // Generate initial recruitment pool using all globally unlocked divisions
+        const unlockedDivisions = useGameStore.getState()
+          .unlockedDivisions as DivisionId[];
+        const recruitPool = generateRecruitmentPool(
+          r.id,
+          unlockedDivisions,
+          1,
+          3,
+        );
+        await db.recruitmentPools.put(recruitPool);
         incrementStat('expansions');
         const regionName = REGION_MAP.get(r.id)?.name ?? r.id;
         showToast('success', `Expanze dokončena: ${regionName}`);

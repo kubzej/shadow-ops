@@ -11,21 +11,16 @@ export interface Toast {
 
 interface UIStore {
   activeTab: TabId;
-  activeModal: ModalId;
-  modalData: unknown;
   selectedRegionId: string | null;
   selectedAgentId: string | null;
   toasts: Toast[];
   saveSwitchRequested: boolean;
 
   setActiveTab: (tab: TabId) => void;
-  openModal: (modal: ModalId, data?: unknown) => void;
-  closeModal: () => void;
   selectRegion: (regionId: string | null) => void;
   selectAgent: (agentId: string | null) => void;
   showToast: (type: Toast['type'], message: string) => void;
   dismissToast: (id: string) => void;
-  pruneExpiredToasts: () => void;
   requestSaveSelect: () => void;
   clearSaveSwitchRequest: () => void;
 }
@@ -59,13 +54,6 @@ export const useUIStore = create<UIStore>((set, get) => ({
     set((state) => ({
       toasts: state.toasts.filter((t) => t.id !== id),
     })),
-
-  pruneExpiredToasts: () => {
-    const now = Date.now();
-    set((state) => ({
-      toasts: state.toasts.filter((t) => t.expiresAt > now),
-    }));
-  },
 
   requestSaveSelect: () => set({ saveSwitchRequested: true }),
   clearSaveSwitchRequest: () => set({ saveSwitchRequested: false }),

@@ -114,7 +114,7 @@ function CitySwitcherOverlay({
       <div
         className="rounded-t-2xl overflow-hidden"
         style={{
-          background: '#0f0f0f',
+          background: '#262626',
           border: '1px solid #2a2a2a',
           maxHeight: '70vh',
         }}
@@ -154,7 +154,7 @@ function CitySwitcherOverlay({
                 <div
                   key={i}
                   className="rounded-xl h-16 animate-pulse"
-                  style={{ background: '#111' }}
+                  style={{ background: '#2b2b2b' }}
                 />
               ))
             : cities.map((city) => {
@@ -165,14 +165,14 @@ function CitySwitcherOverlay({
                     onClick={() => onSelect(city.id)}
                     className="flex items-center gap-3 rounded-xl p-3 text-left w-full transition-all"
                     style={{
-                      background: isActive ? '#4ade8011' : '#111',
-                      border: `1px solid ${isActive ? '#4ade8033' : '#1a1a1a'}`,
+                      background: isActive ? '#4ade8011' : '#2b2b2b',
+                      border: `1px solid ${isActive ? '#4ade8033' : '#333333'}`,
                     }}
                   >
                     {/* Active indicator */}
                     <div
                       className="w-2 h-2 rounded-full flex-shrink-0"
-                      style={{ background: isActive ? '#4ade80' : '#2a2a2a' }}
+                      style={{ background: isActive ? '#4ade80' : '#444444' }}
                     />
 
                     {/* Name + country */}
@@ -203,7 +203,7 @@ function CitySwitcherOverlay({
                               className="w-1.5 h-1.5 rounded-full inline-block"
                               style={{
                                 background:
-                                  i < city.level ? '#4ade80' : '#2a2a2a',
+                                  i < city.level ? '#4ade80' : '#444444',
                               }}
                             />
                           ))}

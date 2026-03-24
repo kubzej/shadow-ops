@@ -14,8 +14,8 @@ export default function BottomNav() {
     <nav
       className="fixed bottom-0 left-0 right-0 flex border-t"
       style={{
-        background: '#111111',
-        borderColor: '#2a2a2a',
+        background: '#2b2b2b',
+        borderColor: '#444444',
         paddingLeft: 'env(safe-area-inset-left)',
         paddingRight: 'env(safe-area-inset-right)',
       }}

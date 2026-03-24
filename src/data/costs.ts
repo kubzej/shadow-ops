@@ -58,7 +58,7 @@ export const DIVISION_UNLOCK_COSTS: Record<
   finance: { money: 2000, intel: 25, shadow: 0 },
   logistics: { money: 1200, intel: 15, shadow: 0 },
   medical: { money: 1500, intel: 20, shadow: 0 },
-  blackops: { money: 5000, intel: 60, shadow: 60 },
+  blackops: { money: 3000, intel: 40, shadow: 40 },
 };
 
 // Division level upgrade costs (per level 1→2, 2→3)
@@ -72,7 +72,7 @@ export const DIVISION_LEVEL_COSTS: Record<
 };
 
 // Cost to assign an additional division to a safe house (multiplied by safehouse index)
-export const DIVISION_ASSIGN_BASE_COST = 200;
+export const DIVISION_ASSIGN_BASE_COST = 500;
 
 // Expansion costs (expanding to a new city)
 export const EXPANSION_BASE_COST = { money: 1000, intel: 15 };
@@ -85,3 +85,77 @@ export const EXPANSION_BUILD_TIME_PER_DISTANCE = 30; // seconds per distance uni
 
 // Recruitment refresh cost (manual refresh of recruitment pool)
 export const RECRUITMENT_REFRESH_COST = { money: 100 };
+
+// ─────────────────────────────────────────────
+// Modules
+// ─────────────────────────────────────────────
+
+/** Maximum modules active on any one safe house at a time. */
+export const MODULE_MAX_PER_SAFEHOUSE = 2;
+
+export interface ModuleDef {
+  id: string;
+  /** Display name */
+  name: string;
+  /** Short description shown in the UI */
+  description: string;
+  /** One-time purchase cost */
+  cost: { money: number; intel?: number; shadow?: number; influence?: number };
+}
+
+export const MODULE_CATALOG: ModuleDef[] = [
+  {
+    id: 'server_room',
+    name: 'Server Room',
+    description: '+3 intel/tick',
+    cost: { money: 3000, intel: 30 },
+  },
+  {
+    id: 'lab',
+    name: 'Výzkumná laboratoř',
+    description: '+2 intel/tick',
+    cost: { money: 2000, intel: 20 },
+  },
+  {
+    id: 'armory',
+    name: 'Zbrojnice',
+    description: '+0.1 shadow/tick',
+    cost: { money: 6000, shadow: 40 },
+  },
+  {
+    id: 'finance_hub',
+    name: 'Finanční centrum',
+    description: '+4 money/tick',
+    cost: { money: 5000, intel: 40 },
+  },
+  {
+    id: 'signal_jammer',
+    name: 'Signal Jammer',
+    description: 'Alert decay +0.1/tick',
+    cost: { money: 3500, intel: 15, shadow: 10 },
+  },
+  {
+    id: 'med_bay',
+    name: 'Med Bay',
+    description: 'Léčení agentů 2× rychlejší',
+    cost: { money: 3000, intel: 20 },
+  },
+  {
+    id: 'training_center',
+    name: 'Výcvikové centrum',
+    description: '+25 % XP z misí',
+    cost: { money: 4000, intel: 30 },
+  },
+  {
+    id: 'forgery_lab',
+    name: 'Padělatelna',
+    description: '+0.3 influence/tick',
+    cost: { money: 4500, intel: 30, influence: 10 },
+  },
+  {
+    id: 'black_site',
+    name: 'Black Site',
+    description: '-20 % alert gain z misí',
+    cost: { money: 5500, intel: 20, shadow: 15 },
+  },
+];

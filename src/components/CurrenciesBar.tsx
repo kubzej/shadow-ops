@@ -14,7 +14,7 @@ export default function CurrenciesBar() {
         <div
           key={icon}
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg flex-shrink-0"
-          style={{ background: '#111', border: '1px solid #1a1a1a' }}
+          style={{ background: '#2b2b2b', border: '1px solid #1a1a1a' }}
         >
           <span className="text-sm" style={{ color }}>
             {icon}

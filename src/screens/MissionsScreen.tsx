@@ -24,13 +24,24 @@ import {
   calculateSuccessChance,
   checkAgentEligibility,
   checkTeamEligibility,
+  APPROACH_MODS,
   type AgentEligibility,
+  type MissionApproach,
 } from '../engine/missionResolver';
 import type { MissionResult } from '../db/schema';
 import type { CompletedMissionResult } from '../store/missionStore';
 import { formatDuration } from '../hooks/useMissionTimer';
 import { DIVISIONS } from '../data/agentTypes';
 import type { AgentRank } from '../data/agentTypes';
+import { EQUIPMENT_CATALOG } from '../data/equipmentCatalog';
+import type { Equipment } from '../data/equipmentCatalog';
+
+const RARITY_COLOR: Record<string, string> = {
+  common: '#9ca3af',
+  uncommon: '#4ade80',
+  rare: '#60a5fa',
+  legendary: '#f59e0b',
+};
 
 const RANK_LABEL: Record<AgentRank, string> = {
   recruit: 'Rekrut',
@@ -85,7 +96,7 @@ function difficultyDots(n: number, color: string) {
         <span
           key={i}
           className="w-1.5 h-1.5 rounded-full inline-block"
-          style={{ background: i < n ? color : '#2a2a2a' }}
+          style={{ background: i < n ? color : '#444444' }}
         />
       ))}
     </span>
@@ -152,6 +163,8 @@ function ActiveMissionCard({
   const isComplete = Date.now() >= active.completesAt;
 
   const [pct, setPct] = useState(progress);
+  const [agentDetails, setAgentDetails] = useState<Agent[]>([]);
+
   useEffect(() => {
     const id = setInterval(() => {
       setPct(Math.min(1, (Date.now() - active.startedAt) / total));
@@ -159,10 +172,26 @@ function ActiveMissionCard({
     return () => clearInterval(id);
   }, [active.startedAt, total]);
 
+  useEffect(() => {
+    db.agents.bulkGet(active.agentIds).then((results) => {
+      setAgentDetails(results.filter(Boolean) as Agent[]);
+    });
+  }, [active.agentIds]);
+
+  // Collect all unique equipment worn by the agents
+  const equippedItems = useMemo(() => {
+    const ids = agentDetails
+      .flatMap((a) => a.equipment.map((s) => s.equipmentId))
+      .filter(Boolean) as string[];
+    return Array.from(new Set(ids))
+      .map((id) => EQUIPMENT_CATALOG.find((e) => e.id === id))
+      .filter(Boolean) as Equipment[];
+  }, [agentDetails]);
+
   return (
     <div
       className="rounded-xl p-3 flex flex-col gap-2"
-      style={{ background: '#111', border: `1px solid ${meta.color}33` }}
+      style={{ background: '#2b2b2b', border: `1px solid ${meta.color}33` }}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -181,6 +210,17 @@ function ActiveMissionCard({
             </p>
             <p className="text-xs" style={{ color: '#666' }}>
               {meta.label} · {active.agentIds.length} agentů
+              {active.approach && active.approach !== 'standard' && (
+                <span
+                  className="ml-1.5 px-1 py-0.5 rounded text-[10px] font-semibold"
+                  style={{
+                    background: active.approach === 'aggressive' ? '#2a140044' : '#001a2a44',
+                    color: active.approach === 'aggressive' ? '#f97316' : '#22d3ee',
+                  }}
+                >
+                  {active.approach === 'aggressive' ? 'Agresivní' : 'Skrytá'}
+                </span>
+              )}
             </p>
           </div>
         </div>
@@ -196,10 +236,48 @@ function ActiveMissionCard({
         </div>
       </div>
 
+      {/* Agent list */}
+      {agentDetails.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {agentDetails.map((a) => (
+            <span
+              key={a.id}
+              className="text-[10px] px-1.5 py-0.5 rounded"
+              style={{
+                background: '#333333',
+                color: '#aaa',
+                border: '1px solid #2a2a2a',
+              }}
+            >
+              {a.name}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Equipped items */}
+      {equippedItems.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {equippedItems.map((eq) => (
+            <span
+              key={eq.id}
+              className="text-[10px] px-1.5 py-0.5 rounded flex items-center gap-0.5"
+              style={{
+                background: '#333333',
+                color: RARITY_COLOR[eq.rarity] ?? '#888',
+                border: `1px solid ${RARITY_COLOR[eq.rarity] ?? '#888'}44`,
+              }}
+            >
+              {eq.name}
+            </span>
+          ))}
+        </div>
+      )}
+
       {/* Progress bar */}
       <div
         className="h-1 rounded-full overflow-hidden"
-        style={{ background: '#2a2a2a' }}
+        style={{ background: '#444444' }}
       >
         <div
           className="h-full rounded-full transition-all"
@@ -250,7 +328,7 @@ function MissionCard({
   return (
     <div
       className="rounded-xl p-3 flex flex-col gap-2.5"
-      style={{ background: '#111', border: '1px solid #2a2a2a' }}
+      style={{ background: '#2b2b2b', border: '1px solid #2a2a2a' }}
     >
       {/* Top row */}
       <div className="flex items-start gap-2">
@@ -261,6 +339,19 @@ function MissionCard({
           {meta.icon}
         </span>
         <div className="flex-1 min-w-0">
+          {/* Rescue badge */}
+          {mission.isRescue && (
+            <div
+              className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded mb-1"
+              style={{
+                background: '#ef444422',
+                color: '#ef4444',
+                border: '1px solid #ef444433',
+              }}
+            >
+              🚨 ZÁCHRANNÁ MISE
+            </div>
+          )}
           <p
             className="text-sm font-medium leading-tight"
             style={{ color: '#e8e8e8' }}
@@ -274,7 +365,7 @@ function MissionCard({
       </div>
 
       {/* Meta row */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <span
           className="text-xs px-1.5 py-0.5 rounded"
           style={{ background: `${meta.color}22`, color: meta.color }}
@@ -296,6 +387,22 @@ function MissionCard({
           <Users size={11} />
           {mission.minAgents}–{mission.maxAgents}
         </span>
+        {mission.intelCost && mission.intelCost > 0 && (
+          <span
+            className="text-xs px-1.5 py-0.5 rounded font-semibold"
+            style={{ background: '#1e3a5f', color: '#60a5fa', border: '1px solid #60a5fa44' }}
+          >
+            ◈{mission.intelCost}
+          </span>
+        )}
+        {mission.chainNextTargetId && (
+          <span
+            className="text-xs px-1.5 py-0.5 rounded font-semibold"
+            style={{ background: '#2a200a', color: '#facc15', border: '1px solid #facc1544' }}
+          >
+            ⛓ pokračování
+          </span>
+        )}
       </div>
 
       {/* Rewards */}
@@ -332,7 +439,7 @@ function MissionCard({
                 key={stat}
                 className="text-xs px-1.5 py-0.5 rounded"
                 style={{
-                  background: '#1a1a1a',
+                  background: '#333333',
                   color: '#888',
                   border: '1px solid #2a2a2a',
                 }}
@@ -388,8 +495,8 @@ function MissionCard({
         disabled={!canStart}
         className="w-full py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 transition-all"
         style={{
-          background: canStart ? meta.color : '#1a1a1a',
-          color: canStart ? '#0a0a0a' : '#444',
+          background: canStart ? meta.color : '#333333',
+          color: canStart ? '#222222' : '#444',
           cursor: canStart ? 'pointer' : 'not-allowed',
         }}
       >
@@ -437,8 +544,8 @@ function AgentRow({
       disabled={disabled && !selected}
       className="w-full flex items-center gap-3 p-2.5 rounded-xl transition-all text-left"
       style={{
-        background: selected ? '#1a2e1a' : '#111',
-        border: `1px solid ${selected ? '#4ade80' : '#2a2a2a'}`,
+        background: selected ? '#1a2e1a' : '#2b2b2b',
+        border: `1px solid ${selected ? '#4ade80' : '#444444'}`,
         opacity: disabled && !selected ? 0.4 : 1,
       }}
     >
@@ -451,7 +558,7 @@ function AgentRow({
       <div
         className="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
         style={{
-          background: selected ? '#4ade8033' : '#1a1a1a',
+          background: selected ? '#4ade8033' : '#333333',
           color: selected ? '#4ade80' : '#888',
         }}
       >
@@ -516,12 +623,14 @@ function AgentSelectorModal({
   onClose,
 }: {
   mission: Mission;
-  onConfirm: (agents: Agent[]) => void;
+  onConfirm: (agents: Agent[], approach: MissionApproach) => void;
   onClose: () => void;
 }) {
   const [regionAgents, setRegionAgents] = useState<Agent[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [regionAlertLevel, setRegionAlertLevel] = useState(0);
+  const [approach, setApproach] = useState<MissionApproach>('standard');
+  const currencies = useGameStore((s) => s.currencies);
 
   useEffect(() => {
     db.regions.get(mission.regionId).then((r) => {
@@ -554,18 +663,21 @@ function AgentSelectorModal({
 
   const successChance = useMemo(() => {
     if (selectedAgents.length === 0) return null;
-    return calculateSuccessChance(selectedAgents, mission, regionAlertLevel);
-  }, [selectedAgents, mission, regionAlertLevel]);
+    return calculateSuccessChance(selectedAgents, mission, regionAlertLevel, approach);
+  }, [selectedAgents, mission, regionAlertLevel, approach]);
 
   const teamEligible = useMemo(
     () => checkTeamEligibility(selectedAgents, mission),
     [selectedAgents, mission],
   );
 
+  const hasEnoughIntel = currencies.intel >= (mission.intelCost ?? 0);
+
   const canDispatch =
     selectedAgents.length >= mission.minAgents &&
     selectedAgents.length <= mission.maxAgents &&
-    teamEligible;
+    teamEligible &&
+    hasEnoughIntel;
 
   const toggleAgent = useCallback(
     (id: string) => {
@@ -592,7 +704,7 @@ function AgentSelectorModal({
     >
       <div
         className="rounded-t-2xl flex flex-col max-h-[85vh]"
-        style={{ background: '#0f0f0f', border: '1px solid #2a2a2a' }}
+        style={{ background: '#262626', border: '1px solid #2a2a2a' }}
       >
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-2">
@@ -603,7 +715,7 @@ function AgentSelectorModal({
         </div>
 
         {/* Header */}
-        <div className="px-4 pb-3 border-b" style={{ borderColor: '#1a1a1a' }}>
+        <div className="px-4 pb-3 border-b" style={{ borderColor: '#333333' }}>
           <div className="flex items-center justify-between">
             <div>
               <p
@@ -649,7 +761,7 @@ function AgentSelectorModal({
                   key={stat}
                   className="text-xs px-1.5 py-0.5 rounded"
                   style={{
-                    background: '#1a1a1a',
+                    background: '#333333',
                     color: '#888',
                     border: '1px solid #2a2a2a',
                   }}
@@ -685,6 +797,43 @@ function AgentSelectorModal({
           )}
         </div>
 
+        {/* Approach selector */}
+        <div className="px-4 py-3 border-b" style={{ borderColor: '#333333' }}>
+          <p className="text-xs font-medium tracking-widest uppercase mb-2" style={{ color: '#555' }}>
+            Taktika
+          </p>
+          <div className="flex gap-2">
+            {(['standard', 'aggressive', 'covert'] as MissionApproach[]).map((ap) => {
+              const mods = APPROACH_MODS[ap];
+              const isSelected = approach === ap;
+              const label = ap === 'standard' ? 'Standardní' : ap === 'aggressive' ? 'Agresivní' : 'Skrytá';
+              const borderColor = ap === 'standard' ? '#666' : ap === 'aggressive' ? '#f97316' : '#22d3ee';
+              const bgColor = ap === 'standard' ? '#2a2a2a' : ap === 'aggressive' ? '#2a1400' : '#001a2a';
+              const successPct = Math.round((mods.successMult - 1) * 100);
+              const durationPct = Math.round((mods.durationMult - 1) * 100);
+              const alertPct = Math.round((mods.alertMult - 1) * 100);
+              const fmt = (n: number) => (n === 0 ? '±0' : n > 0 ? `+${n}` : `${n}`);
+              return (
+                <button
+                  key={ap}
+                  onClick={() => setApproach(ap)}
+                  className="flex-1 flex flex-col items-center gap-0.5 px-2 py-2 rounded-xl text-xs transition-all"
+                  style={{
+                    background: isSelected ? bgColor : '#1e1e1e',
+                    border: `1px solid ${isSelected ? borderColor : '#333'}`,
+                    color: isSelected ? borderColor : '#555',
+                  }}
+                >
+                  <span className="font-semibold text-xs">{label}</span>
+                  <span style={{ color: '#666', fontSize: '9px' }}>
+                    {fmt(successPct)}% ✓ · {fmt(durationPct)}% ⏱ · {fmt(alertPct)}% 🔴
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Agent list */}
         <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-2">
           {regionAgents.length === 0 ? (
@@ -716,7 +865,7 @@ function AgentSelectorModal({
           {successChance !== null && (
             <div
               className="rounded-xl p-2.5 mb-3 flex items-center justify-between"
-              style={{ background: '#1a1a1a' }}
+              style={{ background: '#333333' }}
             >
               <span className="text-xs" style={{ color: '#555' }}>
                 Odhadovaný výsledek
@@ -724,7 +873,7 @@ function AgentSelectorModal({
               <div className="flex items-center gap-2">
                 <div
                   className="h-1.5 w-24 rounded-full overflow-hidden"
-                  style={{ background: '#2a2a2a' }}
+                  style={{ background: '#444444' }}
                 >
                   <div
                     className="h-full rounded-full"
@@ -745,18 +894,28 @@ function AgentSelectorModal({
           )}
 
           <button
-            onClick={() => canDispatch && onConfirm(selectedAgents)}
+            onClick={() => canDispatch && onConfirm(selectedAgents, approach)}
             disabled={!canDispatch}
             className="w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2"
             style={{
-              background: canDispatch ? meta.color : '#1a1a1a',
-              color: canDispatch ? '#0a0a0a' : '#444',
+              background: canDispatch ? meta.color : '#333333',
+              color: canDispatch ? '#222222' : '#444',
               cursor: canDispatch ? 'pointer' : 'not-allowed',
             }}
           >
             <Shield size={16} />
             Nasadit agenty
           </button>
+          {mission.intelCost && mission.intelCost > 0 && (
+            <p
+              className="text-xs text-center mt-2"
+              style={{ color: hasEnoughIntel ? '#60a5fa' : '#ef4444' }}
+            >
+              {hasEnoughIntel
+                ? `Vyžaduje ◈${mission.intelCost} intel`
+                : `Nedostatek intelu — potřeba ◈${mission.intelCost}`}
+            </p>
+          )}
         </div>
       </div>
     </div>
@@ -809,7 +968,7 @@ function ResultModal({
     >
       <div
         className="w-full rounded-t-2xl flex flex-col max-h-[80vh] overflow-y-auto"
-        style={{ background: '#0f0f0f', border: '1px solid #2a2a2a' }}
+        style={{ background: '#262626', border: '1px solid #2a2a2a' }}
       >
         {/* Color band */}
         <div className="h-1.5 rounded-t-2xl" style={{ background: rm.color }} />
@@ -847,7 +1006,7 @@ function ResultModal({
           {(hasPositive || hasNegative) && (
             <div
               className="rounded-xl p-3 flex flex-col gap-2"
-              style={{ background: '#1a1a1a' }}
+              style={{ background: '#333333' }}
             >
               <p
                 className="text-xs font-medium tracking-widest uppercase"
@@ -916,7 +1075,7 @@ function ResultModal({
           {result.alertGain > 0 && (
             <div
               className="flex items-center gap-2 px-3 py-2 rounded-xl"
-              style={{ background: '#1a1a1a' }}
+              style={{ background: '#333333' }}
             >
               <Zap size={14} color="#f97316" />
               <span className="text-xs" style={{ color: '#888' }}>
@@ -955,23 +1114,59 @@ function ResultModal({
             </div>
           )}
 
-          {/* Affected agents */}
+          {/* Affected agents — per-agent injury breakdown */}
           {result.affectedAgentIds.length > 0 && (
             <div
-              className="rounded-xl p-3"
+              className="rounded-xl p-3 flex flex-col gap-2"
               style={{ background: '#2e0f0f', border: '1px solid #ef444433' }}
             >
-              <p
-                className="text-xs font-medium mb-1"
-                style={{ color: '#ef4444' }}
-              >
+              <p className="text-xs font-medium" style={{ color: '#ef4444' }}>
                 {result.result === 'catastrophe'
                   ? '⚠ Agent zajat'
                   : '⚠ Agenti zranění'}
               </p>
-              <p className="text-xs" style={{ color: '#888' }}>
-                {result.affectedAgentIds.length} agent(ů) vyžaduje ošetření.
-              </p>
+              {result.injuredAgents.length > 0 ? (
+                result.injuredAgents.map((ia) => {
+                  const severityColor =
+                    ia.severity === 'critical'
+                      ? '#ef4444'
+                      : ia.severity === 'serious'
+                        ? '#f97316'
+                        : '#facc15';
+                  const severityLabel =
+                    ia.severity === 'critical'
+                      ? 'Kritické'
+                      : ia.severity === 'serious'
+                        ? 'Vážné'
+                        : 'Lehké';
+                  const healsIn = Math.ceil((ia.healsAt - Date.now()) / 60000);
+                  return (
+                    <div
+                      key={ia.id}
+                      className="flex items-center justify-between"
+                    >
+                      <span className="text-sm" style={{ color: '#e8e8e8' }}>
+                        {ia.name}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className="text-xs font-semibold"
+                          style={{ color: severityColor }}
+                        >
+                          {severityLabel}
+                        </span>
+                        <span className="text-xs" style={{ color: '#555' }}>
+                          ~{healsIn} min
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-xs" style={{ color: '#888' }}>
+                  {result.affectedAgentIds.length} agent(ů) zajat(o).
+                </p>
+              )}
             </div>
           )}
 
@@ -979,7 +1174,7 @@ function ResultModal({
           <button
             onClick={onDismiss}
             className="w-full py-3.5 rounded-xl font-bold text-sm"
-            style={{ background: rm.color, color: '#0a0a0a' }}
+            style={{ background: rm.color, color: '#222222' }}
           >
             Potvrdit
           </button>
@@ -1075,12 +1270,15 @@ export default function MissionsScreen() {
   }, [currentRegionId, activeMissions, completedQueue]);
 
   // Handle dispatch
-  async function handleDispatch(agents: Agent[]) {
+  async function handleDispatch(agents: Agent[], approach: MissionApproach = 'standard') {
     if (!selectedMission || dispatching) return;
     setDispatching(true);
     setSelectedMission(null);
     try {
-      await dispatch(selectedMission, agents);
+      const equippedIds = agents.flatMap((a) =>
+        a.equipment.map((s) => s.equipmentId).filter(Boolean),
+      ) as string[];
+      await dispatch(selectedMission, agents, equippedIds, approach);
       // Refresh region agent list
       if (currentRegionId) {
         db.agents
@@ -1101,7 +1299,7 @@ export default function MissionsScreen() {
   return (
     <div
       className="flex flex-col min-h-full pb-20"
-      style={{ background: '#0a0a0a', color: '#e8e8e8' }}
+      style={{ background: '#222222', color: '#e8e8e8' }}
     >
       {/* Header */}
       <div className="px-4 pt-4 pb-4">
@@ -1163,13 +1361,13 @@ export default function MissionsScreen() {
                 <div
                   key={i}
                   className="rounded-xl h-36 animate-pulse"
-                  style={{ background: '#111' }}
+                  style={{ background: '#2b2b2b' }}
                 />
               ))}
             </div>
           ) : availableMissions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
-              <Shield size={40} style={{ color: '#2a2a2a' }} />
+              <Shield size={40} style={{ color: '#444444' }} />
               <p className="text-sm" style={{ color: '#555' }}>
                 Momentálně žádné mise
               </p>

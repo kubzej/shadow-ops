@@ -77,14 +77,14 @@ export default function OnboardingScreen() {
   return (
     <div
       className="flex flex-col min-h-full"
-      style={{ background: '#0a0a0a', color: '#e8e8e8' }}
+      style={{ background: '#222222', color: '#e8e8e8' }}
     >
       {/* Header */}
       <div className="px-5 pt-12 pb-6 text-center">
         <div className="flex justify-center mb-4">
           <div
             className="w-16 h-16 rounded-2xl flex items-center justify-center"
-            style={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}
+            style={{ background: '#333333', border: '1px solid #2a2a2a' }}
           >
             <LogoSVG paths={selectedLogo.paths} size={36} color="#4ade80" />
           </div>
@@ -101,7 +101,7 @@ export default function OnboardingScreen() {
           <div
             key={s}
             className="w-2 h-2 rounded-full transition-colors"
-            style={{ background: s <= step ? '#4ade80' : '#2a2a2a' }}
+            style={{ background: s <= step ? '#4ade80' : '#444444' }}
           />
         ))}
       </div>
@@ -125,8 +125,8 @@ export default function OnboardingScreen() {
                 maxLength={32}
                 className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-colors"
                 style={{
-                  background: '#111',
-                  border: `1px solid ${nameValid(agencyName) ? '#4ade80' : '#2a2a2a'}`,
+                  background: '#2b2b2b',
+                  border: `1px solid ${nameValid(agencyName) ? '#4ade80' : '#444444'}`,
                   color: '#e8e8e8',
                 }}
               />
@@ -152,8 +152,8 @@ export default function OnboardingScreen() {
                 maxLength={32}
                 className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-colors"
                 style={{
-                  background: '#111',
-                  border: `1px solid ${nameValid(bossName) ? '#4ade80' : '#2a2a2a'}`,
+                  background: '#2b2b2b',
+                  border: `1px solid ${nameValid(bossName) ? '#4ade80' : '#444444'}`,
                   color: '#e8e8e8',
                 }}
               />
@@ -171,8 +171,8 @@ export default function OnboardingScreen() {
               disabled={!step1Valid}
               className="w-full py-4 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all"
               style={{
-                background: step1Valid ? '#4ade80' : '#1a1a1a',
-                color: step1Valid ? '#0a0a0a' : '#444',
+                background: step1Valid ? '#4ade80' : '#333333',
+                color: step1Valid ? '#222222' : '#444',
                 cursor: step1Valid ? 'pointer' : 'not-allowed',
               }}
             >
@@ -200,8 +200,8 @@ export default function OnboardingScreen() {
                     onClick={() => setLogoId(logo.id)}
                     className="aspect-square rounded-xl flex flex-col items-center justify-center gap-1.5 transition-all"
                     style={{
-                      background: selected ? '#1a2e1a' : '#111',
-                      border: `2px solid ${selected ? '#4ade80' : '#2a2a2a'}`,
+                      background: selected ? '#1a2e1a' : '#2b2b2b',
+                      border: `2px solid ${selected ? '#4ade80' : '#444444'}`,
                     }}
                   >
                     <LogoSVG
@@ -225,7 +225,7 @@ export default function OnboardingScreen() {
                 onClick={() => setStep(1)}
                 className="flex-1 py-3 rounded-xl text-sm font-medium"
                 style={{
-                  background: '#1a1a1a',
+                  background: '#333333',
                   color: '#888',
                   border: '1px solid #2a2a2a',
                 }}
@@ -235,7 +235,7 @@ export default function OnboardingScreen() {
               <button
                 onClick={() => setStep(3)}
                 className="flex-1 py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-1 transition-all"
-                style={{ background: '#4ade80', color: '#0a0a0a' }}
+                style={{ background: '#4ade80', color: '#222222' }}
               >
                 Pokračovat <ChevronRight size={14} />
               </button>
@@ -263,8 +263,8 @@ export default function OnboardingScreen() {
                   onClick={() => setStartCity(city.id)}
                   className="p-3 rounded-xl text-left transition-all"
                   style={{
-                    background: startCity === city.id ? '#1a2e1a' : '#111',
-                    border: `1px solid ${startCity === city.id ? '#4ade80' : '#2a2a2a'}`,
+                    background: startCity === city.id ? '#1a2e1a' : '#2b2b2b',
+                    border: `1px solid ${startCity === city.id ? '#4ade80' : '#444444'}`,
                   }}
                 >
                   <div
@@ -287,7 +287,7 @@ export default function OnboardingScreen() {
                 onClick={() => setStep(2)}
                 className="flex-1 py-3 rounded-xl text-sm font-medium"
                 style={{
-                  background: '#1a1a1a',
+                  background: '#333333',
                   color: '#888',
                   border: '1px solid #2a2a2a',
                 }}
@@ -299,8 +299,8 @@ export default function OnboardingScreen() {
                 disabled={!startCity}
                 className="flex-1 py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-1 transition-all"
                 style={{
-                  background: startCity ? '#4ade80' : '#1a1a1a',
-                  color: startCity ? '#0a0a0a' : '#444',
+                  background: startCity ? '#4ade80' : '#333333',
+                  color: startCity ? '#222222' : '#444',
                   cursor: startCity ? 'pointer' : 'not-allowed',
                 }}
               >
@@ -317,7 +317,7 @@ export default function OnboardingScreen() {
 
             <div
               className="rounded-xl p-4 flex flex-col gap-3"
-              style={{ background: '#111', border: '1px solid #2a2a2a' }}
+              style={{ background: '#2b2b2b', border: '1px solid #2a2a2a' }}
             >
               <div className="flex justify-between items-center">
                 <span className="text-xs" style={{ color: '#666' }}>
@@ -347,7 +347,7 @@ export default function OnboardingScreen() {
 
             <div
               className="rounded-xl p-4"
-              style={{ background: '#111', border: '1px solid #2a2a2a' }}
+              style={{ background: '#2b2b2b', border: '1px solid #2a2a2a' }}
             >
               <p
                 className="text-xs font-medium mb-3 tracking-widest uppercase"
@@ -370,7 +370,7 @@ export default function OnboardingScreen() {
 
             <div
               className="rounded-xl p-4"
-              style={{ background: '#111', border: '1px solid #2a2a2a' }}
+              style={{ background: '#2b2b2b', border: '1px solid #2a2a2a' }}
             >
               <p
                 className="text-xs font-medium mb-2 tracking-widest uppercase"
@@ -398,7 +398,7 @@ export default function OnboardingScreen() {
                 disabled={loading}
                 className="flex-1 py-3 rounded-xl text-sm font-medium"
                 style={{
-                  background: '#1a1a1a',
+                  background: '#333333',
                   color: '#888',
                   border: '1px solid #2a2a2a',
                 }}
@@ -411,7 +411,7 @@ export default function OnboardingScreen() {
                 className="flex-1 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all"
                 style={{
                   background: loading ? '#1a2e1a' : '#4ade80',
-                  color: loading ? '#4ade80' : '#0a0a0a',
+                  color: loading ? '#4ade80' : '#222222',
                 }}
               >
                 {loading ? (

@@ -54,15 +54,15 @@ export function usePassiveIncome() {
         const sh = safeHouses.find((s) => s.id === region.id);
         const hasSurv =
           sh?.assignedDivisions.includes('surveillance' as DivisionId) ?? false;
-        const newAlert = decayAlertLevel(region.alertLevel, hasSurv);
+        const hasJammer = sh?.modules.includes('signal_jammer') ?? false;
+        const newAlert = decayAlertLevel(region.alertLevel, hasSurv, hasJammer);
         if (Math.abs(newAlert - region.alertLevel) > 0.001) {
           await db.regions.update(region.id, { alertLevel: newAlert });
         }
       }
     }
 
-    // First tick after 30s delay
-    tick(); // run immediately on mount
+    tick(); // run once immediately on mount, then every 30s
     const id = setInterval(tick, TICK_INTERVAL);
     return () => clearInterval(id);
   }, [loaded, addCurrencies]);

@@ -14,12 +14,14 @@ import {
   distributeXp,
   rollInjury,
   healingDuration,
+  type MissionApproach,
 } from '../engine/missionResolver';
 import { canRankUp, rankUp } from '../engine/agentGenerator';
 import {
   generateMissionsForRegion,
   missionsNeeded,
   generateRescueMission,
+  generateChainMission,
   MISSION_REGEN_INTERVAL_MS,
   MAX_MISSIONS_PER_REGION,
 } from '../engine/missionGenerator';
@@ -33,6 +35,13 @@ const RESCUE_EQUIPMENT_SELL_REFUND = 0.3;
 // Types
 // ─────────────────────────────────────────────
 
+export interface InjuredAgentInfo {
+  id: string;
+  name: string;
+  severity: string;
+  healsAt: number;
+}
+
 export interface CompletedMissionResult {
   activeMission: ActiveMission;
   mission: Mission;
@@ -40,6 +49,7 @@ export interface CompletedMissionResult {
   rewards: import('../db/schema').MissionRewards;
   alertGain: number;
   affectedAgentIds: string[];
+  injuredAgents: InjuredAgentInfo[];
   rankedUpAgents: Array<{ id: string; name: string; newRank: string }>;
 }
 
@@ -60,6 +70,7 @@ interface MissionStore {
     mission: Mission,
     agents: Agent[],
     equippedIds?: string[],
+    approach?: MissionApproach,
   ) => Promise<void>;
   collectResult: (
     activeMissionId: string,
@@ -71,6 +82,9 @@ interface MissionStore {
 
   /** Check for and remove expired missions, top up region missions if needed. */
   checkExpirations: (regionId: string) => Promise<void>;
+
+  /** Clear non-rescue missions for a region and immediately regenerate with current divisions. */
+  invalidateRegionMissions: (regionId: string) => Promise<void>;
 
   /** Forcefully refresh active missions from DB (e.g. after reopening app). */
   refreshActive: () => Promise<void>;
@@ -120,7 +134,13 @@ export const useMissionStore = create<MissionStore>()(
     },
 
     // ── Dispatch a mission ─────────────────────
-    dispatch: async (mission, agents, equippedIds = []) => {
+    dispatch: async (mission, agents, equippedIds = [], approach = 'standard') => {
+      // Deduct intel cost if required
+      if (mission.intelCost && mission.intelCost > 0) {
+        const ok = useGameStore.getState().spendCurrencies({ intel: mission.intelCost });
+        if (!ok) return; // not enough intel
+      }
+
       // Read current alert level for the region before dispatching
       const region = await db.regions.get(mission.regionId);
       const alertLevel = region?.alertLevel ?? 0;
@@ -129,6 +149,7 @@ export const useMissionStore = create<MissionStore>()(
         agents,
         equippedIds,
         alertLevel,
+        approach,
       );
 
       // Persist
@@ -186,8 +207,23 @@ export const useMissionStore = create<MissionStore>()(
       const agents = (await db.agents.bulkGet(activeMission.agentIds)).filter(
         Boolean,
       ) as Agent[];
-      const perAgentXp = distributeXp(result, rewards.xp, agents.length);
+
+      // Fetch safe house modules for this region
+      const missionSafeHouse = await db.safeHouses.get(mission.regionId);
+      const shModules = missionSafeHouse?.modules ?? [];
+      const hasTrainingCenter = shModules.includes('training_center');
+      const hasBlackSite = shModules.includes('black_site');
+      const hasMedBay = shModules.includes('med_bay');
+
+      // Apply module adjustments
+      const basePerAgentXp = distributeXp(result, rewards.xp, agents.length);
+      const perAgentXp = hasTrainingCenter
+        ? Math.round(basePerAgentXp * 1.25)
+        : basePerAgentXp;
+      const effectiveAlertGain = hasBlackSite ? alertGain * 0.8 : alertGain;
+
       const affectedAgentIds: string[] = [];
+      const injuredAgents: InjuredAgentInfo[] = [];
       const rankedUpAgents: Array<{
         id: string;
         name: string;
@@ -207,7 +243,8 @@ export const useMissionStore = create<MissionStore>()(
           // Apply to each agent
           for (const agent of agents) {
             const injury = rollInjury(result, mission.difficulty);
-            const healTime = healingDuration(injury);
+            let healTime = healingDuration(injury);
+            if (hasMedBay && healTime > 0) healTime = Math.ceil(healTime / 2);
 
             const updatedAgent: Partial<Agent> = {
               status: 'available',
@@ -225,6 +262,12 @@ export const useMissionStore = create<MissionStore>()(
               updatedAgent.injuredAt = Date.now();
               updatedAgent.healsAt = Date.now() + healTime * 1000;
               affectedAgentIds.push(agent.id);
+              injuredAgents.push({
+                id: agent.id,
+                name: agent.name,
+                severity: injury,
+                healsAt: Date.now() + healTime * 1000,
+              });
             }
 
             // Catastrophe: capture one agent (first in list)
@@ -373,7 +416,10 @@ export const useMissionStore = create<MissionStore>()(
           // Update region alert level + missionTier
           const region = await db.regions.get(mission.regionId);
           if (region) {
-            const newAlert = Math.min(3, (region.alertLevel ?? 0) + alertGain);
+            const newAlert = Math.min(
+              3,
+              (region.alertLevel ?? 0) + effectiveAlertGain,
+            );
             const regionUpdates: Partial<typeof region> = {
               alertLevel: newAlert,
             };
@@ -406,11 +452,30 @@ export const useMissionStore = create<MissionStore>()(
             result,
             rewards,
             completedAt: Date.now(),
-            alertGain,
+            alertGain: effectiveAlertGain,
           };
           await db.missionLog.add(logEntry);
         },
       );
+
+      // Chain follow-up on success
+      if (result === 'success' && mission.chainNextTargetId) {
+        const chainRegion = await db.regions.get(mission.regionId);
+        const currentIds = chainRegion?.availableMissionIds ?? [];
+        if (currentIds.length < MAX_MISSIONS_PER_REGION) {
+          const followUp = generateChainMission(
+            mission.regionId,
+            chainRegion?.alertLevel ?? 0,
+            mission.chainNextTargetId,
+          );
+          if (followUp) {
+            await db.missions.add(followUp);
+            await db.regions.update(mission.regionId, {
+              availableMissionIds: [...currentIds, followUp.id],
+            });
+          }
+        }
+      }
 
       // Apply currency rewards to gameStore
       const gameStore = useGameStore.getState();
@@ -447,8 +512,9 @@ export const useMissionStore = create<MissionStore>()(
         mission,
         result,
         rewards,
-        alertGain,
+        alertGain: effectiveAlertGain,
         affectedAgentIds,
+        injuredAgents,
         rankedUpAgents,
       };
 
@@ -640,6 +706,27 @@ export const useMissionStore = create<MissionStore>()(
           s.availableMissions = workingValid;
         });
       }
+    },
+
+    // ── Invalidate & regenerate missions for a region ──
+    invalidateRegionMissions: async (regionId) => {
+      const region = await db.regions.get(regionId);
+      if (!region) return;
+      const ids = region.availableMissionIds ?? [];
+      const missions = (await db.missions.bulkGet(ids)).filter(
+        Boolean,
+      ) as Mission[];
+      // Keep rescue missions intact, delete everything else
+      const toDelete = missions.filter((m) => !m.isRescue);
+      const toKeep = missions.filter((m) => m.isRescue);
+      if (toDelete.length > 0) {
+        await db.missions.bulkDelete(toDelete.map((m) => m.id));
+      }
+      await db.regions.update(regionId, {
+        availableMissionIds: toKeep.map((m) => m.id),
+        lastMissionGeneratedAt: undefined, // reset so checkExpirations fires immediately
+      });
+      await get().checkExpirations(regionId);
     },
 
     // ── Refresh active from DB ─────────────────

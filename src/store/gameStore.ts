@@ -67,6 +67,7 @@ interface GameStore {
   incrementStat: (stat: 'missions' | 'agents' | 'expansions') => void;
   incrementMissionAttempted: () => void;
   incrementMissionCompleted: () => void;
+  getPlayTimeSecs: () => number;
   reset: () => void;
   _persist: () => void;
 }
@@ -197,6 +198,8 @@ export const useGameStore = create<GameStore>()(
       });
       get()._persist();
     },
+    getPlayTimeSecs: () =>
+      _loadedPlayTime + Math.round((Date.now() - _sessionStartedAt) / 1000),
     reset: () => {
       set((state) => {
         state.loaded = false;

@@ -20,6 +20,7 @@ import { db } from '../db/db';
 import type { Agent, AgentStatus, SafeHouse } from '../db/schema';
 import type { AgentRank } from '../data/agentTypes';
 import { DIVISIONS } from '../data/agentTypes';
+import { AGENT_TYPES } from '../data/agentTypes';
 import { REGION_MAP } from '../data/regions';
 
 // ─────────────────────────────────────────────
@@ -154,7 +155,7 @@ function StatBar({
       </span>
       <div
         className="flex-1 h-1.5 rounded-full overflow-hidden"
-        style={{ background: '#1a1a1a' }}
+        style={{ background: '#333333' }}
       >
         <div
           className="h-full rounded-full"
@@ -228,7 +229,7 @@ function AgentCard({
     <button
       onClick={() => onTap(agent)}
       className="w-full text-left rounded-xl p-3 flex items-center gap-3 transition-all"
-      style={{ background: '#111', border: '1px solid #2a2a2a' }}
+      style={{ background: '#2b2b2b', border: '1px solid #2a2a2a' }}
     >
       {/* Avatar */}
       <div
@@ -263,13 +264,16 @@ function AgentCard({
           >
             {divisionName(agent.division)}
           </span>
+          <span className="text-xs" style={{ color: '#666' }}>
+            {AGENT_TYPES.find((t) => t.id === agent.typeId)?.name ?? agent.typeId}
+          </span>
+          <span className="text-xs" style={{ color: '#444' }}>·</span>
           <span className="text-xs" style={{ color: '#555' }}>
             {RANK_LABEL[agent.rank]}
           </span>
+        </div>
+        <div className="flex items-center gap-1 mt-0.5">
           <span className="text-xs" style={{ color: '#444' }}>
-            ·
-          </span>
-          <span className="text-xs" style={{ color: '#555' }}>
             📍 {REGION_MAP.get(agent.safeHouseId)?.name ?? agent.safeHouseId}
           </span>
         </div>
@@ -460,7 +464,7 @@ function AgentDetailModal({
     >
       <div
         className="rounded-t-2xl flex flex-col max-h-[90vh] overflow-y-auto"
-        style={{ background: '#0f0f0f', border: '1px solid #2a2a2a' }}
+        style={{ background: '#262626', border: '1px solid #2a2a2a' }}
       >
         {/* Color accent */}
         <div className="h-1 rounded-t-2xl" style={{ background: color }} />
@@ -504,12 +508,22 @@ function AgentDetailModal({
                         className="w-1.5 h-1.5 rounded-full"
                         style={{
                           background:
-                            i < RANK_STARS[agent.rank] ? color : '#2a2a2a',
+                            i < RANK_STARS[agent.rank] ? color : '#444444',
                         }}
                       />
                     ))}
                   </span>
                 </div>
+                {(() => {
+                  const agentTypeName = AGENT_TYPES.find(
+                    (t) => t.id === agent.typeId,
+                  )?.name;
+                  return agentTypeName ? (
+                    <p className="text-xs mt-0.5" style={{ color: '#555' }}>
+                      {agentTypeName}
+                    </p>
+                  ) : null;
+                })()}
                 <p className="text-xs mt-1" style={{ color: '#555' }}>
                   📍{' '}
                   {REGION_MAP.get(agent.safeHouseId)?.name ?? agent.safeHouseId}
@@ -562,9 +576,9 @@ function AgentDetailModal({
                 disabled={!canAffordHeal}
                 className="text-xs px-2.5 py-1 rounded-lg font-semibold flex items-center gap-1"
                 style={{
-                  background: canAffordHeal ? '#4ade8022' : '#1a1a1a',
+                  background: canAffordHeal ? '#4ade8022' : '#333333',
                   color: canAffordHeal ? '#4ade80' : '#444',
-                  border: `1px solid ${canAffordHeal ? '#4ade8044' : '#2a2a2a'}`,
+                  border: `1px solid ${canAffordHeal ? '#4ade8044' : '#444444'}`,
                   cursor: canAffordHeal ? 'pointer' : 'not-allowed',
                 }}
               >
@@ -579,7 +593,7 @@ function AgentDetailModal({
           {/* Stats */}
           <div
             className="rounded-xl p-3 flex flex-col gap-2"
-            style={{ background: '#111' }}
+            style={{ background: '#2b2b2b' }}
           >
             <p
               className="text-xs font-medium tracking-widest uppercase mb-1"
@@ -600,7 +614,7 @@ function AgentDetailModal({
           {/* XP / Rank */}
           <div
             className="rounded-xl p-3 flex flex-col gap-2"
-            style={{ background: '#111' }}
+            style={{ background: '#2b2b2b' }}
           >
             <div className="flex items-center justify-between">
               <p
@@ -621,7 +635,7 @@ function AgentDetailModal({
             </div>
             <div
               className="h-2 rounded-full overflow-hidden"
-              style={{ background: '#1a1a1a' }}
+              style={{ background: '#333333' }}
             >
               <div
                 className="h-full rounded-full transition-all"
@@ -643,7 +657,7 @@ function AgentDetailModal({
           </div>
 
           {/* Mission stats */}
-          <div className="rounded-xl p-3" style={{ background: '#111' }}>
+          <div className="rounded-xl p-3" style={{ background: '#2b2b2b' }}>
             <p
               className="text-xs font-medium tracking-widest uppercase mb-3"
               style={{ color: '#555' }}
@@ -693,7 +707,7 @@ function AgentDetailModal({
           </div>
 
           {/* Equipment slots */}
-          <div className="rounded-xl p-3" style={{ background: '#111' }}>
+          <div className="rounded-xl p-3" style={{ background: '#2b2b2b' }}>
             <p
               className="text-xs font-medium tracking-widest uppercase mb-3"
               style={{ color: '#555' }}
@@ -712,7 +726,7 @@ function AgentDetailModal({
                       key={i}
                       className="h-9 rounded-xl flex items-center justify-center"
                       style={{
-                        background: '#0a0a0a',
+                        background: '#222222',
                         border: '1px dashed #252525',
                       }}
                     >
@@ -795,7 +809,7 @@ function AgentDetailModal({
                             key={b.label}
                             className="text-[10px] px-1.5 py-0.5 rounded font-mono"
                             style={{
-                              background: '#1a1a1a',
+                              background: '#333333',
                               color: rankLocked
                                 ? '#555'
                                 : b.positive
@@ -846,7 +860,7 @@ function AgentDetailModal({
             >
               <div
                 className="rounded-t-2xl flex flex-col max-h-[65vh]"
-                style={{ background: '#0f0f0f', border: '1px solid #2a2a2a' }}
+                style={{ background: '#262626', border: '1px solid #2a2a2a' }}
               >
                 <div className="flex justify-center pt-3 pb-1">
                   <div
@@ -883,7 +897,7 @@ function AgentDetailModal({
                         onClick={() => doTransfer(ta)}
                         className="text-left rounded-xl p-3 flex items-center gap-3"
                         style={{
-                          background: '#111',
+                          background: '#2b2b2b',
                           border: '1px solid #2a2a2a',
                         }}
                       >
@@ -1006,7 +1020,7 @@ function AgentDetailModal({
             >
               <div
                 className="rounded-2xl p-5 w-full max-w-xs"
-                style={{ background: '#111', border: '1px solid #2a2a2a' }}
+                style={{ background: '#2b2b2b', border: '1px solid #2a2a2a' }}
               >
                 <p
                   className="text-base font-bold mb-1"
@@ -1038,7 +1052,7 @@ function AgentDetailModal({
                   <button
                     onClick={() => setShowDismiss(false)}
                     className="flex-1 py-2 rounded-xl text-sm font-medium"
-                    style={{ background: '#1a1a1a', color: '#888' }}
+                    style={{ background: '#333333', color: '#888' }}
                   >
                     Zrušit
                   </button>
@@ -1066,7 +1080,7 @@ function AgentDetailModal({
             >
               <div
                 className="rounded-t-2xl"
-                style={{ background: '#0f0f0f', border: '1px solid #2a2a2a' }}
+                style={{ background: '#262626', border: '1px solid #2a2a2a' }}
               >
                 <div
                   className="h-1 rounded-t-2xl"
@@ -1120,7 +1134,7 @@ function AgentDetailModal({
                             }
                             className="flex items-center gap-3 p-3 rounded-xl"
                             style={{
-                              background: '#111',
+                              background: '#2b2b2b',
                               border: '1px solid #2a2a2a',
                               opacity: full || !canAfford ? 0.4 : 1,
                               cursor:
@@ -1253,7 +1267,7 @@ export default function AgentsScreen() {
   return (
     <div
       className="flex flex-col min-h-full pb-20"
-      style={{ background: '#0a0a0a', color: '#e8e8e8' }}
+      style={{ background: '#222222', color: '#e8e8e8' }}
     >
       {/* Header */}
       <div className="px-4 pt-4 pb-4">
@@ -1286,9 +1300,9 @@ export default function AgentsScreen() {
                 onClick={() => setFilter(tab.id)}
                 className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
                 style={{
-                  background: active ? '#4ade8022' : '#111',
+                  background: active ? '#4ade8022' : '#2b2b2b',
                   color: active ? '#4ade80' : '#666',
-                  border: `1px solid ${active ? '#4ade8044' : '#1a1a1a'}`,
+                  border: `1px solid ${active ? '#4ade8044' : '#333333'}`,
                 }}
               >
                 {tab.label}
@@ -1296,7 +1310,7 @@ export default function AgentsScreen() {
                   <span
                     className="px-1 min-w-4 text-center rounded text-[10px]"
                     style={{
-                      background: active ? '#4ade8033' : '#1a1a1a',
+                      background: active ? '#4ade8033' : '#333333',
                       color: active ? '#4ade80' : '#555',
                     }}
                   >
@@ -1316,12 +1330,12 @@ export default function AgentsScreen() {
             <div
               key={i}
               className="rounded-xl h-16 animate-pulse"
-              style={{ background: '#111' }}
+              style={{ background: '#2b2b2b' }}
             />
           ))
         ) : sorted.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
-            <Users size={48} style={{ color: '#1a1a1a' }} />
+            <Users size={48} style={{ color: '#333333' }} />
             <p className="text-sm" style={{ color: '#555' }}>
               {filter === 'all'
                 ? 'Žádní agenti'
