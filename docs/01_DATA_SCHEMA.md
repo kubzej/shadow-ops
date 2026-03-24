@@ -171,6 +171,8 @@ interface RegionState {
 
   /** Minimální floor obtížnosti (0–4). Narůstá s počtem dokončených misí, nikdy neklesá. */
   missionTier?: number;
+  /** Timestamp kdy se má příště spawnout Flash Operation v tomto regionu. Persistováno do DB. */
+  nextFlashMissionAt?: number;
 }
 ```
 
@@ -225,6 +227,7 @@ interface Mission {
   alertGain: number; // před approach/module modifikátory
   isRescue?: boolean;
   capturedAgentId?: string; // u rescue misí: ID zachraňovaného agenta
+  isFlash?: boolean; // Flash Operation — speciální typ, viz Game Mechanics
 
   intelCost?: number; // intel potřebný k odeslání
 

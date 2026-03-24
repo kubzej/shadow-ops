@@ -23,16 +23,19 @@ import { C, cardBase, DIVISION_COLOR } from '../styles/tokens';
 
 async function exitDemo(navigate: ReturnType<typeof useNavigate>) {
   const previousSlotId = sessionStorage.getItem('shadow-ops-pre-demo-slot');
+  useUIStore.getState().setDemoMode(false);
+  sessionStorage.removeItem('shadow-ops-pre-demo-slot');
+
   if (previousSlotId) {
     activateSlot(previousSlotId);
     localStorage.setItem('shadow-ops-active-slot', previousSlotId);
     await loadGame();
-    useUIStore.getState().setDemoMode(false);
     navigate('/map');
   } else {
-    useUIStore.getState().setDemoMode(false);
-    useGameStore.getState().reset();
-    navigate('/');
+    // No previous slot — clear demo slot and go to slot picker via the
+    // saveSwitchRequested mechanism so App.tsx handles the appState transition
+    localStorage.removeItem('shadow-ops-active-slot');
+    useUIStore.getState().requestSaveSelect();
   }
 }
 
@@ -151,6 +154,8 @@ export default function DemoScreen() {
     setResetting(true);
     try {
       await seedDemoDb(true); // force re-seed
+      // Pre-select Amsterdam so Missions screen shows flash mission immediately
+      useUIStore.getState().selectRegion('amsterdam');
       setAgentCount(await db.agents.filter((a) => a.status !== 'dead').count());
     } catch (err) {
       console.error('[DemoScreen] Reset failed:', err);
@@ -174,7 +179,10 @@ export default function DemoScreen() {
       >
         <FlaskConical size={22} color={C.green} />
         <div className="flex-1">
-          <p className="text-sm font-bold tracking-widest" style={{ color: C.green }}>
+          <p
+            className="text-sm font-bold tracking-widest"
+            style={{ color: C.green }}
+          >
             DEMO MODE
           </p>
           <p className="text-xs" style={{ color: C.textMuted }}>
@@ -223,12 +231,18 @@ export default function DemoScreen() {
           <div className="rounded-xl p-4 flex flex-col gap-3" style={cardBase}>
             {/* Agency */}
             <div className="flex items-center justify-between">
-              <span className="text-xs" style={{ color: C.textMuted }}>Agentura</span>
+              <span className="text-xs" style={{ color: C.textMuted }}>
+                Agentura
+              </span>
               <span className="text-sm font-semibold">{agencyName || '—'}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs" style={{ color: C.textMuted }}>Ředitel</span>
-              <span className="text-sm" style={{ color: C.textSecondary }}>{bossName || '—'}</span>
+              <span className="text-xs" style={{ color: C.textMuted }}>
+                Ředitel
+              </span>
+              <span className="text-sm" style={{ color: C.textSecondary }}>
+                {bossName || '—'}
+              </span>
             </div>
             {/* Currencies */}
             <div
@@ -239,11 +253,19 @@ export default function DemoScreen() {
                 { label: 'Peníze', value: currencies.money, color: C.green },
                 { label: 'Intel', value: currencies.intel, color: C.blue },
                 { label: 'Shadow', value: currencies.shadow, color: C.bm },
-                { label: 'Vliv', value: currencies.influence, color: C.divExtraction },
+                {
+                  label: 'Vliv',
+                  value: currencies.influence,
+                  color: C.divExtraction,
+                },
               ].map(({ label, value, color }) => (
                 <div key={label} className="flex flex-col items-center gap-0.5">
-                  <span className="text-sm font-bold" style={{ color }}>{value}</span>
-                  <span className="text-[10px]" style={{ color: C.textMuted }}>{label}</span>
+                  <span className="text-sm font-bold" style={{ color }}>
+                    {value}
+                  </span>
+                  <span className="text-[10px]" style={{ color: C.textMuted }}>
+                    {label}
+                  </span>
                 </div>
               ))}
             </div>
@@ -252,11 +274,17 @@ export default function DemoScreen() {
               className="flex items-center justify-between pt-2"
               style={{ borderTop: `1px solid ${C.borderSubtle}` }}
             >
-              <span className="text-xs" style={{ color: C.textMuted }}>Mise splněny</span>
-              <span className="text-sm font-semibold">{totalMissionsCompleted}</span>
+              <span className="text-xs" style={{ color: C.textMuted }}>
+                Mise splněny
+              </span>
+              <span className="text-sm font-semibold">
+                {totalMissionsCompleted}
+              </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs" style={{ color: C.textMuted }}>Aktivní agenti</span>
+              <span className="text-xs" style={{ color: C.textMuted }}>
+                Aktivní agenti
+              </span>
               <span className="text-sm font-semibold">{agentCount}</span>
             </div>
           </div>
@@ -323,23 +351,39 @@ export default function DemoScreen() {
           </button>
 
           {showDesign && (
-            <div className="rounded-xl p-4 mt-2 flex flex-col gap-4" style={cardBase}>
+            <div
+              className="rounded-xl p-4 mt-2 flex flex-col gap-4"
+              style={cardBase}
+            >
               {/* Base colors */}
               <div>
-                <p className="text-xs mb-2" style={{ color: C.textMuted }}>Základní barvy</p>
+                <p className="text-xs mb-2" style={{ color: C.textMuted }}>
+                  Základní barvy
+                </p>
                 <div className="grid grid-cols-2 gap-2">
                   <Swatch color={C.green} label={`Primary green ${C.green}`} />
                   <Swatch color={C.bgBase} label={`Background ${C.bgBase}`} />
                   <Swatch color={C.bgSurface} label={`Card ${C.bgSurface}`} />
-                  <Swatch color={C.borderDefault} label={`Border ${C.borderDefault}`} />
-                  <Swatch color={C.textPrimary} label={`Text primary ${C.textPrimary}`} />
-                  <Swatch color={C.textSecondary} label={`Text muted ${C.textSecondary}`} />
+                  <Swatch
+                    color={C.borderDefault}
+                    label={`Border ${C.borderDefault}`}
+                  />
+                  <Swatch
+                    color={C.textPrimary}
+                    label={`Text primary ${C.textPrimary}`}
+                  />
+                  <Swatch
+                    color={C.textSecondary}
+                    label={`Text muted ${C.textSecondary}`}
+                  />
                 </div>
               </div>
 
               {/* Division colors */}
               <div>
-                <p className="text-xs mb-2" style={{ color: C.textMuted }}>Divize</p>
+                <p className="text-xs mb-2" style={{ color: C.textMuted }}>
+                  Divize
+                </p>
                 <div className="grid grid-cols-2 gap-2">
                   {Object.entries(DIVISION_COLOR).map(([div, color]) => (
                     <Swatch key={div} color={color} label={`${div}`} />
@@ -349,7 +393,9 @@ export default function DemoScreen() {
 
               {/* Status badges */}
               <div>
-                <p className="text-xs mb-2" style={{ color: C.textMuted }}>Stav agenta</p>
+                <p className="text-xs mb-2" style={{ color: C.textMuted }}>
+                  Stav agenta
+                </p>
                 <div className="flex flex-wrap gap-2">
                   {Object.keys(STATUS_COLORS).map((s) => (
                     <StatusBadge key={s} status={s} />

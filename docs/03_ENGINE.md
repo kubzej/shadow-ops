@@ -227,6 +227,29 @@ Fallback pro neznámou kategorii: generické popisy dle severity.
 - Poslední mise + missionTier > 0: minDiff = missionTier + 1 (garantovaná výzva pro veterány)
 - Zbytek: normální generateMission()
 
+### generateFlashMission(regionId, alertLevel, availableDivisions?)
+
+```
+1. Kategorie: stejný weighted pick jako generateMission() (ovlivněný alertLevel + available divisions)
+2. Obtížnost: max(3, min(5, 3 + round(effectiveAlert × 0.6 + rand(−0.3, 0.3))))
+   → Vždy diff 3–5, nikdy méně
+3. Komplíkace: vyšší pravděpodobnost (urgentnost = méně přípravy)
+   chance = 0.1 + difficulty × 0.1
+4. Rewards: normální výpočet × 1.5 (shadow bonus +8 se přidává v collectResult)
+5. expiresAt: now + 5 minut (pouze dispatch window, mise samá trvá normálně)
+6. isFlash: true
+```
+
+**Konstanty:**
+
+```
+FLASH_MISSION_INTERVAL_MIN_MS = 10 × 60 × 1000   // 10 minut
+FLASH_MISSION_INTERVAL_MAX_MS = 15 × 60 × 1000   // 15 minut
+FLASH_MISSION_MIN_TIER        = 2                 // missionTier potřebný pro spawn
+FLASH_MISSION_EXPIRY_MS       = 5 × 60 × 1000    // 5 minut
+FLASH_MISSION_SHADOW_BONUS    = 8                 // garantovaný shadow bonus
+```
+
 ### generateRescueMission(regionId, capturedAgentId, agentName, alertLevel)
 
 ```

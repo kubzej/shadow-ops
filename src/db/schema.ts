@@ -109,6 +109,8 @@ export interface RegionState {
   constructionCompletesAt?: number;
   /** Persistent minimum difficulty floor (0–4). Increases as missions are completed here, never decreases. */
   missionTier?: number;
+  /** Timestamp when the next Flash Operation should spawn for this region. */
+  nextFlashMissionAt?: number;
 }
 
 // ============ MISSION ============
@@ -147,6 +149,7 @@ export interface Mission {
   alertGain: number;
   isRescue?: boolean;
   capturedAgentId?: string; // set on rescue missions — agent to free on success/partial
+  isFlash?: boolean; // Flash Operation — 5 min dispatch window, ×1.5 rewards + guaranteed shadow bonus
   expiresAt?: number; // timestamp
   createdAt: number;
 }

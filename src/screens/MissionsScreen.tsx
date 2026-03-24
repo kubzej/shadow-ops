@@ -161,9 +161,34 @@ function Countdown({ completesAt }: { completesAt: number }) {
   return <span>{formatDuration(remaining)}</span>;
 }
 
-// ─────────────────────────────────────────────
-// Active mission card
-// ─────────────────────────────────────────────
+// Flash-specific countdown: blinks red when under 60 seconds
+function FlashCountdown({ expiresAt }: { expiresAt: number }) {
+  const [remaining, setRemaining] = useState(
+    Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000)),
+  );
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setRemaining(Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000)));
+    }, 500);
+    return () => clearInterval(id);
+  }, [expiresAt]);
+
+  const isCritical = remaining <= 60;
+  return (
+    <span
+      style={{
+        color: isCritical ? C.red : C.divExtraction,
+        fontWeight: 600,
+        animation: isCritical
+          ? 'flash-blink 0.8s ease-in-out infinite'
+          : undefined,
+      }}
+    >
+      {formatDuration(remaining)}
+    </span>
+  );
+}
 
 function ActiveMissionCard({
   active,
@@ -500,8 +525,19 @@ function MissionCard({
           ) : null;
         })()}
 
-      {/* Expiry warning */}
-      {mission.expiresAt && (
+      {/* Flash expiry — replaces normal expiry row for flash missions */}
+      {mission.isFlash && mission.expiresAt && (
+        <div
+          className="flex items-center gap-1 text-xs"
+          style={{ color: C.yellow }}
+        >
+          <Zap size={11} />
+          Okno zavírá za <FlashCountdown expiresAt={mission.expiresAt} />
+        </div>
+      )}
+
+      {/* Normal expiry warning (non-flash) */}
+      {!mission.isFlash && mission.expiresAt && (
         <div
           className="flex items-center gap-1 text-xs"
           style={{ color: '#f97316' }}

@@ -1,7 +1,10 @@
 import { db, activateSlot } from '../db/db';
 import { initializeGame, loadGame } from '../engine/initializeGame';
 import { createAgent, generateRecruitmentPool } from '../engine/agentGenerator';
-import { generateMissionsForRegion } from '../engine/missionGenerator';
+import {
+  generateMissionsForRegion,
+  generateFlashMission,
+} from '../engine/missionGenerator';
 import type { DivisionId } from '../data/agentTypes';
 import type { Mission, ActiveMission } from '../db/schema';
 
@@ -29,12 +32,25 @@ export async function seedDemoDb(force = false): Promise<void> {
     }
 
     // ── 1. Base init ──────────────────────────────────────────────────────────
-    await initializeGame('PHANTOM NETWORK', 'Director Wolf', 'london', 'eye', DEMO_SLOT_ID);
+    await initializeGame(
+      'PHANTOM NETWORK',
+      'Director Wolf',
+      'london',
+      'eye',
+      DEMO_SLOT_ID,
+    );
 
     // ── 2. Upgrade game state ─────────────────────────────────────────────────
     const allDivisions: DivisionId[] = [
-      'surveillance', 'cyber', 'extraction', 'sabotage', 'influence',
-      'finance', 'logistics', 'medical', 'blackops',
+      'surveillance',
+      'cyber',
+      'extraction',
+      'sabotage',
+      'influence',
+      'finance',
+      'logistics',
+      'medical',
+      'blackops',
     ];
     const divisionLevels: Record<DivisionId, number> = {
       surveillance: 2,
@@ -63,7 +79,11 @@ export async function seedDemoDb(force = false): Promise<void> {
     // ── 3. Upgrade London safe house ──────────────────────────────────────────
     await db.safeHouses.update('london', {
       level: 3,
-      assignedDivisions: ['surveillance', 'cyber', 'extraction'] as DivisionId[],
+      assignedDivisions: [
+        'surveillance',
+        'cyber',
+        'extraction',
+      ] as DivisionId[],
       modules: ['training_center', 'black_site', 'med_bay'],
     });
 
@@ -83,7 +103,10 @@ export async function seedDemoDb(force = false): Promise<void> {
       owned: true,
       safeHouseId: 'amsterdam',
       alertLevel: 1.2,
-      missionTier: 1,
+      // missionTier 2 = eligible for Flash Operations
+      missionTier: 2,
+      // Schedule next flash spawn 12 min from now (demo: first one is seeded manually)
+      nextFlashMissionAt: now + 12 * 60 * 1000,
     });
 
     // ── 5. Add Berlin safe house (under construction) ─────────────────────────
@@ -321,7 +344,13 @@ export async function seedDemoDb(force = false): Promise<void> {
       baseSuccessChance: 0.65,
       baseDuration: 180,
       rewards: { money: 500, intel: 5, shadow: 2, influence: 0, xp: 120 },
-      failurePenalty: { money: -200, intel: -5, shadow: -3, influence: 0, xp: 0 },
+      failurePenalty: {
+        money: -200,
+        intel: -5,
+        shadow: -3,
+        influence: 0,
+        xp: 0,
+      },
       alertGain: 0.4,
       isRescue: true,
       capturedAgentId: agent8Id as string,
@@ -356,9 +385,23 @@ export async function seedDemoDb(force = false): Promise<void> {
     );
     await db.missions.bulkAdd(amsterdamMissions);
 
+    // Demo flash mission for Amsterdam — ends in ~3.5 min so blinking timer is visible
+    const demoFlash = generateFlashMission('amsterdam', 1.2, [
+      'blackops',
+      'sabotage',
+    ] as DivisionId[]);
+    const demoFlashWithExpiry: Mission = {
+      ...demoFlash,
+      title: demoFlash.title,
+      expiresAt: now + 3.5 * 60 * 1000,
+    };
+    await db.missions.add(demoFlashWithExpiry);
+
     await db.regions.update('amsterdam', {
-      availableMissionIds: amsterdamMissions.map((m) => m.id),
-      missionTier: 1,
+      availableMissionIds: [
+        ...amsterdamMissions.map((m) => m.id),
+        demoFlashWithExpiry.id,
+      ],
     });
 
     // ── 10. Active missions ───────────────────────────────────────────────────
@@ -417,7 +460,6 @@ export async function seedDemoDb(force = false): Promise<void> {
 
     // ── 12. Refresh game store ────────────────────────────────────────────────
     await loadGame();
-
   } catch (err) {
     console.error('[seedDemoDb] Failed to seed demo database:', err);
     throw err;

@@ -23,8 +23,13 @@ import {
   missionsNeeded,
   generateRescueMission,
   generateChainMission,
+  generateFlashMission,
   MISSION_REGEN_INTERVAL_MS,
   MAX_MISSIONS_PER_REGION,
+  FLASH_MISSION_INTERVAL_MIN_MS,
+  FLASH_MISSION_INTERVAL_MAX_MS,
+  FLASH_MISSION_MIN_TIER,
+  FLASH_MISSION_SHADOW_BONUS,
 } from '../engine/missionGenerator';
 import { useGameStore } from './gameStore';
 import { useUIStore } from './uiStore';
@@ -32,6 +37,9 @@ import { randomId } from '../utils/rng';
 import { EQUIPMENT_CATALOG } from '../data/equipmentCatalog';
 
 const RESCUE_EQUIPMENT_SELL_REFUND = 0.3;
+
+// Debounce flash spawn checks to run at most every 30s inside the 1s tick
+let _lastFlashCheck = 0;
 
 // ─────────────────────────────────────────────
 // Types
@@ -98,6 +106,68 @@ interface MissionStore {
 
   /** Forcefully refresh active missions from DB (e.g. after reopening app). */
   refreshActive: () => Promise<void>;
+}
+
+// ─────────────────────────────────────────────
+// Flash Operation spawn helper (called from tickMissions, debounced to 30s)
+// ─────────────────────────────────────────────
+
+async function _spawnFlashMissionsIfDue(now: number): Promise<void> {
+  // Find all owned regions with missionTier >= FLASH_MISSION_MIN_TIER
+  const eligibleRegions = await db.regions
+    .filter((r) => r.owned && (r.missionTier ?? 0) >= FLASH_MISSION_MIN_TIER)
+    .toArray();
+
+  for (const region of eligibleRegions) {
+    const nextAt = region.nextFlashMissionAt ?? 0;
+    if (now < nextAt) continue;
+
+    // Skip if there is already an active flash mission for this region
+    const ids = region.availableMissionIds;
+    const existing = (await db.missions.bulkGet(ids)).filter(
+      Boolean,
+    ) as import('../db/schema').Mission[];
+    const alreadyHasFlash = existing.some((m) => m.isFlash);
+    if (alreadyHasFlash) {
+      // Still schedule the next check even if we skip spawning this cycle
+      const nextInterval =
+        FLASH_MISSION_INTERVAL_MIN_MS +
+        Math.random() *
+          (FLASH_MISSION_INTERVAL_MAX_MS - FLASH_MISSION_INTERVAL_MIN_MS);
+      await db.regions.update(region.id, {
+        nextFlashMissionAt: now + nextInterval,
+      });
+      continue;
+    }
+
+    // Spawn the flash mission
+    const safehouse = await db.safeHouses.get(region.id);
+    const assignedDivisions = safehouse?.assignedDivisions?.filter(
+      (d) => d !== 'medical',
+    );
+    const flash = generateFlashMission(
+      region.id,
+      region.alertLevel ?? 0,
+      assignedDivisions,
+    );
+
+    await db.missions.add(flash);
+    const nextInterval =
+      FLASH_MISSION_INTERVAL_MIN_MS +
+      Math.random() *
+        (FLASH_MISSION_INTERVAL_MAX_MS - FLASH_MISSION_INTERVAL_MIN_MS);
+    await db.regions.update(region.id, {
+      availableMissionIds: [...ids, flash.id],
+      nextFlashMissionAt: now + nextInterval,
+    });
+
+    useUIStore
+      .getState()
+      .showToast(
+        'info',
+        `⚡ Urgentní mise v ${region.id} — 5 minut na odeslání!`,
+      );
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -573,18 +643,20 @@ export const useMissionStore = create<MissionStore>()(
         }
       }
 
-      // Apply currency rewards to gameStore
+      // Apply currency rewards to gameStore (flash missions get +8 shadow bonus)
       const gameStore = useGameStore.getState();
+      const flashShadowBonus = mission.isFlash ? FLASH_MISSION_SHADOW_BONUS : 0;
       if (
         rewards.money ||
         rewards.intel ||
         rewards.shadow ||
-        rewards.influence
+        rewards.influence ||
+        flashShadowBonus
       ) {
         gameStore.addCurrencies({
           money: rewards.money,
           intel: rewards.intel,
-          shadow: rewards.shadow,
+          shadow: rewards.shadow + flashShadowBonus,
           influence: rewards.influence,
         });
       }
@@ -706,6 +778,12 @@ export const useMissionStore = create<MissionStore>()(
           });
         }
 
+        // Flash Operation spawn (debounced to 30s)
+        if (now - _lastFlashCheck >= 30_000) {
+          _lastFlashCheck = now;
+          void _spawnFlashMissionsIfDue(now);
+        }
+
         // Recover stuck agents: on_mission but no matching active mission in DB
         const onMissionAgents = await db.agents
           .filter((a) => a.status === 'on_mission')
@@ -769,11 +847,11 @@ export const useMissionStore = create<MissionStore>()(
           true,
           undefined, // guaranteeEasy overrides minDifficulty
         )[0];
-        // If at max capacity, drop the newest non-rescue mission to make room
+        // If at max capacity, drop the newest non-rescue, non-flash mission to make room
         if (workingValid.length >= MAX_MISSIONS_PER_REGION) {
           const dropTarget = [...workingValid]
             .reverse()
-            .find((m) => !m.isRescue);
+            .find((m) => !m.isRescue && !m.isFlash);
           if (dropTarget) {
             await db.missions.delete(dropTarget.id);
             workingValid = workingValid.filter((m) => m.id !== dropTarget.id);
@@ -837,11 +915,13 @@ export const useMissionStore = create<MissionStore>()(
       const missions = (await db.missions.bulkGet(ids)).filter(
         Boolean,
       ) as Mission[];
-      // Keep rescue missions and locked chain missions intact, delete everything else
+      // Keep rescue missions, flash missions, and locked chain missions intact
       const toDelete = missions.filter(
-        (m) => !m.isRescue && !m.lockedByDivision,
+        (m) => !m.isRescue && !m.isFlash && !m.lockedByDivision,
       );
-      const toKeep = missions.filter((m) => m.isRescue || !!m.lockedByDivision);
+      const toKeep = missions.filter(
+        (m) => m.isRescue || m.isFlash || !!m.lockedByDivision,
+      );
       if (toDelete.length > 0) {
         await db.missions.bulkDelete(toDelete.map((m) => m.id));
       }
