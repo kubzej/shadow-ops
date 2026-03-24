@@ -2,9 +2,19 @@ import { useEffect, useState, useCallback } from 'react';
 import CityBar from '../components/CityBar';
 import CurrenciesBar from '../components/CurrenciesBar';
 import {
+  C,
+  cardBase,
+  activeTab,
+  btn,
+  modalSheet,
+  modalAccentBar,
+  modalOverlay,
+} from '../styles/tokens';
+import {
   AlertTriangle,
   ChevronRight,
   Clock,
+  Coins,
   Heart,
   Shield,
   Skull,
@@ -73,6 +83,13 @@ const RARITY_COLOR: Record<string, string> = {
   uncommon: '#4ade80',
   rare: '#60a5fa',
   legendary: '#f59e0b',
+};
+
+const RARITY_LABEL: Record<string, string> = {
+  common: 'Běžný',
+  uncommon: 'Neobvyklý',
+  rare: 'Vzácný',
+  legendary: 'Legendární',
 };
 
 // Fraction of buy price refunded when selling equipment
@@ -150,12 +167,12 @@ function StatBar({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs w-12 flex-shrink-0" style={{ color: '#666' }}>
+      <span className="text-xs w-12 flex-shrink-0" style={{ color: '#999' }}>
         {label}
       </span>
       <div
         className="flex-1 h-1.5 rounded-full overflow-hidden"
-        style={{ background: '#333333' }}
+        style={{ background: '#666666' }}
       >
         <div
           className="h-full rounded-full"
@@ -229,7 +246,7 @@ function AgentCard({
     <button
       onClick={() => onTap(agent)}
       className="w-full text-left rounded-xl p-3 flex items-center gap-3 transition-all"
-      style={{ background: '#2b2b2b', border: '1px solid #2a2a2a' }}
+      style={cardBase}
     >
       {/* Avatar */}
       <div
@@ -264,16 +281,19 @@ function AgentCard({
           >
             {divisionName(agent.division)}
           </span>
-          <span className="text-xs" style={{ color: '#666' }}>
-            {AGENT_TYPES.find((t) => t.id === agent.typeId)?.name ?? agent.typeId}
+          <span className="text-xs" style={{ color: '#999' }}>
+            {AGENT_TYPES.find((t) => t.id === agent.typeId)?.name ??
+              agent.typeId}
           </span>
-          <span className="text-xs" style={{ color: '#444' }}>·</span>
-          <span className="text-xs" style={{ color: '#555' }}>
+          <span className="text-xs" style={{ color: '#777' }}>
+            ·
+          </span>
+          <span className="text-xs" style={{ color: '#888' }}>
             {RANK_LABEL[agent.rank]}
           </span>
         </div>
         <div className="flex items-center gap-1 mt-0.5">
-          <span className="text-xs" style={{ color: '#444' }}>
+          <span className="text-xs" style={{ color: '#777' }}>
             📍 {REGION_MAP.get(agent.safeHouseId)?.name ?? agent.safeHouseId}
           </span>
         </div>
@@ -287,12 +307,12 @@ function AgentCard({
         >
           {statusMeta.label}
         </span>
-        <span className="text-xs font-mono" style={{ color: '#555' }}>
+        <span className="text-xs font-mono" style={{ color: '#888' }}>
           avg {avg}
         </span>
       </div>
 
-      <ChevronRight size={16} style={{ color: '#333', flexShrink: 0 }} />
+      <ChevronRight size={16} style={{ color: '#999', flexShrink: 0 }} />
     </button>
   );
 }
@@ -464,16 +484,13 @@ function AgentDetailModal({
     >
       <div
         className="rounded-t-2xl flex flex-col max-h-[90vh] overflow-y-auto"
-        style={{ background: '#262626', border: '1px solid #2a2a2a' }}
+        style={modalSheet}
       >
-        {/* Color accent */}
-        <div className="h-1 rounded-t-2xl" style={{ background: color }} />
-
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-1">
           <div
             className="w-10 h-1 rounded-full"
-            style={{ background: '#333' }}
+            style={{ background: '#999' }}
           />
         </div>
 
@@ -498,7 +515,7 @@ function AgentDetailModal({
                   >
                     {divisionName(agent.division)}
                   </span>
-                  <span className="text-xs" style={{ color: '#666' }}>
+                  <span className="text-xs" style={{ color: '#999' }}>
                     {RANK_LABEL[agent.rank]}
                   </span>
                   <span className="flex gap-0.5">
@@ -508,7 +525,7 @@ function AgentDetailModal({
                         className="w-1.5 h-1.5 rounded-full"
                         style={{
                           background:
-                            i < RANK_STARS[agent.rank] ? color : '#444444',
+                            i < RANK_STARS[agent.rank] ? color : '#777777',
                         }}
                       />
                     ))}
@@ -519,18 +536,18 @@ function AgentDetailModal({
                     (t) => t.id === agent.typeId,
                   )?.name;
                   return agentTypeName ? (
-                    <p className="text-xs mt-0.5" style={{ color: '#555' }}>
+                    <p className="text-xs mt-0.5" style={{ color: '#888' }}>
                       {agentTypeName}
                     </p>
                   ) : null;
                 })()}
-                <p className="text-xs mt-1" style={{ color: '#555' }}>
+                <p className="text-xs mt-1" style={{ color: '#888' }}>
                   📍{' '}
                   {REGION_MAP.get(agent.safeHouseId)?.name ?? agent.safeHouseId}
                 </p>
               </div>
             </div>
-            <button onClick={onClose} style={{ color: '#555' }}>
+            <button onClick={onClose} style={{ color: '#888' }}>
               <XCircle size={22} />
             </button>
           </div>
@@ -539,8 +556,7 @@ function AgentDetailModal({
           <div
             className="mt-3 px-3 py-2 rounded-xl flex items-center justify-between"
             style={{
-              background: `${status.color}18`,
-              border: `1px solid ${status.color}33`,
+              background: `${status.color}14`,
             }}
           >
             <div className="flex items-center gap-2">
@@ -575,15 +591,10 @@ function AgentDetailModal({
                 onClick={handleInstantHeal}
                 disabled={!canAffordHeal}
                 className="text-xs px-2.5 py-1 rounded-lg font-semibold flex items-center gap-1"
-                style={{
-                  background: canAffordHeal ? '#4ade8022' : '#333333',
-                  color: canAffordHeal ? '#4ade80' : '#444',
-                  border: `1px solid ${canAffordHeal ? '#4ade8044' : '#444444'}`,
-                  cursor: canAffordHeal ? 'pointer' : 'not-allowed',
-                }}
+                style={btn.action(C.green, !canAffordHeal)}
               >
                 <Zap size={11} />
-                <span style={{ color: '#4ade80' }}>$</span> {instantHealCost}
+                <Coins size={11} color={C.green} /> {instantHealCost}
               </button>
             )}
           </div>
@@ -593,11 +604,11 @@ function AgentDetailModal({
           {/* Stats */}
           <div
             className="rounded-xl p-3 flex flex-col gap-2"
-            style={{ background: '#2b2b2b' }}
+            style={{ background: C.bgSurface }}
           >
             <p
               className="text-xs font-medium tracking-widest uppercase mb-1"
-              style={{ color: '#555' }}
+              style={{ color: C.textMuted }}
             >
               Statistiky
             </p>
@@ -614,12 +625,12 @@ function AgentDetailModal({
           {/* XP / Rank */}
           <div
             className="rounded-xl p-3 flex flex-col gap-2"
-            style={{ background: '#2b2b2b' }}
+            style={{ background: C.bgSurface }}
           >
             <div className="flex items-center justify-between">
               <p
                 className="text-xs font-medium tracking-widest uppercase"
-                style={{ color: '#555' }}
+                style={{ color: C.textMuted }}
               >
                 Zkušenosti
               </p>
@@ -628,14 +639,14 @@ function AgentDetailModal({
                   MAX RANK
                 </span>
               ) : (
-                <span className="text-xs" style={{ color: '#666' }}>
+                <span className="text-xs" style={{ color: '#999' }}>
                   {agent.xp} / {agent.xpToNextRank} XP
                 </span>
               )}
             </div>
             <div
               className="h-2 rounded-full overflow-hidden"
-              style={{ background: '#333333' }}
+              style={{ background: '#666666' }}
             >
               <div
                 className="h-full rounded-full transition-all"
@@ -657,10 +668,10 @@ function AgentDetailModal({
           </div>
 
           {/* Mission stats */}
-          <div className="rounded-xl p-3" style={{ background: '#2b2b2b' }}>
+          <div className="rounded-xl p-3" style={{ background: C.bgSurface }}>
             <p
               className="text-xs font-medium tracking-widest uppercase mb-3"
-              style={{ color: '#555' }}
+              style={{ color: C.textMuted }}
             >
               Statistiky misí
             </p>
@@ -672,7 +683,7 @@ function AgentDetailModal({
                 >
                   {agent.missionsAttempted}
                 </span>
-                <span className="text-xs text-center" style={{ color: '#555' }}>
+                <span className="text-xs text-center" style={{ color: '#888' }}>
                   Celkem
                 </span>
               </div>
@@ -683,7 +694,7 @@ function AgentDetailModal({
                 >
                   {agent.missionsCompleted}
                 </span>
-                <span className="text-xs text-center" style={{ color: '#555' }}>
+                <span className="text-xs text-center" style={{ color: '#888' }}>
                   Úspěšných
                 </span>
               </div>
@@ -699,7 +710,7 @@ function AgentDetailModal({
                 >
                   {successRate !== null ? `${successRate} %` : '—'}
                 </span>
-                <span className="text-xs text-center" style={{ color: '#555' }}>
+                <span className="text-xs text-center" style={{ color: '#888' }}>
                   Úspěšnost
                 </span>
               </div>
@@ -707,10 +718,10 @@ function AgentDetailModal({
           </div>
 
           {/* Equipment slots */}
-          <div className="rounded-xl p-3" style={{ background: '#2b2b2b' }}>
+          <div className="rounded-xl p-3" style={{ background: C.bgSurface }}>
             <p
               className="text-xs font-medium tracking-widest uppercase mb-3"
-              style={{ color: '#555' }}
+              style={{ color: C.textMuted }}
             >
               Vybavení
             </p>
@@ -726,11 +737,10 @@ function AgentDetailModal({
                       key={i}
                       className="h-9 rounded-xl flex items-center justify-center"
                       style={{
-                        background: '#222222',
-                        border: '1px dashed #252525',
+                        background: C.bgBase,
                       }}
                     >
-                      <span className="text-[11px]" style={{ color: '#333' }}>
+                      <span className="text-[11px]" style={{ color: '#999' }}>
                         Prázdný slot
                       </span>
                     </div>
@@ -773,7 +783,6 @@ function AgentDetailModal({
                     className="rounded-xl p-2.5"
                     style={{
                       background: `${rc}0d`,
-                      border: `1px solid ${rc}33`,
                     }}
                   >
                     <div className="flex items-center gap-2 mb-1.5">
@@ -791,7 +800,7 @@ function AgentDetailModal({
                         className="text-[10px] px-1.5 py-0.5 rounded"
                         style={{ background: `${rc}22`, color: rc }}
                       >
-                        {eq.rarity}
+                        {RARITY_LABEL[eq.rarity] ?? eq.rarity}
                       </span>
                     </div>
                     {rankLocked && (
@@ -809,9 +818,9 @@ function AgentDetailModal({
                             key={b.label}
                             className="text-[10px] px-1.5 py-0.5 rounded font-mono"
                             style={{
-                              background: '#333333',
+                              background: '#666666',
                               color: rankLocked
-                                ? '#555'
+                                ? '#888'
                                 : b.positive
                                   ? '#4ade80'
                                   : '#f97316',
@@ -826,22 +835,14 @@ function AgentDetailModal({
                       <button
                         onClick={() => handleSell(i)}
                         className="flex-1 text-xs py-1.5 rounded-lg font-medium"
-                        style={{
-                          background: '#1a0f00',
-                          color: '#f97316',
-                          border: '1px solid #f9731633',
-                        }}
+                        style={btn.action(C.divExtraction, false)}
                       >
                         Prodat +${refund}
                       </button>
                       <button
                         onClick={() => openTransfer(i)}
                         className="flex-1 text-xs py-1.5 rounded-lg font-medium"
-                        style={{
-                          background: '#00101a',
-                          color: '#60a5fa',
-                          border: '1px solid #60a5fa33',
-                        }}
+                        style={btn.action(C.blue, false)}
                       >
                         Přendat →
                       </button>
@@ -860,12 +861,12 @@ function AgentDetailModal({
             >
               <div
                 className="rounded-t-2xl flex flex-col max-h-[65vh]"
-                style={{ background: '#262626', border: '1px solid #2a2a2a' }}
+                style={modalSheet}
               >
                 <div className="flex justify-center pt-3 pb-1">
                   <div
                     className="w-10 h-1 rounded-full"
-                    style={{ background: '#333' }}
+                    style={{ background: '#999' }}
                   />
                 </div>
                 <div className="px-4 pt-2 pb-1 flex items-center justify-between">
@@ -877,7 +878,7 @@ function AgentDetailModal({
                   </p>
                   <button
                     onClick={() => setTransferSlotIdx(null)}
-                    style={{ color: '#555' }}
+                    style={{ color: '#888' }}
                   >
                     <XCircle size={20} />
                   </button>
@@ -886,7 +887,7 @@ function AgentDetailModal({
                   {transferCandidates.length === 0 ? (
                     <p
                       className="text-sm text-center py-6"
-                      style={{ color: '#555' }}
+                      style={{ color: '#888' }}
                     >
                       Žádný agent ve stejné základně nemá volný slot
                     </p>
@@ -896,10 +897,7 @@ function AgentDetailModal({
                         key={ta.id}
                         onClick={() => doTransfer(ta)}
                         className="text-left rounded-xl p-3 flex items-center gap-3"
-                        style={{
-                          background: '#2b2b2b',
-                          border: '1px solid #2a2a2a',
-                        }}
+                        style={cardBase}
                       >
                         <div
                           className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0"
@@ -917,11 +915,11 @@ function AgentDetailModal({
                           >
                             {ta.name}
                           </p>
-                          <p className="text-xs" style={{ color: '#555' }}>
+                          <p className="text-xs" style={{ color: '#888' }}>
                             {divisionName(ta.division)} · {RANK_LABEL[ta.rank]}
                           </p>
                         </div>
-                        <ChevronRight size={16} style={{ color: '#333' }} />
+                        <ChevronRight size={16} style={{ color: '#999' }} />
                       </button>
                     ))
                   )}
@@ -934,7 +932,7 @@ function AgentDetailModal({
           {agent.status === 'traveling' && agent.arrivesAt && (
             <div
               className="rounded-xl p-3 flex items-start gap-2"
-              style={{ background: '#1a0a2e', border: '1px solid #a78bfa33' }}
+              style={{ background: '#1a0a2e' }}
             >
               <Truck
                 size={16}
@@ -961,7 +959,7 @@ function AgentDetailModal({
           {isCaptured && (
             <div
               className="rounded-xl p-3 flex items-start gap-2"
-              style={{ background: '#2e0f0f', border: '1px solid #ef444433' }}
+              style={{ background: '#2e0f0f' }}
             >
               <AlertTriangle
                 size={16}
@@ -988,11 +986,7 @@ function AgentDetailModal({
               <button
                 onClick={openRelocate}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium"
-                style={{
-                  background: '#0a0f1a',
-                  color: '#60a5fa',
-                  border: '1px solid #60a5fa33',
-                }}
+                style={btn.action(C.blue, false)}
               >
                 <Truck size={12} />
                 Přesunout
@@ -1000,11 +994,7 @@ function AgentDetailModal({
               <button
                 onClick={() => setShowDismiss(true)}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium"
-                style={{
-                  background: '#1a0a0a',
-                  color: '#ef4444',
-                  border: '1px solid #ef444433',
-                }}
+                style={btn.destructive}
               >
                 <UserX size={12} />
                 Propustit
@@ -1018,17 +1008,14 @@ function AgentDetailModal({
               className="fixed inset-0 z-[70] flex items-center justify-center px-6"
               style={{ background: 'rgba(0,0,0,0.85)' }}
             >
-              <div
-                className="rounded-2xl p-5 w-full max-w-xs"
-                style={{ background: '#2b2b2b', border: '1px solid #2a2a2a' }}
-              >
+              <div className="rounded-2xl p-5 w-full max-w-xs" style={cardBase}>
                 <p
                   className="text-base font-bold mb-1"
                   style={{ color: '#e8e8e8' }}
                 >
                   Propustit {agent.name}?
                 </p>
-                <p className="text-xs mb-4" style={{ color: '#666' }}>
+                <p className="text-xs mb-4" style={{ color: '#999' }}>
                   Agent bude trvale odstraněn. Vybavení bude prodáno za
                   30&nbsp;% ceny. Ztratíte všechny nasbírané XP.
                 </p>
@@ -1052,18 +1039,14 @@ function AgentDetailModal({
                   <button
                     onClick={() => setShowDismiss(false)}
                     className="flex-1 py-2 rounded-xl text-sm font-medium"
-                    style={{ background: '#333333', color: '#888' }}
+                    style={btn.secondary()}
                   >
                     Zrušit
                   </button>
                   <button
                     onClick={handleDismiss}
                     className="flex-1 py-2 rounded-xl text-sm font-medium"
-                    style={{
-                      background: '#2e0f0f',
-                      color: '#ef4444',
-                      border: '1px solid #ef444433',
-                    }}
+                    style={btn.destructive}
                   >
                     Propustit
                   </button>
@@ -1078,18 +1061,11 @@ function AgentDetailModal({
               className="fixed inset-0 z-[70] flex flex-col justify-end"
               style={{ background: 'rgba(0,0,0,0.82)' }}
             >
-              <div
-                className="rounded-t-2xl"
-                style={{ background: '#262626', border: '1px solid #2a2a2a' }}
-              >
-                <div
-                  className="h-1 rounded-t-2xl"
-                  style={{ background: '#60a5fa' }}
-                />
+              <div className="rounded-t-2xl" style={modalSheet}>
                 <div className="flex justify-center pt-3 pb-1">
                   <div
                     className="w-10 h-1 rounded-full"
-                    style={{ background: '#333' }}
+                    style={{ background: '#999' }}
                   />
                 </div>
                 <div className="px-4 pt-2 pb-6">
@@ -1102,7 +1078,7 @@ function AgentDetailModal({
                     </p>
                     <button
                       onClick={() => setShowRelocate(false)}
-                      style={{ color: '#555' }}
+                      style={{ color: '#888' }}
                     >
                       <XCircle size={20} />
                     </button>
@@ -1110,7 +1086,7 @@ function AgentDetailModal({
                   {otherSafeHouses.length === 0 ? (
                     <p
                       className="text-sm text-center py-6"
-                      style={{ color: '#555' }}
+                      style={{ color: '#888' }}
                     >
                       Nemáte jinou základnu
                     </p>
@@ -1134,8 +1110,7 @@ function AgentDetailModal({
                             }
                             className="flex items-center gap-3 p-3 rounded-xl"
                             style={{
-                              background: '#2b2b2b',
-                              border: '1px solid #2a2a2a',
+                              ...cardBase,
                               opacity: full || !canAfford ? 0.4 : 1,
                               cursor:
                                 full || !canAfford ? 'not-allowed' : 'pointer',
@@ -1159,7 +1134,7 @@ function AgentDetailModal({
                               >
                                 {REGION_MAP.get(sh.id)?.name ?? sh.id}
                               </p>
-                              <p className="text-xs" style={{ color: '#666' }}>
+                              <p className="text-xs" style={{ color: '#999' }}>
                                 {count}/{cap} agentů · {mins} min
                                 {full ? ' · plno' : ''}
                               </p>
@@ -1267,7 +1242,7 @@ export default function AgentsScreen() {
   return (
     <div
       className="flex flex-col min-h-full pb-20"
-      style={{ background: '#222222', color: '#e8e8e8' }}
+      style={{ background: C.bgBase, color: C.textPrimary }}
     >
       {/* Header */}
       <div className="px-4 pt-4 pb-4">
@@ -1275,7 +1250,7 @@ export default function AgentsScreen() {
           <h1 className="text-lg font-bold tracking-tight">Agenti</h1>
           <div
             className="flex items-center gap-1.5 text-sm"
-            style={{ color: '#555' }}
+            style={{ color: '#888' }}
           >
             <Users size={16} />
             <span>{agents.length}</span>
@@ -1300,9 +1275,9 @@ export default function AgentsScreen() {
                 onClick={() => setFilter(tab.id)}
                 className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
                 style={{
-                  background: active ? '#4ade8022' : '#2b2b2b',
-                  color: active ? '#4ade80' : '#666',
-                  border: `1px solid ${active ? '#4ade8044' : '#333333'}`,
+                  ...(active ? activeTab.active : activeTab.inactive),
+                  padding: '6px 12px',
+                  flexShrink: 0,
                 }}
               >
                 {tab.label}
@@ -1310,8 +1285,8 @@ export default function AgentsScreen() {
                   <span
                     className="px-1 min-w-4 text-center rounded text-[10px]"
                     style={{
-                      background: active ? '#4ade8033' : '#333333',
-                      color: active ? '#4ade80' : '#555',
+                      background: active ? `${C.green}20` : C.bgSurface2,
+                      color: active ? C.green : C.textMuted,
                     }}
                   >
                     {count}
@@ -1330,19 +1305,19 @@ export default function AgentsScreen() {
             <div
               key={i}
               className="rounded-xl h-16 animate-pulse"
-              style={{ background: '#2b2b2b' }}
+              style={{ background: C.bgSurface }}
             />
           ))
         ) : sorted.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
-            <Users size={48} style={{ color: '#333333' }} />
-            <p className="text-sm" style={{ color: '#555' }}>
+            <Users size={48} style={{ color: '#666666' }} />
+            <p className="text-sm" style={{ color: '#888' }}>
               {filter === 'all'
                 ? 'Žádní agenti'
                 : 'Žádní agenti v této kategorii'}
             </p>
             {filter === 'all' && (
-              <p className="text-xs text-center px-8" style={{ color: '#444' }}>
+              <p className="text-xs text-center px-8" style={{ color: '#777' }}>
                 Najmi prvního agenta na Základně.
               </p>
             )}
@@ -1363,11 +1338,11 @@ export default function AgentsScreen() {
               <div
                 key={a.id}
                 className="flex items-center gap-2 py-1.5 px-3 rounded-lg mb-1.5 text-xs"
-                style={{ background: '#1a1208', border: '1px solid #f9741633' }}
+                style={{ background: '#1a1208' }}
               >
                 <Clock size={11} color="#f97316" />
                 <span style={{ color: '#f97316' }}>{a.name}</span>
-                <span style={{ color: '#666' }}>se léčí —</span>
+                <span style={{ color: '#999' }}>se léčí —</span>
                 <HealingCountdown healsAt={a.healsAt!} />
               </div>
             ))}

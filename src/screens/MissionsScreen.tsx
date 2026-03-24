@@ -2,17 +2,31 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import CityBar from '../components/CityBar';
 import CurrenciesBar from '../components/CurrenciesBar';
 import {
+  C,
+  cardBase,
+  cardActive,
+  btn,
+  modalSheet,
+  modalOverlay,
+} from '../styles/tokens';
+import {
   AlertTriangle,
   CheckCircle,
   ChevronRight,
   Clock,
+  Coins,
+  Eye,
+  Ghost,
+  Radio,
   Shield,
   Skull,
+  Star,
   TriangleAlert,
   Users,
   XCircle,
   Zap,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useMissionStore } from '../store/missionStore';
 import { useGameStore } from '../store/gameStore';
 import { useUIStore } from '../store/uiStore';
@@ -96,7 +110,7 @@ function difficultyDots(n: number, color: string) {
         <span
           key={i}
           className="w-1.5 h-1.5 rounded-full inline-block"
-          style={{ background: i < n ? color : '#444444' }}
+          style={{ background: i < n ? color : '#777777' }}
         />
       ))}
     </span>
@@ -110,13 +124,13 @@ function chanceColor(chance: number) {
   return '#ef4444';
 }
 
-function rewardLine(icon: string, iconColor: string, value: number) {
+function rewardLine(Icon: LucideIcon, iconColor: string, value: number) {
   if (!value) return null;
   const sign = value > 0 ? '+' : '';
-  const valueColor = value > 0 ? '#4ade80' : '#ef4444';
+  const valueColor = value > 0 ? C.green : C.red;
   return (
-    <span key={icon} className="flex items-center gap-0.5 text-xs">
-      <span style={{ color: iconColor }}>{icon}</span>
+    <span className="flex items-center gap-0.5 text-xs">
+      <Icon size={10} color={iconColor} />
       <span style={{ color: valueColor }}>
         {sign}
         {value}
@@ -189,10 +203,7 @@ function ActiveMissionCard({
   }, [agentDetails]);
 
   return (
-    <div
-      className="rounded-xl p-3 flex flex-col gap-2"
-      style={{ background: '#2b2b2b', border: `1px solid ${meta.color}33` }}
-    >
+    <div className="rounded-xl p-3 flex flex-col gap-2" style={cardBase}>
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <span
@@ -208,14 +219,18 @@ function ActiveMissionCard({
             >
               {mission.title}
             </p>
-            <p className="text-xs" style={{ color: '#666' }}>
+            <p className="text-xs" style={{ color: '#999' }}>
               {meta.label} · {active.agentIds.length} agentů
               {active.approach && active.approach !== 'standard' && (
                 <span
                   className="ml-1.5 px-1 py-0.5 rounded text-[10px] font-semibold"
                   style={{
-                    background: active.approach === 'aggressive' ? '#2a140044' : '#001a2a44',
-                    color: active.approach === 'aggressive' ? '#f97316' : '#22d3ee',
+                    background:
+                      active.approach === 'aggressive'
+                        ? '#2a140044'
+                        : '#001a2a44',
+                    color:
+                      active.approach === 'aggressive' ? '#f97316' : '#22d3ee',
                   }}
                 >
                   {active.approach === 'aggressive' ? 'Agresivní' : 'Skrytá'}
@@ -244,9 +259,8 @@ function ActiveMissionCard({
               key={a.id}
               className="text-[10px] px-1.5 py-0.5 rounded"
               style={{
-                background: '#333333',
+                background: C.bgSurface2,
                 color: '#aaa',
-                border: '1px solid #2a2a2a',
               }}
             >
               {a.name}
@@ -263,9 +277,8 @@ function ActiveMissionCard({
               key={eq.id}
               className="text-[10px] px-1.5 py-0.5 rounded flex items-center gap-0.5"
               style={{
-                background: '#333333',
+                background: `${RARITY_COLOR[eq.rarity] ?? '#888'}22`,
                 color: RARITY_COLOR[eq.rarity] ?? '#888',
-                border: `1px solid ${RARITY_COLOR[eq.rarity] ?? '#888'}44`,
               }}
             >
               {eq.name}
@@ -277,7 +290,7 @@ function ActiveMissionCard({
       {/* Progress bar */}
       <div
         className="h-1 rounded-full overflow-hidden"
-        style={{ background: '#444444' }}
+        style={{ background: '#777777' }}
       >
         <div
           className="h-full rounded-full transition-all"
@@ -290,7 +303,7 @@ function ActiveMissionCard({
 
       {/* Success chance */}
       <div className="flex items-center justify-between">
-        <span className="text-xs" style={{ color: '#555' }}>
+        <span className="text-xs" style={{ color: '#888' }}>
           Šance na úspěch
         </span>
         <span
@@ -326,10 +339,7 @@ function MissionCard({
   const canStart = eligibleCount > 0;
 
   return (
-    <div
-      className="rounded-xl p-3 flex flex-col gap-2.5"
-      style={{ background: '#2b2b2b', border: '1px solid #2a2a2a' }}
-    >
+    <div className="rounded-xl p-3 flex flex-col gap-2.5" style={cardBase}>
       {/* Top row */}
       <div className="flex items-start gap-2">
         <span
@@ -346,7 +356,6 @@ function MissionCard({
               style={{
                 background: '#ef444422',
                 color: '#ef4444',
-                border: '1px solid #ef444433',
               }}
             >
               🚨 ZÁCHRANNÁ MISE
@@ -358,7 +367,7 @@ function MissionCard({
           >
             {mission.title}
           </p>
-          <p className="text-xs mt-0.5 line-clamp-2" style={{ color: '#666' }}>
+          <p className="text-xs mt-0.5 line-clamp-2" style={{ color: '#999' }}>
             {mission.flavor}
           </p>
         </div>
@@ -375,30 +384,37 @@ function MissionCard({
         {difficultyDots(mission.difficulty, meta.color)}
         <span
           className="text-xs flex items-center gap-1"
-          style={{ color: '#555' }}
+          style={{ color: '#888' }}
         >
           <Clock size={11} />
           {formatDuration(mission.baseDuration)}
         </span>
         <span
           className="text-xs flex items-center gap-1"
-          style={{ color: '#555' }}
+          style={{ color: '#888' }}
         >
           <Users size={11} />
           {mission.minAgents}–{mission.maxAgents}
         </span>
         {mission.intelCost && mission.intelCost > 0 && (
           <span
-            className="text-xs px-1.5 py-0.5 rounded font-semibold"
-            style={{ background: '#1e3a5f', color: '#60a5fa', border: '1px solid #60a5fa44' }}
+            className="text-xs px-1.5 py-0.5 rounded font-semibold flex items-center gap-0.5"
+            style={{
+              background: '#1e3a5f',
+              color: '#60a5fa',
+            }}
           >
-            ◈{mission.intelCost}
+            <Eye size={10} />
+            {mission.intelCost}
           </span>
         )}
         {mission.chainNextTargetId && (
           <span
             className="text-xs px-1.5 py-0.5 rounded font-semibold"
-            style={{ background: '#2a200a', color: '#facc15', border: '1px solid #facc1544' }}
+            style={{
+              background: '#2a200a',
+              color: '#facc15',
+            }}
           >
             ⛓ pokračování
           </span>
@@ -407,11 +423,11 @@ function MissionCard({
 
       {/* Rewards */}
       <div className="flex flex-wrap gap-x-3 gap-y-1">
-        {rewardLine('$', '#4ade80', mission.rewards.money)}
-        {rewardLine('◈', '#60a5fa', mission.rewards.intel)}
-        {rewardLine('◆', '#a78bfa', mission.rewards.shadow)}
-        {rewardLine('✦', '#f97316', mission.rewards.influence)}
-        {rewardLine('⭐', '#facc15', mission.rewards.xp)}
+        {rewardLine(Coins, C.green, mission.rewards.money)}
+        {rewardLine(Eye, C.blue, mission.rewards.intel)}
+        {rewardLine(Ghost, C.bm, mission.rewards.shadow)}
+        {rewardLine(Radio, C.divExtraction, mission.rewards.influence)}
+        {rewardLine(Star, C.yellow, mission.rewards.xp)}
       </div>
 
       {/* Requirements */}
@@ -426,7 +442,6 @@ function MissionCard({
                 style={{
                   background: `${divInfo?.color ?? '#4ade80'}18`,
                   color: divInfo?.color ?? '#4ade80',
-                  border: `1px solid ${divInfo?.color ?? '#4ade80'}44`,
                 }}
               >
                 🏢 {divInfo?.name ?? div}
@@ -439,9 +454,8 @@ function MissionCard({
                 key={stat}
                 className="text-xs px-1.5 py-0.5 rounded"
                 style={{
-                  background: '#333333',
-                  color: '#888',
-                  border: '1px solid #2a2a2a',
+                  background: C.bgSurface2,
+                  color: C.textMuted,
                 }}
               >
                 {STAT_LABELS[stat] ?? stat} ≥ {val}
@@ -449,7 +463,7 @@ function MissionCard({
             ))}
           <span
             className="text-xs ml-auto"
-            style={{ color: canStart ? '#4ade80' : '#555' }}
+            style={{ color: canStart ? '#4ade80' : '#888' }}
           >
             {eligibleCount}/{freeCount} kompetentních
           </span>
@@ -468,7 +482,6 @@ function MissionCard({
               style={{
                 background: '#2a1a00',
                 color: '#f97316',
-                border: '1px solid #f9731633',
               }}
             >
               <TriangleAlert size={11} />
@@ -495,8 +508,8 @@ function MissionCard({
         disabled={!canStart}
         className="w-full py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 transition-all"
         style={{
-          background: canStart ? meta.color : '#333333',
-          color: canStart ? '#222222' : '#444',
+          background: canStart ? meta.color : C.bgSurface2,
+          color: canStart ? '#141414' : C.textDisabled,
           cursor: canStart ? 'pointer' : 'not-allowed',
         }}
       >
@@ -544,8 +557,7 @@ function AgentRow({
       disabled={disabled && !selected}
       className="w-full flex items-center gap-3 p-2.5 rounded-xl transition-all text-left"
       style={{
-        background: selected ? '#1a2e1a' : '#2b2b2b',
-        border: `1px solid ${selected ? '#4ade80' : '#444444'}`,
+        ...(selected ? cardActive : cardBase),
         opacity: disabled && !selected ? 0.4 : 1,
       }}
     >
@@ -558,8 +570,8 @@ function AgentRow({
       <div
         className="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
         style={{
-          background: selected ? '#4ade8033' : '#333333',
-          color: selected ? '#4ade80' : '#888',
+          background: selected ? `${C.green}20` : C.bgSurface2,
+          color: selected ? C.green : C.textMuted,
         }}
       >
         {agent.name.slice(0, 2).toUpperCase()}
@@ -596,7 +608,7 @@ function AgentRow({
       </div>
       <div
         className="grid grid-cols-4 gap-1 text-xs flex-shrink-0"
-        style={{ color: '#666' }}
+        style={{ color: '#999' }}
       >
         {(['stealth', 'combat', 'intel', 'tech'] as const).map((s) => (
           <div key={s} className="flex flex-col items-center">
@@ -663,7 +675,12 @@ function AgentSelectorModal({
 
   const successChance = useMemo(() => {
     if (selectedAgents.length === 0) return null;
-    return calculateSuccessChance(selectedAgents, mission, regionAlertLevel, approach);
+    return calculateSuccessChance(
+      selectedAgents,
+      mission,
+      regionAlertLevel,
+      approach,
+    );
   }, [selectedAgents, mission, regionAlertLevel, approach]);
 
   const teamEligible = useMemo(
@@ -700,40 +717,49 @@ function AgentSelectorModal({
   return (
     <div
       className="fixed inset-0 z-50 flex flex-col justify-end"
-      style={{ background: 'rgba(0,0,0,0.75)' }}
+      style={modalOverlay}
     >
       <div
         className="rounded-t-2xl flex flex-col max-h-[85vh]"
-        style={{ background: '#262626', border: '1px solid #2a2a2a' }}
+        style={modalSheet}
       >
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-2">
           <div
             className="w-10 h-1 rounded-full"
-            style={{ background: '#333' }}
+            style={{ background: '#999' }}
           />
         </div>
 
         {/* Header */}
-        <div className="px-4 pb-3 border-b" style={{ borderColor: '#333333' }}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p
-                className="text-xs font-medium tracking-widest uppercase mb-0.5"
-                style={{ color: meta.color }}
+        <div className="px-4 pb-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span
+                  className="text-xs font-semibold tracking-widest uppercase"
+                  style={{ color: meta.color }}
+                >
+                  {meta.label}
+                </span>
+                <span style={{ color: '#666666' }}>·</span>
+                <span className="text-xs" style={{ color: '#999' }}>
+                  {cityName}
+                </span>
+              </div>
+              <h3
+                className="text-base font-bold leading-tight"
+                style={{ color: '#e8e8e8' }}
               >
-                {meta.label} · 📍 {cityName}
-              </p>
-              <h3 className="text-base font-bold" style={{ color: '#e8e8e8' }}>
                 {mission.title}
               </h3>
             </div>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg"
-              style={{ color: '#555' }}
+              className="p-1.5 rounded-lg flex-shrink-0"
+              style={{ color: '#888' }}
             >
-              <XCircle size={20} />
+              <XCircle size={18} />
             </button>
           </div>
 
@@ -744,14 +770,13 @@ function AgentSelectorModal({
               return (
                 <span
                   key={div}
-                  className="text-xs px-1.5 py-0.5 rounded"
+                  className="text-xs px-2 py-0.5 rounded-full font-medium"
                   style={{
                     background: `${divInfo?.color ?? '#4ade80'}18`,
                     color: divInfo?.color ?? '#4ade80',
-                    border: `1px solid ${divInfo?.color ?? '#4ade80'}44`,
                   }}
                 >
-                  🏢 {divInfo?.name ?? div}
+                  {divInfo?.name ?? div}
                 </span>
               );
             })}
@@ -761,26 +786,31 @@ function AgentSelectorModal({
                   key={stat}
                   className="text-xs px-1.5 py-0.5 rounded"
                   style={{
-                    background: '#333333',
-                    color: '#888',
-                    border: '1px solid #2a2a2a',
+                    background: '#666666',
+                    color: C.textMuted,
                   }}
                 >
                   {STAT_LABELS[stat] ?? stat} ≥ {val}
                 </span>
               ))}
-            <span className="text-xs ml-auto" style={{ color: '#666' }}>
-              Agentů:{' '}
-              <span
+            <div className="ml-auto flex items-center gap-1.5">
+              <Users
+                size={11}
                 style={{
                   color:
-                    selected.size >= mission.minAgents ? '#4ade80' : '#aaa',
+                    selected.size >= mission.minAgents ? '#4ade80' : '#888',
+                }}
+              />
+              <span
+                className="text-xs font-medium"
+                style={{
+                  color:
+                    selected.size >= mission.minAgents ? '#4ade80' : '#888',
                 }}
               >
-                {selected.size}
+                {selected.size}/{mission.minAgents}–{mission.maxAgents}
               </span>
-              /{mission.minAgents}–{mission.maxAgents}
-            </span>
+            </div>
           </div>
 
           {/* Team eligibility warning */}
@@ -798,39 +828,106 @@ function AgentSelectorModal({
         </div>
 
         {/* Approach selector */}
-        <div className="px-4 py-3 border-b" style={{ borderColor: '#333333' }}>
-          <p className="text-xs font-medium tracking-widest uppercase mb-2" style={{ color: '#555' }}>
+        <div className="px-4 py-3">
+          <p
+            className="text-xs font-medium tracking-widest uppercase mb-2"
+            style={{ color: '#888' }}
+          >
             Taktika
           </p>
           <div className="flex gap-2">
-            {(['standard', 'aggressive', 'covert'] as MissionApproach[]).map((ap) => {
-              const mods = APPROACH_MODS[ap];
-              const isSelected = approach === ap;
-              const label = ap === 'standard' ? 'Standardní' : ap === 'aggressive' ? 'Agresivní' : 'Skrytá';
-              const borderColor = ap === 'standard' ? '#666' : ap === 'aggressive' ? '#f97316' : '#22d3ee';
-              const bgColor = ap === 'standard' ? '#2a2a2a' : ap === 'aggressive' ? '#2a1400' : '#001a2a';
-              const successPct = Math.round((mods.successMult - 1) * 100);
-              const durationPct = Math.round((mods.durationMult - 1) * 100);
-              const alertPct = Math.round((mods.alertMult - 1) * 100);
-              const fmt = (n: number) => (n === 0 ? '±0' : n > 0 ? `+${n}` : `${n}`);
-              return (
-                <button
-                  key={ap}
-                  onClick={() => setApproach(ap)}
-                  className="flex-1 flex flex-col items-center gap-0.5 px-2 py-2 rounded-xl text-xs transition-all"
-                  style={{
-                    background: isSelected ? bgColor : '#1e1e1e',
-                    border: `1px solid ${isSelected ? borderColor : '#333'}`,
-                    color: isSelected ? borderColor : '#555',
-                  }}
-                >
-                  <span className="font-semibold text-xs">{label}</span>
-                  <span style={{ color: '#666', fontSize: '9px' }}>
-                    {fmt(successPct)}% ✓ · {fmt(durationPct)}% ⏱ · {fmt(alertPct)}% 🔴
-                  </span>
-                </button>
-              );
-            })}
+            {(['standard', 'aggressive', 'covert'] as MissionApproach[]).map(
+              (ap) => {
+                const mods = APPROACH_MODS[ap];
+                const isSelected = approach === ap;
+                const label =
+                  ap === 'standard'
+                    ? 'Standardní'
+                    : ap === 'aggressive'
+                      ? 'Agresivní'
+                      : 'Skrytá';
+                const activeColor =
+                  ap === 'standard'
+                    ? '#999'
+                    : ap === 'aggressive'
+                      ? '#f97316'
+                      : '#22d3ee';
+                const bgColor =
+                  ap === 'standard'
+                    ? '#2a2a2a'
+                    : ap === 'aggressive'
+                      ? '#2a1400'
+                      : '#001a2a';
+                const successPct = Math.round((mods.successMult - 1) * 100);
+                const durationPct = Math.round((mods.durationMult - 1) * 100);
+                const alertPct = Math.round((mods.alertMult - 1) * 100);
+                const fmt = (n: number) =>
+                  n === 0 ? '±0' : n > 0 ? `+${n}` : `${n}`;
+                const statColor = (n: number, lowerBetter = false) => {
+                  if (n === 0) return '#888';
+                  return (lowerBetter ? n < 0 : n > 0) ? '#4ade80' : '#ef4444';
+                };
+                return (
+                  <button
+                    key={ap}
+                    onClick={() => setApproach(ap)}
+                    className="flex-1 flex flex-col gap-2 px-2.5 py-2.5 rounded-xl transition-all"
+                    style={{ background: isSelected ? bgColor : C.bgBase }}
+                  >
+                    <span
+                      className="font-semibold text-xs"
+                      style={{ color: isSelected ? activeColor : C.textMuted }}
+                    >
+                      {label}
+                    </span>
+                    <div className="flex flex-col gap-0.5 w-full">
+                      <div className="flex items-center justify-between">
+                        <span
+                          className="text-[9px] uppercase tracking-wide"
+                          style={{ color: '#888' }}
+                        >
+                          Úspěch
+                        </span>
+                        <span
+                          className="text-[10px] font-semibold"
+                          style={{ color: statColor(successPct) }}
+                        >
+                          {fmt(successPct)}%
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span
+                          className="text-[9px] uppercase tracking-wide"
+                          style={{ color: '#888' }}
+                        >
+                          Čas
+                        </span>
+                        <span
+                          className="text-[10px] font-semibold"
+                          style={{ color: statColor(durationPct, true) }}
+                        >
+                          {fmt(durationPct)}%
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span
+                          className="text-[9px] uppercase tracking-wide"
+                          style={{ color: '#888' }}
+                        >
+                          Alert
+                        </span>
+                        <span
+                          className="text-[10px] font-semibold"
+                          style={{ color: statColor(alertPct, true) }}
+                        >
+                          {fmt(alertPct)}%
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                );
+              },
+            )}
           </div>
         </div>
 
@@ -838,8 +935,8 @@ function AgentSelectorModal({
         <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-2">
           {regionAgents.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 gap-2">
-              <Users size={32} style={{ color: '#333' }} />
-              <p className="text-sm" style={{ color: '#555' }}>
+              <Users size={32} style={{ color: '#999' }} />
+              <p className="text-sm" style={{ color: '#888' }}>
                 Žádní volní agenti v {cityName}
               </p>
             </div>
@@ -858,22 +955,19 @@ function AgentSelectorModal({
         </div>
 
         {/* Bottom action */}
-        <div
-          className="px-4 pb-6 pt-3"
-          style={{ borderTop: '1px solid #1a1a1a' }}
-        >
+        <div className="px-4 pb-6 pt-3">
           {successChance !== null && (
             <div
               className="rounded-xl p-2.5 mb-3 flex items-center justify-between"
-              style={{ background: '#333333' }}
+              style={{ background: C.bgSurface2 }}
             >
-              <span className="text-xs" style={{ color: '#555' }}>
+              <span className="text-xs" style={{ color: '#888' }}>
                 Odhadovaný výsledek
               </span>
               <div className="flex items-center gap-2">
                 <div
                   className="h-1.5 w-24 rounded-full overflow-hidden"
-                  style={{ background: '#444444' }}
+                  style={{ background: '#777777' }}
                 >
                   <div
                     className="h-full rounded-full"
@@ -896,25 +990,31 @@ function AgentSelectorModal({
           <button
             onClick={() => canDispatch && onConfirm(selectedAgents, approach)}
             disabled={!canDispatch}
-            className="w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2"
+            className="w-full py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all"
             style={{
-              background: canDispatch ? meta.color : '#333333',
-              color: canDispatch ? '#222222' : '#444',
+              background: canDispatch ? meta.color : C.bgSurface2,
+              color: canDispatch ? '#141414' : C.textDisabled,
               cursor: canDispatch ? 'pointer' : 'not-allowed',
             }}
           >
-            <Shield size={16} />
-            Nasadit agenty
+            <Zap size={16} />
+            Zahájit operaci
           </button>
           {mission.intelCost && mission.intelCost > 0 && (
-            <p
-              className="text-xs text-center mt-2"
-              style={{ color: hasEnoughIntel ? '#60a5fa' : '#ef4444' }}
-            >
-              {hasEnoughIntel
-                ? `Vyžaduje ◈${mission.intelCost} intel`
-                : `Nedostatek intelu — potřeba ◈${mission.intelCost}`}
-            </p>
+            <div className="flex items-center justify-center gap-1.5 mt-2">
+              <Eye
+                size={12}
+                style={{ color: hasEnoughIntel ? '#60a5fa' : '#ef4444' }}
+              />
+              <span
+                className="text-xs"
+                style={{ color: hasEnoughIntel ? '#60a5fa' : '#ef4444' }}
+              >
+                {hasEnoughIntel
+                  ? `Vyžaduje ${mission.intelCost} intel`
+                  : `Nedostatek intelu — potřeba ${mission.intelCost}`}
+              </span>
+            </div>
           )}
         </div>
       </div>
@@ -964,15 +1064,12 @@ function ResultModal({
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center"
-      style={{ background: 'rgba(0,0,0,0.80)' }}
+      style={modalOverlay}
     >
       <div
         className="w-full rounded-t-2xl flex flex-col max-h-[80vh] overflow-y-auto"
-        style={{ background: '#262626', border: '1px solid #2a2a2a' }}
+        style={modalSheet}
       >
-        {/* Color band */}
-        <div className="h-1.5 rounded-t-2xl" style={{ background: rm.color }} />
-
         <div className="p-5 flex flex-col gap-4">
           {/* Result hero */}
           <div className="flex flex-col items-center gap-2 pt-2">
@@ -988,7 +1085,7 @@ function ResultModal({
             >
               {rm.label}
             </h2>
-            <p className="text-sm text-center" style={{ color: '#666' }}>
+            <p className="text-sm text-center" style={{ color: '#999' }}>
               {result.mission.title}
             </p>
             <div className="flex items-center gap-1.5">
@@ -1006,54 +1103,54 @@ function ResultModal({
           {(hasPositive || hasNegative) && (
             <div
               className="rounded-xl p-3 flex flex-col gap-2"
-              style={{ background: '#333333' }}
+              style={{ background: C.bgSurface2 }}
             >
               <p
                 className="text-xs font-medium tracking-widest uppercase"
-                style={{ color: '#555' }}
+                style={{ color: '#888' }}
               >
                 Výsledek operace
               </p>
               <div className="grid grid-cols-2 gap-2">
                 {[
                   {
-                    icon: '$',
-                    color: '#4ade80',
+                    Icon: Coins,
+                    color: C.green,
                     key: 'money' as const,
                     label: 'Peníze',
                   },
                   {
-                    icon: '◈',
-                    color: '#60a5fa',
+                    Icon: Eye,
+                    color: C.blue,
                     key: 'intel' as const,
                     label: 'Intel',
                   },
                   {
-                    icon: '◆',
-                    color: '#a78bfa',
+                    Icon: Ghost,
+                    color: C.bm,
                     key: 'shadow' as const,
                     label: 'Shadow',
                   },
                   {
-                    icon: '✦',
-                    color: '#f97316',
+                    Icon: Radio,
+                    color: C.divExtraction,
                     key: 'influence' as const,
                     label: 'Vliv',
                   },
                   {
-                    icon: '⭐',
-                    color: '#facc15',
+                    Icon: Star,
+                    color: C.yellow,
                     key: 'xp' as const,
                     label: 'XP',
                   },
-                ].map(({ icon, color: iconColor, key, label }) => {
+                ].map(({ Icon, color: iconColor, key, label }) => {
                   const val = result.rewards[key];
                   if (!val) return null;
                   return (
                     <div key={key} className="flex items-center gap-2">
-                      <span style={{ color: iconColor }}>{icon}</span>
+                      <Icon size={13} color={iconColor} />
                       <div>
-                        <p className="text-xs" style={{ color: '#555' }}>
+                        <p className="text-xs" style={{ color: '#888' }}>
                           {label}
                         </p>
                         <p
@@ -1075,7 +1172,7 @@ function ResultModal({
           {result.alertGain > 0 && (
             <div
               className="flex items-center gap-2 px-3 py-2 rounded-xl"
-              style={{ background: '#333333' }}
+              style={{ background: C.bgSurface2 }}
             >
               <Zap size={14} color="#f97316" />
               <span className="text-xs" style={{ color: '#888' }}>
@@ -1088,7 +1185,7 @@ function ResultModal({
           {result.rankedUpAgents?.length > 0 && (
             <div
               className="rounded-xl p-3 flex flex-col gap-2"
-              style={{ background: '#1a1500', border: '1px solid #facc1544' }}
+              style={{ background: '#1a1500' }}
             >
               <p
                 className="text-xs font-medium tracking-widest uppercase"
@@ -1118,7 +1215,7 @@ function ResultModal({
           {result.affectedAgentIds.length > 0 && (
             <div
               className="rounded-xl p-3 flex flex-col gap-2"
-              style={{ background: '#2e0f0f', border: '1px solid #ef444433' }}
+              style={{ background: '#2e0f0f' }}
             >
               <p className="text-xs font-medium" style={{ color: '#ef4444' }}>
                 {result.result === 'catastrophe'
@@ -1155,7 +1252,7 @@ function ResultModal({
                         >
                           {severityLabel}
                         </span>
-                        <span className="text-xs" style={{ color: '#555' }}>
+                        <span className="text-xs" style={{ color: '#888' }}>
                           ~{healsIn} min
                         </span>
                       </div>
@@ -1174,7 +1271,7 @@ function ResultModal({
           <button
             onClick={onDismiss}
             className="w-full py-3.5 rounded-xl font-bold text-sm"
-            style={{ background: rm.color, color: '#222222' }}
+            style={{ background: rm.color, color: '#141414' }}
           >
             Potvrdit
           </button>
@@ -1270,7 +1367,10 @@ export default function MissionsScreen() {
   }, [currentRegionId, activeMissions, completedQueue]);
 
   // Handle dispatch
-  async function handleDispatch(agents: Agent[], approach: MissionApproach = 'standard') {
+  async function handleDispatch(
+    agents: Agent[],
+    approach: MissionApproach = 'standard',
+  ) {
     if (!selectedMission || dispatching) return;
     setDispatching(true);
     setSelectedMission(null);
@@ -1299,7 +1399,7 @@ export default function MissionsScreen() {
   return (
     <div
       className="flex flex-col min-h-full pb-20"
-      style={{ background: '#222222', color: '#e8e8e8' }}
+      style={{ background: C.bgBase, color: C.textPrimary }}
     >
       {/* Header */}
       <div className="px-4 pt-4 pb-4">
@@ -1322,7 +1422,7 @@ export default function MissionsScreen() {
           <section>
             <p
               className="text-xs font-medium tracking-widest uppercase mb-2"
-              style={{ color: '#555' }}
+              style={{ color: '#888' }}
             >
               Probíhající (
               {
@@ -1350,7 +1450,7 @@ export default function MissionsScreen() {
         <section>
           <p
             className="text-xs font-medium tracking-widest uppercase mb-2"
-            style={{ color: '#555' }}
+            style={{ color: '#888' }}
           >
             Dostupné mise
           </p>
@@ -1361,17 +1461,17 @@ export default function MissionsScreen() {
                 <div
                   key={i}
                   className="rounded-xl h-36 animate-pulse"
-                  style={{ background: '#2b2b2b' }}
+                  style={{ background: C.bgSurface }}
                 />
               ))}
             </div>
           ) : availableMissions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
-              <Shield size={40} style={{ color: '#444444' }} />
-              <p className="text-sm" style={{ color: '#555' }}>
+              <Shield size={40} style={{ color: '#777777' }} />
+              <p className="text-sm" style={{ color: '#888' }}>
                 Momentálně žádné mise
               </p>
-              <p className="text-xs text-center" style={{ color: '#444' }}>
+              <p className="text-xs text-center" style={{ color: '#777' }}>
                 Nové operace brzy přibydou.
               </p>
             </div>

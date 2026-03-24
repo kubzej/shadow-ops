@@ -2,12 +2,28 @@ import { useCallback, useEffect, useState } from 'react';
 import CityBar from '../components/CityBar';
 import CurrenciesBar from '../components/CurrenciesBar';
 import {
+  C,
+  cardBase,
+  cardActive,
+  btn,
+  modalSheet,
+  modalOverlay,
+} from '../styles/tokens';
+import {
   Building2,
   ChevronRight,
+  Coins,
+  Eye,
+  Ghost,
+  House,
+  Lock,
+  Radio,
   RefreshCcw,
   ShieldCheck,
   TrendingUp,
+  User,
   Users,
+  Wrench,
   XCircle,
 } from 'lucide-react';
 import { db } from '../db/db';
@@ -68,7 +84,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'safehouse', label: 'Safe House' },
   { id: 'divisions', label: 'Divize' },
   { id: 'shop', label: 'Obchod' },
-  { id: 'blackmarket', label: '🕵 BM' },
+  { id: 'blackmarket', label: 'Černý trh' },
 ];
 
 // ─────────────────────────────────────────────
@@ -80,6 +96,13 @@ const RARITY_COLOR: Record<string, string> = {
   uncommon: '#4ade80',
   rare: '#60a5fa',
   legendary: '#f59e0b',
+};
+
+const RARITY_LABEL: Record<string, string> = {
+  common: 'Běžný',
+  uncommon: 'Neobvyklý',
+  rare: 'Vzácný',
+  legendary: 'Legendární',
 };
 
 const RANK_LABEL: Record<AgentRank, string> = {
@@ -215,8 +238,8 @@ function RecruitmentTab() {
   if (!safeHouses.length)
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-2">
-        <Building2 size={40} style={{ color: '#444444' }} />
-        <p className="text-sm" style={{ color: '#555' }}>
+        <Building2 size={40} style={{ color: '#777777' }} />
+        <p className="text-sm" style={{ color: '#888' }}>
           Žádné safe housy
         </p>
       </div>
@@ -244,15 +267,12 @@ function RecruitmentTab() {
                 disabled={currencies.money < RECRUITMENT_REFRESH_COST.money}
                 className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs"
                 style={{
-                  background: '#2b2b2b',
-                  color: '#888',
-                  border: '1px solid #2a2a2a',
+                  ...btn.secondary(),
                   opacity:
                     currencies.money < RECRUITMENT_REFRESH_COST.money ? 0.5 : 1,
                 }}
               >
-                <RefreshCcw size={11} />{' '}
-                <span style={{ color: '#4ade80' }}>$</span>
+                <RefreshCcw size={11} /> <Coins size={11} color={C.green} />
                 {RECRUITMENT_REFRESH_COST.money}
               </button>
             </div>
@@ -276,10 +296,7 @@ function RecruitmentTab() {
                       <div
                         key={o.id}
                         className="rounded-xl p-3 flex items-center gap-3"
-                        style={{
-                          background: '#2b2b2b',
-                          border: '1px solid #2a2a2a',
-                        }}
+                        style={cardBase}
                       >
                         <div
                           className="w-10 h-10 rounded-xl flex items-center justify-center font-bold flex-shrink-0"
@@ -305,11 +322,14 @@ function RecruitmentTab() {
                             >
                               {divName(inferDiv(o.agentTypeId))}
                             </span>
-                            <span className="text-xs" style={{ color: '#666' }}>
-                              {AGENT_TYPES.find((t) => t.id === o.agentTypeId)?.name ?? o.agentTypeId}
+                            <span className="text-xs" style={{ color: '#999' }}>
+                              {AGENT_TYPES.find((t) => t.id === o.agentTypeId)
+                                ?.name ?? o.agentTypeId}
                             </span>
-                            <span className="text-xs" style={{ color: '#444' }}>·</span>
-                            <span className="text-xs" style={{ color: '#555' }}>
+                            <span className="text-xs" style={{ color: '#777' }}>
+                              ·
+                            </span>
+                            <span className="text-xs" style={{ color: '#888' }}>
                               {RANK_LABEL[o.rank]} · avg {avg}
                             </span>
                           </div>
@@ -318,14 +338,9 @@ function RecruitmentTab() {
                           onClick={() => hire(o, sh.id)}
                           disabled={!ok || hiring === o.id}
                           className="px-3 py-2 rounded-lg text-xs font-bold flex-shrink-0"
-                          style={{
-                            background: ok ? '#4ade8022' : '#333333',
-                            color: ok ? '#4ade80' : '#444',
-                            border: `1px solid ${ok ? '#4ade8044' : '#333333'}`,
-                            cursor: ok ? 'pointer' : 'not-allowed',
-                          }}
+                          style={btn.action(C.green, !ok)}
                         >
-                          <span style={{ color: '#4ade80' }}>$</span>
+                          <Coins size={11} color={C.green} />
                           {o.cost}
                         </button>
                       </div>
@@ -336,10 +351,12 @@ function RecruitmentTab() {
               <button
                 onClick={() => refresh(sh.id)}
                 className="w-full py-5 rounded-xl flex flex-col items-center gap-1.5"
-                style={{ background: '#262626', border: '1px dashed #2a2a2a' }}
+                style={{
+                  background: C.bgSurface,
+                }}
               >
-                <Users size={22} style={{ color: '#333' }} />
-                <p className="text-xs" style={{ color: '#555' }}>
+                <Users size={22} style={{ color: C.textDisabled }} />
+                <p className="text-xs" style={{ color: '#888' }}>
                   Klepni pro obnovení
                 </p>
               </button>
@@ -373,7 +390,10 @@ function SafeHouseTab() {
   );
   const [assigningTo, setAssigningTo] = useState<string | null>(null);
   const [assignPicked, setAssignPicked] = useState<DivisionId | null>(null);
-  const [confirmDemolish, setConfirmDemolish] = useState<{ shId: string; moduleId: string } | null>(null);
+  const [confirmDemolish, setConfirmDemolish] = useState<{
+    shId: string;
+    moduleId: string;
+  } | null>(null);
 
   const load = useCallback(async () => {
     const allShs = await db.safeHouses.toArray();
@@ -465,8 +485,8 @@ function SafeHouseTab() {
   if (!houses.length)
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-2">
-        <Building2 size={40} style={{ color: '#444444' }} />
-        <p className="text-sm" style={{ color: '#555' }}>
+        <Building2 size={40} style={{ color: '#777777' }} />
+        <p className="text-sm" style={{ color: '#888' }}>
           Žádné safe housy
         </p>
       </div>
@@ -487,11 +507,7 @@ function SafeHouseTab() {
             currencies.intel >= nextCost.intel;
 
           return (
-            <div
-              key={sh.id}
-              className="rounded-xl p-4"
-              style={{ background: '#2b2b2b', border: '1px solid #2a2a2a' }}
-            >
+            <div key={sh.id} className="rounded-xl p-4" style={cardBase}>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-start gap-2">
                   <Building2 size={17} color="#4ade80" />
@@ -502,7 +518,7 @@ function SafeHouseTab() {
                     >
                       {REGION_MAP.get(sh.id)?.name ?? sh.id}
                     </p>
-                    <p className="text-xs" style={{ color: '#666' }}>
+                    <p className="text-xs" style={{ color: '#999' }}>
                       {COUNTRY_MAP.get(REGION_MAP.get(sh.id)?.countryId ?? '')
                         ?.name ?? ''}
                     </p>
@@ -512,7 +528,7 @@ function SafeHouseTab() {
                           key={i}
                           className="w-2 h-2 rounded-full"
                           style={{
-                            background: i < sh.level ? '#4ade80' : '#444444',
+                            background: i < sh.level ? '#4ade80' : '#777777',
                           }}
                         />
                       ))}
@@ -530,23 +546,23 @@ function SafeHouseTab() {
               <div className="flex gap-3 mb-3">
                 <div
                   className="flex-1 rounded-lg p-2 text-center"
-                  style={{ background: '#222222' }}
+                  style={{ background: C.bgBase }}
                 >
                   <p className="text-sm font-bold" style={{ color: '#e8e8e8' }}>
                     {count}/{cap}
                   </p>
-                  <p className="text-xs" style={{ color: '#555' }}>
+                  <p className="text-xs" style={{ color: '#888' }}>
                     Agenti
                   </p>
                 </div>
                 <div
                   className="flex-1 rounded-lg p-2 text-center"
-                  style={{ background: '#222222' }}
+                  style={{ background: C.bgBase }}
                 >
                   <p className="text-sm font-bold" style={{ color: '#e8e8e8' }}>
                     {sh.assignedDivisions.length}
                   </p>
-                  <p className="text-xs" style={{ color: '#555' }}>
+                  <p className="text-xs" style={{ color: '#888' }}>
                     Divize
                   </p>
                 </div>
@@ -579,14 +595,13 @@ function SafeHouseTab() {
                           setAssigningTo(sh.id);
                           setAssignPicked(null);
                         }}
-                        className="text-xs px-2 py-0.5 rounded"
+                        className="text-xs px-2 py-0.5 rounded flex items-center gap-0.5"
                         style={{
-                          background: '#222222',
-                          color: '#4ade80',
-                          border: '1px dashed #4ade8033',
+                          background: C.bgBase,
+                          color: C.green,
                         }}
                       >
-                        + <span style={{ color: '#4ade80' }}>$</span>
+                        + <Coins size={10} color={C.green} />
                         {DIVISION_ASSIGN_BASE_COST * (sh.index ?? 1)}
                       </button>
                     );
@@ -603,12 +618,12 @@ function SafeHouseTab() {
                       <span
                         className="text-xs px-2 py-0.5 rounded flex items-center gap-1"
                         style={{
-                          background: '#333333',
-                          color: '#555',
-                          border: '1px dashed #2a2a2a',
+                          background: C.bgSurface2,
+                          color: '#888',
                         }}
                       >
-                        🔒 {nextLevel ? `+slot na Lv${nextLevel}` : 'Plný slot'}
+                        <Lock size={9} />
+                        {nextLevel ? `+slot na Lv${nextLevel}` : 'Plný slot'}
                       </span>
                     );
                   }
@@ -638,13 +653,11 @@ function SafeHouseTab() {
                   shadow: number;
                   influence: number;
                 }) => (
-                  <span className="flex items-center gap-1.5 flex-wrap">
+                  <span className="flex items-center gap-2 flex-wrap">
                     {money !== 0 && (
                       <span className="flex items-center gap-0.5 text-xs">
-                        <span style={{ color: '#4ade80' }}>$</span>
-                        <span
-                          style={{ color: money >= 0 ? '#4ade80' : '#ef4444' }}
-                        >
+                        <Coins size={10} color={C.green} />
+                        <span style={{ color: money >= 0 ? C.green : C.red }}>
                           {money >= 0 ? '+' : ''}
                           {money.toFixed(1)}
                         </span>
@@ -652,10 +665,8 @@ function SafeHouseTab() {
                     )}
                     {intel !== 0 && (
                       <span className="flex items-center gap-0.5 text-xs">
-                        <span style={{ color: '#60a5fa' }}>◈</span>
-                        <span
-                          style={{ color: intel >= 0 ? '#60a5fa' : '#ef4444' }}
-                        >
+                        <Eye size={10} color={C.blue} />
+                        <span style={{ color: intel >= 0 ? C.blue : C.red }}>
                           {intel >= 0 ? '+' : ''}
                           {intel.toFixed(1)}
                         </span>
@@ -663,10 +674,8 @@ function SafeHouseTab() {
                     )}
                     {shadow !== 0 && (
                       <span className="flex items-center gap-0.5 text-xs">
-                        <span style={{ color: '#a78bfa' }}>◆</span>
-                        <span
-                          style={{ color: shadow >= 0 ? '#a78bfa' : '#ef4444' }}
-                        >
+                        <Ghost size={10} color={C.bm} />
+                        <span style={{ color: shadow >= 0 ? C.bm : C.red }}>
                           {shadow >= 0 ? '+' : ''}
                           {shadow.toFixed(1)}
                         </span>
@@ -674,10 +683,10 @@ function SafeHouseTab() {
                     )}
                     {influence !== 0 && (
                       <span className="flex items-center gap-0.5 text-xs">
-                        <span style={{ color: '#f97316' }}>✦</span>
+                        <Radio size={10} color={C.divExtraction} />
                         <span
                           style={{
-                            color: influence >= 0 ? '#f97316' : '#ef4444',
+                            color: influence >= 0 ? C.divExtraction : C.red,
                           }}
                         >
                           {influence >= 0 ? '+' : ''}
@@ -698,18 +707,14 @@ function SafeHouseTab() {
                   <div
                     className="mb-3 rounded-lg overflow-hidden"
                     style={{
-                      background: '#222222',
-                      border: '1px solid #1a1a1a',
+                      background: C.bgBase,
                     }}
                   >
                     {/* Header */}
-                    <div
-                      className="px-3 pt-2.5 pb-1.5"
-                      style={{ borderBottom: '1px solid #141414' }}
-                    >
+                    <div className="px-3 pt-2.5 pb-1.5">
                       <p
                         className="text-[10px] uppercase tracking-widest font-semibold"
-                        style={{ color: '#3a3a3a' }}
+                        style={{ color: '#666666' }}
                       >
                         Příjmy a výdaje / tick
                       </p>
@@ -724,7 +729,7 @@ function SafeHouseTab() {
                         >
                           <span
                             className="text-[11px] truncate"
-                            style={{ color: '#555' }}
+                            style={{ color: '#888' }}
                           >
                             {d.label}
                           </span>
@@ -739,10 +744,11 @@ function SafeHouseTab() {
                           className="flex items-center justify-between gap-2"
                         >
                           <span
-                            className="text-[11px] truncate"
-                            style={{ color: '#555' }}
+                            className="flex items-center gap-1 text-[11px] truncate"
+                            style={{ color: '#888' }}
                           >
-                            🔧 {m.label}
+                            <Wrench size={9} style={{ flexShrink: 0 }} />
+                            {m.label}
                           </span>
                           <CurrencyLine {...m} />
                         </div>
@@ -751,20 +757,18 @@ function SafeHouseTab() {
                       {/* Salaries */}
                       {bd.salaries.length > 0 && (
                         <>
-                          <div
-                            className="my-0.5"
-                            style={{ borderTop: '1px solid #141414' }}
-                          />
+                          <div className="my-0.5" />
                           {bd.salaries.map((s) => (
                             <div
                               key={s.label}
                               className="flex items-center justify-between gap-2"
                             >
                               <span
-                                className="text-[11px] truncate"
-                                style={{ color: '#444' }}
+                                className="flex items-center gap-1 text-[11px] truncate"
+                                style={{ color: '#888' }}
                               >
-                                👤 {s.label}
+                                <User size={9} style={{ flexShrink: 0 }} />
+                                {s.label}
                               </span>
                               <CurrencyLine {...s} />
                             </div>
@@ -775,22 +779,23 @@ function SafeHouseTab() {
                       {/* Upkeep */}
                       <div className="flex items-center justify-between gap-2">
                         <span
-                          className="text-[11px] truncate"
-                          style={{ color: '#444' }}
+                          className="flex items-center gap-1 text-[11px] truncate"
+                          style={{ color: '#888' }}
                         >
-                          🏠 {bd.upkeep.label}
+                          <House size={9} style={{ flexShrink: 0 }} />
+                          {bd.upkeep.label}
                         </span>
                         <CurrencyLine {...bd.upkeep} />
                       </div>
 
                       {/* Net */}
                       <div
-                        className="pt-1.5 mt-0.5 flex items-center justify-between gap-2"
-                        style={{ borderTop: '1px solid #1f1f1f' }}
+                        className="pt-2 mt-1 flex items-center justify-between gap-2"
+                        style={{ borderTop: `1px solid ${C.bgSurface2}` }}
                       >
                         <span
-                          className="text-[11px] font-semibold"
-                          style={{ color: '#666' }}
+                          className="text-xs font-semibold"
+                          style={{ color: '#e8e8e8' }}
                         >
                           Čistý tick
                         </span>
@@ -805,7 +810,7 @@ function SafeHouseTab() {
               <div className="mb-3">
                 <p
                   className="text-[10px] uppercase tracking-widest mb-1.5"
-                  style={{ color: '#3a3a3a' }}
+                  style={{ color: '#666666' }}
                 >
                   Moduly ({sh.modules.length}/{MODULE_MAX_PER_SAFEHOUSE})
                 </p>
@@ -821,7 +826,9 @@ function SafeHouseTab() {
                             money: Math.floor(mod.cost.money * 0.3),
                             intel: Math.floor((mod.cost.intel ?? 0) * 0.3),
                             shadow: Math.floor((mod.cost.shadow ?? 0) * 0.3),
-                            influence: Math.floor((mod.cost.influence ?? 0) * 0.3),
+                            influence: Math.floor(
+                              (mod.cost.influence ?? 0) * 0.3,
+                            ),
                           }
                         : null;
                       return (
@@ -830,37 +837,86 @@ function SafeHouseTab() {
                           className="flex items-center justify-between rounded-lg px-2 py-1.5"
                           style={{
                             background: isConfirming ? '#2a1a1a' : '#1a2e1a',
-                            border: `1px solid ${isConfirming ? '#ef444433' : '#4ade8022'}`,
                           }}
                         >
-                          <span className="text-xs font-medium" style={{ color: isConfirming ? '#ef4444' : '#4ade80' }}>
+                          <span
+                            className="text-xs font-medium"
+                            style={{
+                              color: isConfirming ? '#ef4444' : '#4ade80',
+                            }}
+                          >
                             {mod?.name ?? mId}
                           </span>
                           {isConfirming ? (
                             <div className="flex items-center gap-2">
-                              <span className="text-[10px]" style={{ color: '#888' }}>
-                                Refund{refund?.money ? ` $${refund.money}` : ''}{refund?.intel ? ` ◈${refund.intel}` : ''}{refund?.shadow ? ` ◆${refund.shadow}` : ''}{refund?.influence ? ` ✦${refund.influence}` : ''}
+                              <span
+                                className="flex items-center gap-1 text-[10px]"
+                                style={{ color: '#888' }}
+                              >
+                                Refund
+                                {refund?.money ? (
+                                  <>
+                                    <Coins size={9} color={C.green} />
+                                    <span style={{ color: C.green }}>
+                                      {refund.money}
+                                    </span>
+                                  </>
+                                ) : null}
+                                {refund?.intel ? (
+                                  <>
+                                    <Eye size={9} color={C.blue} />
+                                    <span style={{ color: C.blue }}>
+                                      {refund.intel}
+                                    </span>
+                                  </>
+                                ) : null}
+                                {refund?.shadow ? (
+                                  <>
+                                    <Ghost size={9} color={C.bm} />
+                                    <span style={{ color: C.bm }}>
+                                      {refund.shadow}
+                                    </span>
+                                  </>
+                                ) : null}
+                                {refund?.influence ? (
+                                  <>
+                                    <Radio size={9} color={C.divExtraction} />
+                                    <span style={{ color: C.divExtraction }}>
+                                      {refund.influence}
+                                    </span>
+                                  </>
+                                ) : null}
                               </span>
                               <button
                                 onClick={() => demolishModule(sh, mId)}
                                 className="text-[10px] px-2 py-0.5 rounded font-semibold"
-                                style={{ background: '#ef444422', color: '#ef4444', border: '1px solid #ef444433' }}
+                                style={{
+                                  background: '#ef444422',
+                                  color: '#ef4444',
+                                }}
                               >
                                 Potvrdit
                               </button>
                               <button
                                 onClick={() => setConfirmDemolish(null)}
                                 className="text-[10px] px-2 py-0.5 rounded"
-                                style={{ color: '#555' }}
+                                style={{ color: '#888' }}
                               >
                                 Zrušit
                               </button>
                             </div>
                           ) : (
                             <button
-                              onClick={() => setConfirmDemolish({ shId: sh.id, moduleId: mId })}
+                              onClick={() =>
+                                setConfirmDemolish({
+                                  shId: sh.id,
+                                  moduleId: mId,
+                                })
+                              }
                               className="text-[10px] px-2 py-0.5 rounded"
-                              style={{ color: '#555', border: '1px solid #333333' }}
+                              style={{
+                                color: '#888',
+                              }}
                             >
                               Demolovat
                             </button>
@@ -888,46 +944,59 @@ function SafeHouseTab() {
                           disabled={!canAfford}
                           className="w-full flex items-center justify-between rounded-lg px-3 py-2 text-left"
                           style={{
-                            background: canAfford ? '#0d1a0d' : '#222222',
-                            border: `1px solid ${canAfford ? '#4ade8022' : '#333333'}`,
-                            cursor: canAfford ? 'pointer' : 'not-allowed',
+                            ...btn.action(C.green, !canAfford),
                             opacity: canAfford ? 1 : 0.6,
                           }}
                         >
                           <div className="min-w-0 flex-1">
                             <p
                               className="text-xs font-semibold truncate"
-                              style={{ color: canAfford ? '#e8e8e8' : '#555' }}
+                              style={{ color: canAfford ? '#e8e8e8' : '#888' }}
                             >
                               {mod.name}
                             </p>
                             <p
                               className="text-[10px] truncate"
-                              style={{ color: '#555' }}
+                              style={{ color: '#888' }}
                             >
                               {mod.description}
                             </p>
                           </div>
-                          <div className="flex items-center gap-1.5 ml-2 flex-shrink-0 text-[10px]">
+                          <div className="flex items-center gap-2 ml-2 flex-shrink-0">
                             {mod.cost.money > 0 && (
-                              <span style={{ color: '#4ade80' }}>
-                                <span style={{ color: '#4ade80' }}>$</span>
+                              <span
+                                className="flex items-center gap-0.5 text-[10px]"
+                                style={{ color: C.green }}
+                              >
+                                <Coins size={10} color={C.green} />
                                 {mod.cost.money}
                               </span>
                             )}
                             {(mod.cost.intel ?? 0) > 0 && (
-                              <span style={{ color: '#60a5fa' }}>
-                                ◈{mod.cost.intel}
+                              <span
+                                className="flex items-center gap-0.5 text-[10px]"
+                                style={{ color: C.blue }}
+                              >
+                                <Eye size={10} color={C.blue} />
+                                {mod.cost.intel}
                               </span>
                             )}
                             {(mod.cost.shadow ?? 0) > 0 && (
-                              <span style={{ color: '#a78bfa' }}>
-                                ◆{mod.cost.shadow}
+                              <span
+                                className="flex items-center gap-0.5 text-[10px]"
+                                style={{ color: C.bm }}
+                              >
+                                <Ghost size={10} color={C.bm} />
+                                {mod.cost.shadow}
                               </span>
                             )}
                             {(mod.cost.influence ?? 0) > 0 && (
-                              <span style={{ color: '#f97316' }}>
-                                ✦{mod.cost.influence}
+                              <span
+                                className="flex items-center gap-0.5 text-[10px]"
+                                style={{ color: C.divExtraction }}
+                              >
+                                <Radio size={10} color={C.divExtraction} />
+                                {mod.cost.influence}
                               </span>
                             )}
                           </div>
@@ -944,7 +1013,6 @@ function SafeHouseTab() {
                   style={{
                     background: '#1a1a08',
                     color: '#facc15',
-                    border: '1px solid #facc1533',
                   }}
                 >
                   Upgrade probíhá…
@@ -954,22 +1022,22 @@ function SafeHouseTab() {
                   onClick={() => upgrade(sh)}
                   disabled={!canUpg}
                   className="w-full py-2.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5"
-                  style={{
-                    background: canUpg ? '#4ade8022' : '#262626',
-                    color: canUpg ? '#4ade80' : '#444',
-                    border: `1px solid ${canUpg ? '#4ade8044' : '#333333'}`,
-                    cursor: canUpg ? 'pointer' : 'not-allowed',
-                  }}
+                  style={btn.action(C.green, !canUpg)}
                 >
-                  <TrendingUp size={12} /> Upgrade na {sh.level + 1} —{' '}
-                  <span style={{ color: '#4ade80' }}>$</span>
-                  {nextCost.money} <span style={{ color: '#60a5fa' }}>◈</span>
-                  {nextCost.intel}
+                  <TrendingUp size={12} /> Upgrade na {sh.level + 1}
+                  <span className="flex items-center gap-0.5 ml-1">
+                    <Coins size={11} color={C.green} />
+                    {nextCost.money}
+                  </span>
+                  <span className="flex items-center gap-0.5">
+                    <Eye size={11} color={C.blue} />
+                    {nextCost.intel}
+                  </span>
                 </button>
               ) : (
                 <p
                   className="text-center text-xs py-2"
-                  style={{ color: '#555' }}
+                  style={{ color: '#888' }}
                 >
                   Max level
                 </p>
@@ -990,22 +1058,12 @@ function SafeHouseTab() {
             (d) => !sh.assignedDivisions.includes(d),
           );
           return (
-            <div
-              className="fixed inset-0 z-50 flex flex-col justify-end"
-              style={{ background: 'rgba(0,0,0,0.75)' }}
-            >
-              <div
-                className="rounded-t-2xl"
-                style={{ background: '#262626', border: '1px solid #2a2a2a' }}
-              >
-                <div
-                  className="h-1 rounded-t-2xl"
-                  style={{ background: '#4ade80' }}
-                />
+            <div style={modalOverlay}>
+              <div style={modalSheet}>
                 <div className="flex justify-center pt-3 pb-1">
                   <div
                     className="w-10 h-1 rounded-full"
-                    style={{ background: '#333' }}
+                    style={{ background: '#999' }}
                   />
                 </div>
                 <div className="px-4 pt-2 pb-6">
@@ -1029,7 +1087,7 @@ function SafeHouseTab() {
                         setAssigningTo(null);
                         setAssignPicked(null);
                       }}
-                      style={{ color: '#555' }}
+                      style={{ color: '#888' }}
                     >
                       <XCircle size={22} />
                     </button>
@@ -1037,16 +1095,16 @@ function SafeHouseTab() {
 
                   <div
                     className="rounded-lg px-3 py-2 mb-3 flex items-center gap-2"
-                    style={{ background: '#2b2b2b' }}
+                    style={{ background: C.bgSurface2 }}
                   >
-                    <span style={{ color: '#4ade80' }}>$</span>
+                    <Coins size={14} color={canPay ? C.green : C.red} />
                     <span
                       className="text-sm font-bold"
-                      style={{ color: canPay ? '#4ade80' : '#ef4444' }}
+                      style={{ color: canPay ? C.green : C.red }}
                     >
                       {assignCost}
                     </span>
-                    <span className="text-xs" style={{ color: '#555' }}>
+                    <span className="text-xs" style={{ color: '#888' }}>
                       / {currencies.money}
                     </span>
                   </div>
@@ -1054,7 +1112,7 @@ function SafeHouseTab() {
                   {available.length === 0 ? (
                     <p
                       className="text-sm text-center py-4"
-                      style={{ color: '#555' }}
+                      style={{ color: '#888' }}
                     >
                       Všechny odemčené divize jsou přiřazeny.
                     </p>
@@ -1069,10 +1127,7 @@ function SafeHouseTab() {
                             key={divId}
                             onClick={() => setAssignPicked(divId)}
                             className="flex items-center gap-3 p-3 rounded-xl text-left w-full"
-                            style={{
-                              background: sel ? `${div.color}22` : '#2b2b2b',
-                              border: `1px solid ${sel ? `${div.color}55` : '#444444'}`,
-                            }}
+                            style={sel ? { ...cardActive } : { ...cardBase }}
                           >
                             <div
                               className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
@@ -1089,7 +1144,7 @@ function SafeHouseTab() {
                               </p>
                               <p
                                 className="text-xs truncate"
-                                style={{ color: '#555' }}
+                                style={{ color: '#888' }}
                               >
                                 {div.description}
                               </p>
@@ -1108,11 +1163,7 @@ function SafeHouseTab() {
                         setAssignPicked(null);
                       }}
                       className="flex-1 py-3 rounded-xl text-sm font-medium"
-                      style={{
-                        background: '#333333',
-                        color: '#888',
-                        border: '1px solid #2a2a2a',
-                      }}
+                      style={btn.secondary()}
                     >
                       Zrušit
                     </button>
@@ -1123,14 +1174,7 @@ function SafeHouseTab() {
                         }
                         disabled={!assignPicked || !canPay}
                         className="flex-1 py-3 rounded-xl font-bold text-sm"
-                        style={{
-                          background:
-                            assignPicked && canPay ? '#4ade8022' : '#333333',
-                          color: assignPicked && canPay ? '#4ade80' : '#444',
-                          border: `1px solid ${assignPicked && canPay ? '#4ade8044' : '#333333'}`,
-                          cursor:
-                            assignPicked && canPay ? 'pointer' : 'not-allowed',
-                        }}
+                        style={btn.action(C.green, !(assignPicked && canPay))}
                       >
                         Přiřadit divizi
                       </button>
@@ -1239,23 +1283,19 @@ function DivisionsTab() {
           <div
             key={div.id}
             className="rounded-xl p-3 flex items-center gap-3"
-            style={{
-              background: isOn ? `${div.color}11` : '#262626',
-              border: `1px solid ${isOn ? `${div.color}33` : '#333333'}`,
-              opacity: isOn || canU ? 1 : 0.6,
-            }}
+            style={{ ...cardBase, opacity: isOn || canU ? 1 : 0.6 }}
           >
             <div
               className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ background: isOn ? `${div.color}22` : '#333333' }}
+              style={{ background: isOn ? `${div.color}22` : '#666666' }}
             >
-              <ShieldCheck size={15} color={isOn ? div.color : '#444'} />
+              <ShieldCheck size={15} color={isOn ? div.color : '#777'} />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
                 <p
                   className="text-sm font-medium"
-                  style={{ color: isOn ? '#e8e8e8' : '#555' }}
+                  style={{ color: isOn ? '#e8e8e8' : '#888' }}
                 >
                   {div.name}
                 </p>
@@ -1265,13 +1305,13 @@ function DivisionsTab() {
                       <span
                         key={i}
                         className="w-1.5 h-1.5 rounded-full"
-                        style={{ background: i < lv ? div.color : '#444444' }}
+                        style={{ background: i < lv ? div.color : '#777777' }}
                       />
                     ))}
                   </span>
                 )}
               </div>
-              <p className="text-xs truncate" style={{ color: '#555' }}>
+              <p className="text-xs truncate" style={{ color: '#888' }}>
                 {div.description}
               </p>
             </div>
@@ -1280,7 +1320,7 @@ function DivisionsTab() {
               isFree ? (
                 <span
                   className="text-xs px-2 py-1 rounded flex-shrink-0"
-                  style={{ background: '#333333', color: '#555' }}
+                  style={{ background: '#666666', color: '#888' }}
                 >
                   Starter
                 </span>
@@ -1289,12 +1329,7 @@ function DivisionsTab() {
                   onClick={() => doUnlock(div.id)}
                   disabled={!canU}
                   className="text-xs px-2.5 py-1.5 rounded-lg font-semibold flex-shrink-0"
-                  style={{
-                    background: canU ? `${div.color}22` : '#333333',
-                    color: canU ? div.color : '#444',
-                    border: `1px solid ${canU ? `${div.color}44` : '#333333'}`,
-                    cursor: canU ? 'pointer' : 'not-allowed',
-                  }}
+                  style={btn.action(div.color as string, !canU)}
                 >
                   <span style={{ color: '#4ade80' }}>$</span>
                   {uc?.money}
@@ -1305,12 +1340,7 @@ function DivisionsTab() {
                 onClick={() => doUpgrade(div.id)}
                 disabled={!canUpg}
                 className="text-xs px-2.5 py-1.5 rounded-lg font-semibold flex-shrink-0"
-                style={{
-                  background: canUpg ? `${div.color}22` : '#333333',
-                  color: canUpg ? div.color : '#444',
-                  border: `1px solid ${canUpg ? `${div.color}44` : '#333333'}`,
-                  cursor: canUpg ? 'pointer' : 'not-allowed',
-                }}
+                style={btn.action(div.color as string, !canUpg)}
               >
                 ↑ Lv{lv + 1}
               </button>
@@ -1467,17 +1497,17 @@ function ShopTab() {
     <div className="flex flex-col gap-3">
       {/* Rotation header */}
       <div className="flex items-center justify-between">
-        <p className="text-xs" style={{ color: '#555' }}>
+        <p className="text-xs" style={{ color: '#888' }}>
           6 položek · rotace každou hodinu
         </p>
-        <p className="text-xs font-mono" style={{ color: '#444' }}>
+        <p className="text-xs font-mono" style={{ color: '#777' }}>
           🕐 {formatCountdown(countdown)}
         </p>
       </div>
 
       {/* Tier hint */}
       {totalMissions < 10 && (
-        <p className="text-xs" style={{ color: '#444' }}>
+        <p className="text-xs" style={{ color: '#777' }}>
           Na rare itemy potřebuješ 10+ splněných misí · legendary 30+ misí +
           černý trh
         </p>
@@ -1489,7 +1519,6 @@ function ShopTab() {
           style={{
             background: '#1a2e1a',
             color: '#4ade80',
-            border: '1px solid #4ade8033',
           }}
         >
           {notif}
@@ -1509,7 +1538,7 @@ function ShopTab() {
           <div
             key={eq.id}
             className="rounded-xl p-3 flex items-start gap-3"
-            style={{ background: '#2b2b2b', border: '1px solid #2a2a2a' }}
+            style={cardBase}
           >
             <div
               className="w-9 h-9 rounded-lg flex items-center justify-center text-base flex-shrink-0"
@@ -1526,12 +1555,12 @@ function ShopTab() {
                   className="text-[10px] px-1.5 py-0.5 rounded"
                   style={{ background: `${rc}22`, color: rc }}
                 >
-                  {eq.rarity}
+                  {RARITY_LABEL[eq.rarity] ?? eq.rarity}
                 </span>
               </div>
               <p
                 className="text-xs line-clamp-1 mb-1"
-                style={{ color: '#666' }}
+                style={{ color: '#999' }}
               >
                 {eq.description}
               </p>
@@ -1553,7 +1582,7 @@ function ShopTab() {
               )}
               <div
                 className="flex gap-2 flex-wrap text-xs"
-                style={{ color: '#555' }}
+                style={{ color: '#888' }}
               >
                 {eq.bonusStealth ? <span>+{eq.bonusStealth} Stlth</span> : null}
                 {eq.bonusCombat ? <span>+{eq.bonusCombat} Cmbt</span> : null}
@@ -1568,12 +1597,7 @@ function ShopTab() {
               onClick={() => canBuy && setBuying(eq)}
               disabled={!canBuy}
               className="px-2.5 py-2 rounded-lg text-xs font-bold flex-shrink-0 whitespace-nowrap"
-              style={{
-                background: canBuy ? '#4ade8022' : '#333333',
-                color: canBuy ? '#4ade80' : '#444',
-                border: `1px solid ${canBuy ? '#4ade8044' : '#333333'}`,
-                cursor: canBuy ? 'pointer' : 'not-allowed',
-              }}
+              style={btn.action(C.green, !canBuy)}
             >
               {eq.costMoney > 0 && (
                 <>
@@ -1609,22 +1633,12 @@ function ShopTab() {
 
       {/* Agent picker */}
       {buying && (
-        <div
-          className="fixed inset-0 z-50 flex flex-col justify-end"
-          style={{ background: 'rgba(0,0,0,0.75)' }}
-        >
-          <div
-            className="rounded-t-2xl"
-            style={{ background: '#262626', border: '1px solid #2a2a2a' }}
-          >
-            <div
-              className="h-1 rounded-t-2xl"
-              style={{ background: '#4ade80' }}
-            />
+        <div style={modalOverlay}>
+          <div style={modalSheet}>
             <div className="flex justify-center pt-3 pb-1">
               <div
                 className="w-10 h-1 rounded-full"
-                style={{ background: '#333' }}
+                style={{ background: '#999' }}
               />
             </div>
             <div className="px-4 pt-2 pb-6">
@@ -1632,7 +1646,7 @@ function ShopTab() {
                 <div>
                   <p
                     className="text-xs tracking-widest uppercase"
-                    style={{ color: '#555' }}
+                    style={{ color: '#888' }}
                   >
                     Přiřadit
                   </p>
@@ -1645,7 +1659,7 @@ function ShopTab() {
                 </div>
                 <button
                   onClick={() => setBuying(null)}
-                  style={{ color: '#555' }}
+                  style={{ color: '#888' }}
                 >
                   <XCircle size={22} />
                 </button>
@@ -1653,7 +1667,7 @@ function ShopTab() {
               {agents.length === 0 ? (
                 <p
                   className="text-sm text-center py-6"
-                  style={{ color: '#555' }}
+                  style={{ color: '#888' }}
                 >
                   Žádní volní agenti
                 </p>
@@ -1668,8 +1682,7 @@ function ShopTab() {
                         disabled={!has}
                         className="flex items-center gap-3 p-2.5 rounded-xl"
                         style={{
-                          background: '#2b2b2b',
-                          border: '1px solid #2a2a2a',
+                          ...cardBase,
                           opacity: has ? 1 : 0.4,
                           cursor: has ? 'pointer' : 'not-allowed',
                         }}
@@ -1690,12 +1703,12 @@ function ShopTab() {
                           >
                             {a.name}
                           </p>
-                          <p className="text-xs" style={{ color: '#666' }}>
+                          <p className="text-xs" style={{ color: '#999' }}>
                             {has ? 'Volný slot' : 'Plné vybavení'}
                           </p>
                         </div>
                         {has && (
-                          <ChevronRight size={13} style={{ color: '#444' }} />
+                          <ChevronRight size={13} style={{ color: '#777' }} />
                         )}
                       </button>
                     );
@@ -1846,7 +1859,7 @@ function BlackMarketTab() {
         <p className="text-base font-semibold" style={{ color: '#e8e8e8' }}>
           Černý trh uzamčen
         </p>
-        <p className="text-sm" style={{ color: '#555' }}>
+        <p className="text-sm" style={{ color: '#888' }}>
           {remaining > 0
             ? `Dokončete ještě ${remaining} misi${remaining === 1 ? '' : remaining < 5 ? 'e' : 'í'} k odemčení.`
             : 'Dokončete další misi k odemčení.'}
@@ -1858,7 +1871,7 @@ function BlackMarketTab() {
   if (!offer) {
     return (
       <div className="flex items-center justify-center pt-16">
-        <p className="text-sm" style={{ color: '#555' }}>
+        <p className="text-sm" style={{ color: '#888' }}>
           Načítám...
         </p>
       </div>
@@ -1873,7 +1886,7 @@ function BlackMarketTab() {
           <p className="text-sm font-semibold" style={{ color: '#a855f7' }}>
             Černý trh
           </p>
-          <p className="text-xs" style={{ color: '#555' }}>
+          <p className="text-xs" style={{ color: '#888' }}>
             Exkluzivní vybavení a agenti
           </p>
         </div>
@@ -1891,7 +1904,6 @@ function BlackMarketTab() {
           style={{
             background: '#0a1a0a',
             color: '#4ade80',
-            border: '1px solid #4ade8033',
           }}
         >
           {notif}
@@ -1936,7 +1948,6 @@ function BlackMarketTab() {
             className="rounded-xl p-3 flex gap-3 items-start"
             style={{
               background: `${rc}0d`,
-              border: `1px solid ${rc}33`,
             }}
           >
             <div
@@ -1955,13 +1966,13 @@ function BlackMarketTab() {
                     className="text-[10px] px-1.5 py-0.5 rounded"
                     style={{ background: `${rc}22`, color: rc }}
                   >
-                    {eq.rarity}
+                    {RARITY_LABEL[eq.rarity] ?? eq.rarity}
                   </span>
                 )}
               </div>
               <p
                 className="text-xs line-clamp-1 mb-1"
-                style={{ color: '#666' }}
+                style={{ color: '#999' }}
               >
                 {subtitle}
               </p>
@@ -1976,7 +1987,7 @@ function BlackMarketTab() {
               {eq && (
                 <div
                   className="flex gap-2 flex-wrap text-xs"
-                  style={{ color: '#555' }}
+                  style={{ color: '#888' }}
                 >
                   {eq.bonusStealth ? (
                     <span>+{eq.bonusStealth} Stlth</span>
@@ -1994,12 +2005,7 @@ function BlackMarketTab() {
               onClick={() => canAfford && buyListing(listing)}
               disabled={!canAfford}
               className="px-2.5 py-2 rounded-lg text-xs font-bold flex-shrink-0 whitespace-nowrap"
-              style={{
-                background: canAfford ? '#a855f722' : '#333333',
-                color: canAfford ? '#a855f7' : '#444',
-                border: `1px solid ${canAfford ? '#a855f744' : '#333333'}`,
-                cursor: canAfford ? 'pointer' : 'not-allowed',
-              }}
+              style={btn.action(C.bm, !canAfford)}
             >
               {listing.costShadow > 0 && (
                 <>
@@ -2118,19 +2124,12 @@ function AgentPickerModal({
   }, []);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex flex-col justify-end"
-      style={{ background: 'rgba(0,0,0,0.75)' }}
-    >
-      <div
-        className="rounded-t-2xl"
-        style={{ background: '#262626', border: '1px solid #2a2a2a' }}
-      >
-        <div className="h-1 rounded-t-2xl" style={{ background: '#a855f7' }} />
+    <div style={modalOverlay}>
+      <div style={modalSheet}>
         <div className="flex justify-center pt-3 pb-1">
           <div
             className="w-10 h-1 rounded-full"
-            style={{ background: '#333' }}
+            style={{ background: '#999' }}
           />
         </div>
         <div className="px-4 pt-2 pb-6">
@@ -2138,12 +2137,12 @@ function AgentPickerModal({
             <p className="text-sm font-semibold" style={{ color: '#e8e8e8' }}>
               Přiřadit agentovi
             </p>
-            <button onClick={onClose} style={{ color: '#555' }}>
-              ✕
+            <button onClick={onClose} style={{ color: '#888' }}>
+              <XCircle size={20} />
             </button>
           </div>
           {agents.length === 0 ? (
-            <p className="text-sm text-center py-4" style={{ color: '#555' }}>
+            <p className="text-sm text-center py-4" style={{ color: '#888' }}>
               Žádný dostupný agent s volným slotem
             </p>
           ) : (
@@ -2153,7 +2152,7 @@ function AgentPickerModal({
                   key={a.id}
                   onClick={() => onAssign(a, listing)}
                   className="flex items-center gap-3 p-3 rounded-xl"
-                  style={{ background: '#2b2b2b', border: '1px solid #222' }}
+                  style={cardBase}
                 >
                   <div
                     className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold"
@@ -2171,11 +2170,11 @@ function AgentPickerModal({
                     >
                       {a.name}
                     </p>
-                    <p className="text-xs" style={{ color: '#666' }}>
+                    <p className="text-xs" style={{ color: '#999' }}>
                       {RANK_LABEL[a.rank]} · volný slot
                     </p>
                   </div>
-                  <ChevronRight size={13} style={{ color: '#444' }} />
+                  <ChevronRight size={13} style={{ color: '#777' }} />
                 </button>
               ))}
             </div>
@@ -2208,19 +2207,12 @@ function SafeHousePickerModal({
   onConfirm: (shId: string) => void;
 }) {
   return (
-    <div
-      className="fixed inset-0 z-50 flex flex-col justify-end"
-      style={{ background: 'rgba(0,0,0,0.75)' }}
-    >
-      <div
-        className="rounded-t-2xl"
-        style={{ background: '#262626', border: '1px solid #2a2a2a' }}
-      >
-        <div className="h-1 rounded-t-2xl" style={{ background: '#a855f7' }} />
+    <div style={modalOverlay}>
+      <div style={modalSheet}>
         <div className="flex justify-center pt-3 pb-1">
           <div
             className="w-10 h-1 rounded-full"
-            style={{ background: '#333' }}
+            style={{ background: '#999' }}
           />
         </div>
         <div className="px-4 pt-2 pb-6">
@@ -2228,11 +2220,11 @@ function SafeHousePickerModal({
             <p className="text-sm font-semibold" style={{ color: '#e8e8e8' }}>
               Kam umístit agenta?
             </p>
-            <button onClick={onClose} style={{ color: '#555' }}>
-              ✕
+            <button onClick={onClose} style={{ color: '#888' }}>
+              <XCircle size={20} />
             </button>
           </div>
-          <p className="text-xs mb-3" style={{ color: '#666' }}>
+          <p className="text-xs mb-3" style={{ color: '#999' }}>
             {pending.agentName} · {RANK_LABEL[pending.rank]} ·{' '}
             {DIVISIONS.find((d) => d.id === pending.division)?.name ??
               pending.division}
@@ -2249,8 +2241,7 @@ function SafeHousePickerModal({
                   onClick={() => !full && onConfirm(sh.id)}
                   className="flex items-center gap-3 p-3 rounded-xl"
                   style={{
-                    background: full ? '#0d0d0d' : '#2b2b2b',
-                    border: `1px solid ${full ? '#333333' : '#444444'}`,
+                    ...cardBase,
                     opacity: full ? 0.5 : 1,
                     cursor: full ? 'not-allowed' : 'pointer',
                   }}
@@ -2268,12 +2259,12 @@ function SafeHousePickerModal({
                     >
                       {regionDisplayName(sh.id)}
                     </p>
-                    <p className="text-xs" style={{ color: '#666' }}>
+                    <p className="text-xs" style={{ color: '#999' }}>
                       {count}/{cap} agentů {full ? '· plno' : ''}
                     </p>
                   </div>
                   {!full && (
-                    <ChevronRight size={13} style={{ color: '#444' }} />
+                    <ChevronRight size={13} style={{ color: '#777' }} />
                   )}
                 </button>
               );
@@ -2290,14 +2281,12 @@ function SafeHousePickerModal({
 // ─────────────────────────────────────────────
 
 export default function BaseScreen() {
-  const blackMarketUnlocked = useGameStore((s) => s.blackMarketUnlocked);
-  const totalMissions = useGameStore((s) => s.totalMissionsCompleted);
   const [tab, setTab] = useState<Tab>('recruit');
 
   return (
     <div
       className="flex flex-col min-h-full pb-20"
-      style={{ background: '#222222', color: '#e8e8e8' }}
+      style={{ background: C.bgBase, color: C.textPrimary }}
     >
       {/* Header */}
       <div className="px-4 pt-4 pb-3">
@@ -2312,20 +2301,14 @@ export default function BaseScreen() {
 
         {/* Tabs */}
         <div className="flex gap-1">
-          {TABS.filter(
-            (t) =>
-              t.id !== 'blackmarket' ||
-              blackMarketUnlocked ||
-              totalMissions >= 10,
-          ).map((t) => (
+          {TABS.map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
               className="flex-1 py-2 rounded-xl text-xs font-medium transition-all"
               style={{
-                background: tab === t.id ? '#4ade8022' : '#2b2b2b',
-                color: tab === t.id ? '#4ade80' : '#666',
-                border: `1px solid ${tab === t.id ? '#4ade8044' : '#333333'}`,
+                background: tab === t.id ? C.bgSurface2 : 'transparent',
+                color: tab === t.id ? C.green : C.textMuted,
               }}
             >
               {t.label}

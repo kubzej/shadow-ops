@@ -5,6 +5,7 @@ import type { SafeHouse, RegionState } from '../db/schema';
 import { REGION_MAP } from '../data/regions';
 import { COUNTRY_MAP } from '../data/countries';
 import { useUIStore } from '../store/uiStore';
+import { C, modalOverlay, modalSheet } from '../styles/tokens';
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -108,38 +109,31 @@ function CitySwitcherOverlay({
   return (
     <div
       className="fixed inset-0 z-50 flex flex-col justify-end"
-      style={{ background: 'rgba(0,0,0,0.75)' }}
+      style={modalOverlay}
       onClick={onClose}
     >
       <div
-        className="rounded-t-2xl overflow-hidden"
-        style={{
-          background: '#262626',
-          border: '1px solid #2a2a2a',
-          maxHeight: '70vh',
-        }}
+        className="overflow-hidden"
+        style={{ ...modalSheet, maxHeight: '70vh' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-1">
           <div
             className="w-10 h-1 rounded-full"
-            style={{ background: '#333' }}
+            style={{ background: C.bgSurface2 }}
           />
         </div>
 
         {/* Title row */}
-        <div
-          className="px-4 py-2 flex items-center justify-between"
-          style={{ borderBottom: '1px solid #1a1a1a' }}
-        >
+        <div className="px-4 py-2 flex items-center justify-between">
           <span
             className="text-xs font-semibold tracking-widest uppercase"
-            style={{ color: '#555' }}
+            style={{ color: '#888' }}
           >
             Přepnout základnu
           </span>
-          <button onClick={onClose} style={{ color: '#555' }}>
+          <button onClick={onClose} style={{ color: '#888' }}>
             <X size={16} />
           </button>
         </div>
@@ -154,7 +148,7 @@ function CitySwitcherOverlay({
                 <div
                   key={i}
                   className="rounded-xl h-16 animate-pulse"
-                  style={{ background: '#2b2b2b' }}
+                  style={{ background: C.bgSurface }}
                 />
               ))
             : cities.map((city) => {
@@ -165,34 +159,33 @@ function CitySwitcherOverlay({
                     onClick={() => onSelect(city.id)}
                     className="flex items-center gap-3 rounded-xl p-3 text-left w-full transition-all"
                     style={{
-                      background: isActive ? '#4ade8011' : '#2b2b2b',
-                      border: `1px solid ${isActive ? '#4ade8033' : '#333333'}`,
+                      background: isActive ? `${C.green}11` : C.bgSurface,
                     }}
                   >
                     {/* Active indicator */}
                     <div
                       className="w-2 h-2 rounded-full flex-shrink-0"
-                      style={{ background: isActive ? '#4ade80' : '#444444' }}
+                      style={{ background: isActive ? C.green : C.bgSurface2 }}
                     />
 
                     {/* Name + country */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs" style={{ color: '#555' }}>
+                        <span className="text-xs" style={{ color: '#888' }}>
                           {typeIcon(city.type)}
                         </span>
                         <span
                           className="text-sm font-medium truncate"
-                          style={{ color: isActive ? '#4ade80' : '#e8e8e8' }}
+                          style={{ color: isActive ? C.green : C.textPrimary }}
                         >
                           {city.name}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-xs" style={{ color: '#555' }}>
+                        <span className="text-xs" style={{ color: '#888' }}>
                           {city.country}
                         </span>
-                        <span className="text-xs" style={{ color: '#333' }}>
+                        <span className="text-xs" style={{ color: '#999' }}>
                           ·
                         </span>
                         {/* SH level dots */}
@@ -203,7 +196,7 @@ function CitySwitcherOverlay({
                               className="w-1.5 h-1.5 rounded-full inline-block"
                               style={{
                                 background:
-                                  i < city.level ? '#4ade80' : '#444444',
+                                  i < city.level ? C.green : C.bgSurface2,
                               }}
                             />
                           ))}
@@ -216,11 +209,11 @@ function CitySwitcherOverlay({
                       <div className="text-right">
                         <div
                           className="text-xs font-medium"
-                          style={{ color: '#a78bfa' }}
+                          style={{ color: C.bm }}
                         >
                           {city.missionCount} misí
                         </div>
-                        <div className="text-xs" style={{ color: '#60a5fa' }}>
+                        <div className="text-xs" style={{ color: C.blue }}>
                           {city.agentCount} agentů
                         </div>
                       </div>
@@ -254,33 +247,30 @@ export default function CityBar() {
     <>
       <button
         className="w-full flex items-center gap-2 px-4 py-2 text-left mb-3"
-        style={{
-          background: '#0c0c0c',
-          borderBottom: '1px solid #1a1a1a',
-        }}
+        style={{ background: C.bgBase }}
         onClick={() => setOpen(true)}
       >
         <div
           className="w-2 h-2 rounded-full flex-shrink-0"
-          style={{ background: selectedId ? '#4ade80' : '#333' }}
+          style={{ background: selectedId ? C.green : C.bgSurface2 }}
         />
         {region && (
-          <span className="text-xs flex-shrink-0" style={{ color: '#555' }}>
+          <span className="text-xs flex-shrink-0" style={{ color: '#888' }}>
             {typeIcon(region.type)}
           </span>
         )}
         <span
           className="text-sm font-medium flex-1 truncate"
-          style={{ color: region ? '#e8e8e8' : '#555' }}
+          style={{ color: region ? C.textPrimary : C.textSecondary }}
         >
           {region?.name ?? 'Vyber základnu'}
         </span>
         {country && (
-          <span className="text-xs flex-shrink-0" style={{ color: '#444' }}>
+          <span className="text-xs flex-shrink-0" style={{ color: '#777' }}>
             {country.name}
           </span>
         )}
-        <ChevronDown size={13} style={{ color: '#444', flexShrink: 0 }} />
+        <ChevronDown size={13} style={{ color: '#777', flexShrink: 0 }} />
       </button>
 
       {open && (

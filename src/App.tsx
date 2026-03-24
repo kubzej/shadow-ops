@@ -181,7 +181,6 @@ function ToastContainer() {
           className="rounded-xl px-3 py-2.5 text-sm font-medium shadow-lg pointer-events-auto flex items-center gap-2"
           style={{
             background: '#262626',
-            border: `1px solid ${TOAST_COLORS[t.type]}40`,
             color: TOAST_COLORS[t.type],
           }}
           onClick={() => dismiss(t.id)}
