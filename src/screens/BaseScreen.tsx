@@ -410,6 +410,10 @@ function SafeHouseTab() {
     shId: string;
     moduleId: string;
   } | null>(null);
+  const [confirmBuyModule, setConfirmBuyModule] = useState<{
+    shId: string;
+    moduleId: string;
+  } | null>(null);
 
   const load = useCallback(async () => {
     const allShs = await db.safeHouses.toArray();
@@ -976,15 +980,16 @@ function SafeHouseTab() {
                         (currencies.shadow ?? 0) >= (mod.cost.shadow ?? 0) &&
                         (currencies.influence ?? 0) >=
                           (mod.cost.influence ?? 0);
+                      const isConfirming =
+                        confirmBuyModule?.shId === sh.id &&
+                        confirmBuyModule?.moduleId === mod.id;
                       return (
-                        <button
+                        <div
                           key={mod.id}
-                          onClick={() => buyModule(sh, mod.id)}
-                          disabled={!canAfford}
-                          className="w-full flex items-center justify-between rounded-lg px-3 py-2 text-left"
+                          className="w-full flex items-center justify-between rounded-lg px-3 py-2"
                           style={{
-                            ...btn.action(C.green, !canAfford),
-                            opacity: canAfford ? 1 : 0.6,
+                            ...btn.action(C.green, !canAfford && !isConfirming),
+                            opacity: canAfford || isConfirming ? 1 : 0.6,
                           }}
                         >
                           <div className="min-w-0 flex-1">
@@ -1001,45 +1006,90 @@ function SafeHouseTab() {
                               {mod.description}
                             </p>
                           </div>
-                          <div className="flex items-center gap-2 ml-2 flex-shrink-0">
-                            {mod.cost.money > 0 && (
-                              <span
-                                className="flex items-center gap-0.5 text-[10px]"
-                                style={{ color: C.green }}
+                          {isConfirming ? (
+                            <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+                              <button
+                                onClick={() => {
+                                  buyModule(sh, mod.id);
+                                  setConfirmBuyModule(null);
+                                }}
+                                className="text-[10px] px-2 py-0.5 rounded font-semibold"
+                                style={{
+                                  background: '#4ade8022',
+                                  color: '#4ade80',
+                                }}
                               >
-                                <Coins size={10} color={C.green} />
-                                {mod.cost.money}
-                              </span>
-                            )}
-                            {(mod.cost.intel ?? 0) > 0 && (
-                              <span
-                                className="flex items-center gap-0.5 text-[10px]"
-                                style={{ color: C.blue }}
+                                Potvrdit
+                              </button>
+                              <button
+                                onClick={() => setConfirmBuyModule(null)}
+                                className="text-[10px] px-2 py-0.5 rounded"
+                                style={{ color: '#888' }}
                               >
-                                <Eye size={10} color={C.blue} />
-                                {mod.cost.intel}
-                              </span>
-                            )}
-                            {(mod.cost.shadow ?? 0) > 0 && (
-                              <span
-                                className="flex items-center gap-0.5 text-[10px]"
-                                style={{ color: C.bm }}
+                                Zrušit
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+                              <div className="flex items-center gap-1.5">
+                                {mod.cost.money > 0 && (
+                                  <span
+                                    className="flex items-center gap-0.5 text-[10px]"
+                                    style={{ color: C.green }}
+                                  >
+                                    <Coins size={10} color={C.green} />
+                                    {mod.cost.money}
+                                  </span>
+                                )}
+                                {(mod.cost.intel ?? 0) > 0 && (
+                                  <span
+                                    className="flex items-center gap-0.5 text-[10px]"
+                                    style={{ color: C.blue }}
+                                  >
+                                    <Eye size={10} color={C.blue} />
+                                    {mod.cost.intel}
+                                  </span>
+                                )}
+                                {(mod.cost.shadow ?? 0) > 0 && (
+                                  <span
+                                    className="flex items-center gap-0.5 text-[10px]"
+                                    style={{ color: C.bm }}
+                                  >
+                                    <Ghost size={10} color={C.bm} />
+                                    {mod.cost.shadow}
+                                  </span>
+                                )}
+                                {(mod.cost.influence ?? 0) > 0 && (
+                                  <span
+                                    className="flex items-center gap-0.5 text-[10px]"
+                                    style={{ color: C.divExtraction }}
+                                  >
+                                    <Radio size={10} color={C.divExtraction} />
+                                    {mod.cost.influence}
+                                  </span>
+                                )}
+                              </div>
+                              <button
+                                disabled={!canAfford}
+                                onClick={() =>
+                                  setConfirmBuyModule({
+                                    shId: sh.id,
+                                    moduleId: mod.id,
+                                  })
+                                }
+                                className="text-[10px] px-2 py-0.5 rounded font-semibold"
+                                style={{
+                                  background: canAfford
+                                    ? '#4ade8022'
+                                    : '#ffffff11',
+                                  color: canAfford ? '#4ade80' : '#666',
+                                }}
                               >
-                                <Ghost size={10} color={C.bm} />
-                                {mod.cost.shadow}
-                              </span>
-                            )}
-                            {(mod.cost.influence ?? 0) > 0 && (
-                              <span
-                                className="flex items-center gap-0.5 text-[10px]"
-                                style={{ color: C.divExtraction }}
-                              >
-                                <Radio size={10} color={C.divExtraction} />
-                                {mod.cost.influence}
-                              </span>
-                            )}
-                          </div>
-                        </button>
+                                Instalovat
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
@@ -2340,6 +2390,13 @@ function ExpansionSkipPickerModal({
   );
 }
 
+const RANK_NUM: Record<AgentRank, number> = {
+  recruit: 0,
+  operative: 1,
+  specialist: 2,
+  veteran: 3,
+};
+
 function AgentPickerModal({
   listing,
   onClose,
@@ -2368,6 +2425,18 @@ function AgentPickerModal({
       );
   }, []);
 
+  const eq = EQUIPMENT_CATALOG.find((e) => e.id === listing.equipmentId);
+  const minRank = eq?.minRank;
+
+  const isEligible = (a: Agent) =>
+    !minRank || RANK_NUM[a.rank] >= RANK_NUM[minRank];
+
+  const sorted = [...agents].sort((a, b) => {
+    const ea = isEligible(a) ? 0 : 1;
+    const eb = isEligible(b) ? 0 : 1;
+    return ea - eb;
+  });
+
   return (
     <div style={modalOverlay}>
       <div style={modalSheet}>
@@ -2389,7 +2458,7 @@ function AgentPickerModal({
               <XCircle size={20} />
             </button>
           </div>
-          {agents.length === 0 ? (
+          {sorted.length === 0 ? (
             <p
               className="text-sm text-center py-4"
               style={{ color: C.textSecondary }}
@@ -2398,36 +2467,49 @@ function AgentPickerModal({
             </p>
           ) : (
             <div className="flex flex-col gap-2">
-              {agents.map((a) => (
-                <button
-                  key={a.id}
-                  onClick={() => onAssign(a, listing)}
-                  className="flex items-center gap-3 p-3 rounded-xl"
-                  style={cardBase}
-                >
-                  <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold"
-                    style={{
-                      background: `${divColor(a.division)}22`,
-                      color: divColor(a.division),
-                    }}
+              {sorted.map((a) => {
+                const eligible = isEligible(a);
+                return (
+                  <button
+                    key={a.id}
+                    onClick={eligible ? () => onAssign(a, listing) : undefined}
+                    disabled={!eligible}
+                    className="flex items-center gap-3 p-3 rounded-xl"
+                    style={{ ...cardBase, opacity: eligible ? 1 : 0.4 }}
                   >
-                    {a.name.slice(0, 2).toUpperCase()}
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p
-                      className="text-sm font-medium"
-                      style={{ color: C.textPrimary }}
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold"
+                      style={{
+                        background: `${divColor(a.division)}22`,
+                        color: divColor(a.division),
+                      }}
                     >
-                      {a.name}
-                    </p>
-                    <p className="text-xs" style={{ color: C.textSecondary }}>
-                      {RANK_LABEL[a.rank]} · volný slot
-                    </p>
-                  </div>
-                  <ChevronRight size={13} style={{ color: C.textMuted }} />
-                </button>
-              ))}
+                      {a.name.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p
+                        className="text-sm font-medium"
+                        style={{ color: C.textPrimary }}
+                      >
+                        {a.name}
+                      </p>
+                      <p className="text-xs" style={{ color: C.textSecondary }}>
+                        {RANK_LABEL[a.rank]} · volný slot
+                      </p>
+                    </div>
+                    {eligible ? (
+                      <ChevronRight size={13} style={{ color: C.textMuted }} />
+                    ) : (
+                      <span
+                        className="text-[10px] px-1.5 py-0.5 rounded font-semibold"
+                        style={{ background: '#f9731622', color: '#f97316' }}
+                      >
+                        {RANK_LABEL[minRank!]}+
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>

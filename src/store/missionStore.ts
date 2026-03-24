@@ -238,6 +238,7 @@ export const useMissionStore = create<MissionStore>()(
       const hasTrainingCenter = shModules.includes('training_center');
       const hasBlackSite = shModules.includes('black_site');
       const hasMedBay = shModules.includes('med_bay');
+      const hasSaferoom = shModules.includes('saferoom');
 
       // Apply module adjustments
       const basePerAgentXp = distributeXp(result, rewards.xp, agents.length);
@@ -248,6 +249,7 @@ export const useMissionStore = create<MissionStore>()(
 
       const affectedAgentIds: string[] = [];
       const injuredAgents: InjuredAgentInfo[] = [];
+      let saferoomPreventedCapture = false;
       const rankedUpAgents: Array<{
         id: string;
         name: string;
@@ -326,12 +328,47 @@ export const useMissionStore = create<MissionStore>()(
             // Catastrophe: capture one agent (first in list)
             // rescueMissionId is set atomically here to avoid stuck captured state
             if (result === 'catastrophe' && agent.id === agents[0].id) {
-              updatedAgent.status = 'captured';
-              updatedAgent.capturedAt = Date.now();
-              if (catastropheRescueMission) {
-                updatedAgent.rescueMissionId = catastropheRescueMission.id;
+              const saferoomSave = hasSaferoom && createRng()() < 0.3;
+              if (saferoomSave) {
+                // Saferoom: agent evades capture, suffers serious injury instead
+                saferoomPreventedCapture = true;
+                const injuryDesc = rollInjuryDescription(
+                  mission.category,
+                  'serious',
+                  createRng(),
+                );
+                const seriousHealTime = hasMedBay
+                  ? Math.ceil(healingDuration('serious') / 2)
+                  : healingDuration('serious');
+                updatedAgent.status = 'injured';
+                updatedAgent.injuredAt = Date.now();
+                updatedAgent.healsAt = Date.now() + seriousHealTime * 1000;
+                updatedAgent.injuryDescription = injuryDesc;
+                const existingIdx = injuredAgents.findIndex(
+                  (ia) => ia.id === agent.id,
+                );
+                const saferoomInjury: InjuredAgentInfo = {
+                  id: agent.id,
+                  name: agent.name,
+                  severity: 'serious',
+                  description: injuryDesc,
+                  healsAt: Date.now() + seriousHealTime * 1000,
+                };
+                if (existingIdx >= 0) {
+                  injuredAgents[existingIdx] = saferoomInjury;
+                } else {
+                  injuredAgents.push(saferoomInjury);
+                }
+                if (!affectedAgentIds.includes(agent.id))
+                  affectedAgentIds.push(agent.id);
+              } else {
+                updatedAgent.status = 'captured';
+                updatedAgent.capturedAt = Date.now();
+                if (catastropheRescueMission) {
+                  updatedAgent.rescueMissionId = catastropheRescueMission.id;
+                }
+                affectedAgentIds.push(agent.id);
               }
-              affectedAgentIds.push(agent.id);
             }
 
             const merged = { ...agent, ...updatedAgent };
@@ -457,7 +494,7 @@ export const useMissionStore = create<MissionStore>()(
           }
 
           // Persist the pre-generated rescue mission (agent already has rescueMissionId set above)
-          if (catastropheRescueMission) {
+          if (catastropheRescueMission && !saferoomPreventedCapture) {
             await db.missions.add(catastropheRescueMission);
             const captureRegion = await db.regions.get(mission.regionId);
             const regionIds = captureRegion?.availableMissionIds ?? [];
@@ -562,7 +599,7 @@ export const useMissionStore = create<MissionStore>()(
           freshState.unlockBlackMarket();
         }
       }
-      if (result === 'catastrophe') {
+      if (result === 'catastrophe' && !saferoomPreventedCapture) {
         gameStore.incrementStat('agents');
       }
 

@@ -293,6 +293,7 @@ interface Country {
 | training_center  | Výcvikové centrum    | 4 000  | 30    | —      | —         |
 | forgery_lab      | Padělatelna          | 4 500  | 30    | —      | 10        |
 | black_site       | Black Site           | 5 500  | 20    | 15     | —         |
+| saferoom         | Saferoom             | 7 000  | 30    | 25     | —         |
 
 ### Expanze
 

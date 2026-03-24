@@ -15,6 +15,7 @@ interface UIStore {
   selectedAgentId: string | null;
   toasts: Toast[];
   saveSwitchRequested: boolean;
+  demoMode: boolean;
 
   setActiveTab: (tab: TabId) => void;
   selectRegion: (regionId: string | null) => void;
@@ -23,6 +24,7 @@ interface UIStore {
   dismissToast: (id: string) => void;
   requestSaveSelect: () => void;
   clearSaveSwitchRequest: () => void;
+  setDemoMode: (active: boolean) => void;
 }
 
 let toastCounter = 0;
@@ -33,6 +35,7 @@ export const useUIStore = create<UIStore>((set, get) => ({
   selectedAgentId: null,
   toasts: [],
   saveSwitchRequested: false,
+  demoMode: false,
 
   setActiveTab: (tab) => set({ activeTab: tab }),
 
@@ -57,4 +60,5 @@ export const useUIStore = create<UIStore>((set, get) => ({
 
   requestSaveSelect: () => set({ saveSwitchRequested: true }),
   clearSaveSwitchRequest: () => set({ saveSwitchRequested: false }),
+  setDemoMode: (active) => set({ demoMode: active }),
 }));

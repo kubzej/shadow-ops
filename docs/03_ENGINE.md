@@ -137,6 +137,8 @@ else                           → 'critical'
 
 Med Bay modul: healing time × 0.5 (zaokrouhleno nahoru).
 
+Saferoom modul: při výsledku `catastrophe` je 30% šance že první agent **není zajat** — místo toho dostane zranění severity `serious` (Med Bay se aplikuje normálně). Rescue mise se v takovém případě nebytvoří a agent se nezapočítává do ztracených agentů.
+
 ### rollInjuryDescription(category, severity, rng) → string
 
 Vybere náhodný flavor text zranění podle kategorie mise a severity.

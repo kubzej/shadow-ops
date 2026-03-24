@@ -158,4 +158,11 @@ export const MODULE_CATALOG: ModuleDef[] = [
     description: '-20 % alert gain z misí',
     cost: { money: 5500, intel: 20, shadow: 15 },
   },
+  {
+    id: 'saferoom',
+    name: 'Saferoom',
+    description:
+      '30 % šance vyhnout se zajetí při katastrofě (→ serious zranění)',
+    cost: { money: 7000, intel: 30, shadow: 25 },
+  },
 ];

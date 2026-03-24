@@ -6,6 +6,7 @@ import MissionsScreen from './screens/MissionsScreen';
 import AgentsScreen from './screens/AgentsScreen';
 import BaseScreen from './screens/BaseScreen';
 import MenuScreen from './screens/MenuScreen';
+import DemoScreen from './screens/DemoScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
 import LandingScreen from './screens/LandingScreen';
 import { loadGame } from './engine/initializeGame';
@@ -129,6 +130,7 @@ function GameShell() {
   const startCityId = useGameStore((s) => s.startCityId);
   const selectedRegionId = useUIStore((s) => s.selectedRegionId);
   const selectRegion = useUIStore((s) => s.selectRegion);
+  const demoMode = useUIStore((s) => s.demoMode);
 
   // Auto-select home city on first load / save slot switch if nothing is selected
   useEffect(() => {
@@ -156,8 +158,25 @@ function GameShell() {
           <Route path="/agents" element={<AgentsScreen />} />
           <Route path="/base" element={<BaseScreen />} />
           <Route path="/menu" element={<MenuScreen />} />
+          <Route path="/demo" element={<DemoScreen />} />
         </Routes>
       </main>
+      {demoMode && (
+        <div
+          className="flex items-center justify-center gap-1.5 py-1 text-xs"
+          style={{
+            background: '#4ade8010',
+            color: '#4ade80',
+            borderTop: '1px solid #4ade8030',
+          }}
+        >
+          <div
+            className="w-1.5 h-1.5 rounded-full animate-pulse"
+            style={{ background: '#4ade80' }}
+          />
+          DEMO MODE
+        </div>
+      )}
       <BottomNav />
       <ToastContainer />
     </div>

@@ -113,11 +113,12 @@ Nejkomplexnější akce — resolvuje výsledky mise v jedné DB transakci.
 ```
 1. Načti activeMission + mission z DB
 2. resolveMission() → { result, rewards, alertGain }
-3. Načti agenty + safe house moduly (training_center, black_site, med_bay)
+3. Načti agenty + safe house moduly (training_center, black_site, med_bay, saferoom)
 4. Aplikuj moduly:
    - training_center: perAgentXp × 1.25
    - black_site:      alertGain × 0.8
    - med_bay:         healTime × 0.5
+   - saferoom:        při catastrophe 30% šance agent unikne zajetí → status='injured' (serious), rescue mise se nevytvoří
 
 5. Pre-generuj rescue misi pokud catastrophe (atomicky)
 
@@ -130,6 +131,7 @@ Nejkomplexnější akce — resolvuje výsledky mise v jedné DB transakci.
       - Pokud success/partial: missionsCompleted++
       - canRankUp() → rankUp() → agents.put(ranked)
       - Catastrophe: první agent → status='captured', capturedAt, rescueMissionId
+        (pokud hasSaferoom a rand() < 0.3 → místo zajetí serious injury; rescue mise se nepřidá; incrementStat('agents') se nevolá)
    c) Rescue mission outcomes:
       - success: agent.status='available', capturedAt/rescueMissionId cleared
       - partial: agent freed + equipment cleared (30% refund), addCurrencies({money: refund})

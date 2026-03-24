@@ -5,6 +5,7 @@ import {
   Clock,
   Coins,
   Eye,
+  FlaskConical,
   FolderOpen,
   Ghost,
   Globe,
@@ -16,9 +17,11 @@ import {
   Users,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/gameStore';
 import { useUIStore } from '../store/uiStore';
 import { db } from '../db/db';
+import { seedDemoDb } from '../demo/seed';
 import { C, cardBase, btn } from '../styles/tokens';
 
 // ─────────────────────────────────────────────
@@ -67,6 +70,7 @@ function StatRow({
 // ─────────────────────────────────────────────
 
 export default function MenuScreen() {
+  const navigate = useNavigate();
   const agencyName = useGameStore((s) => s.agencyName);
   const bossName = useGameStore((s) => s.bossName);
   const currencies = useGameStore((s) => s.currencies);
@@ -82,6 +86,7 @@ export default function MenuScreen() {
   const [agentCount, setAgentCount] = useState(0);
   const [regionCount, setRegionCount] = useState(0);
   const [showReset, setShowReset] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
   const [playTime, setPlayTime] = useState(
     formatPlayTimeSecs(getPlayTimeSecs()),
   );
@@ -258,6 +263,38 @@ export default function MenuScreen() {
         >
           <FolderOpen size={15} />
           Uložené hry
+        </button>
+
+        {/* Demo mode */}
+        <button
+          onClick={async () => {
+            if (demoLoading) return;
+            setDemoLoading(true);
+            try {
+              sessionStorage.setItem(
+                'shadow-ops-pre-demo-slot',
+                localStorage.getItem('shadow-ops-active-slot') || '',
+              );
+              await seedDemoDb();
+              useUIStore.getState().setDemoMode(true);
+              navigate('/demo');
+            } catch (err) {
+              console.error('[MenuScreen] Demo init failed:', err);
+              setDemoLoading(false);
+            }
+          }}
+          disabled={demoLoading}
+          className="w-full py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2"
+          style={{
+            background: 'transparent',
+            color: demoLoading ? C.textMuted : C.green,
+            border: `1px solid ${demoLoading ? C.textMuted : C.green}40`,
+            cursor: demoLoading ? 'not-allowed' : 'pointer',
+            borderRadius: 14,
+          }}
+        >
+          <FlaskConical size={15} />
+          {demoLoading ? 'Inicializuji...' : 'Testovací prostředí'}
         </button>
 
         {/* Reset */}

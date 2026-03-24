@@ -276,6 +276,14 @@ function AgentCard({
           >
             {agent.name}
           </span>
+          {agent.nickname && (
+            <span
+              className="text-xs italic flex-shrink-0"
+              style={{ color: '#666' }}
+            >
+              {agent.nickname}
+            </span>
+          )}
           {canRankUp(agent) && (
             <span
               className="text-[10px] px-1.5 py-0.5 rounded font-semibold flex-shrink-0"
@@ -302,11 +310,6 @@ function AgentCard({
           <span className="text-xs" style={{ color: '#888' }}>
             {RANK_LABEL[agent.rank]}
           </span>
-          {agent.nickname && (
-            <span className="text-xs italic" style={{ color: '#666' }}>
-              {agent.nickname}
-            </span>
-          )}
         </div>
         <div className="flex items-center gap-1 mt-0.5">
           <span className="text-xs" style={{ color: '#777' }}>
@@ -365,6 +368,7 @@ function AgentDetailModal({
 
   const [transferSlotIdx, setTransferSlotIdx] = useState<number | null>(null);
   const [transferCandidates, setTransferCandidates] = useState<Agent[]>([]);
+  const [confirmSellSlot, setConfirmSellSlot] = useState<number | null>(null);
   const [showDismiss, setShowDismiss] = useState(false);
   const [showRelocate, setShowRelocate] = useState(false);
   const [otherSafeHouses, setOtherSafeHouses] = useState<SafeHouse[]>([]);
@@ -380,6 +384,7 @@ function AgentDetailModal({
     const newStats = applyEquipmentBonuses(agent.baseStats, slots, agent.rank);
     await db.agents.update(agent.id, { equipment: slots, stats: newStats });
     if (eq) addCurrencies({ money: Math.ceil(eq.costMoney * SELL_REFUND) });
+    setConfirmSellSlot(null);
     onAgentUpdated();
   }
 
@@ -533,14 +538,19 @@ function AgentDetailModal({
                 {agent.name.slice(0, 2).toUpperCase()}
               </div>
               <div>
-                <h3 className="text-lg font-bold" style={{ color: '#e8e8e8' }}>
-                  {agent.name}
-                </h3>
-                {agent.nickname && (
-                  <p className="text-xs italic" style={{ color: '#aaa' }}>
-                    {agent.nickname}
-                  </p>
-                )}
+                <div className="flex items-center gap-2">
+                  <h3
+                    className="text-lg font-bold"
+                    style={{ color: '#e8e8e8' }}
+                  >
+                    {agent.name}
+                  </h3>
+                  {agent.nickname && (
+                    <span className="text-sm italic" style={{ color: '#777' }}>
+                      {agent.nickname}
+                    </span>
+                  )}
+                </div>
                 <div className="flex items-center gap-2 mt-0.5">
                   <span
                     className="text-xs px-1.5 py-0.5 rounded"
@@ -886,20 +896,41 @@ function AgentDetailModal({
                       </div>
                     )}
                     <div className="flex gap-1.5">
-                      <button
-                        onClick={() => handleSell(i)}
-                        className="flex-1 text-xs py-1.5 rounded-lg font-medium"
-                        style={btn.action(C.divExtraction, false)}
-                      >
-                        Prodat +${refund}
-                      </button>
-                      <button
-                        onClick={() => openTransfer(i)}
-                        className="flex-1 text-xs py-1.5 rounded-lg font-medium"
-                        style={btn.action(C.blue, false)}
-                      >
-                        Přendat →
-                      </button>
+                      {confirmSellSlot === i ? (
+                        <>
+                          <button
+                            onClick={() => handleSell(i)}
+                            className="flex-1 text-xs py-1.5 rounded-lg font-medium"
+                            style={btn.action(C.divExtraction, false)}
+                          >
+                            Potvrdit +${refund}
+                          </button>
+                          <button
+                            onClick={() => setConfirmSellSlot(null)}
+                            className="flex-1 text-xs py-1.5 rounded-lg font-medium"
+                            style={btn.secondary()}
+                          >
+                            Zrušit
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => setConfirmSellSlot(i)}
+                            className="flex-1 text-xs py-1.5 rounded-lg font-medium"
+                            style={btn.action(C.divExtraction, false)}
+                          >
+                            Prodat +${refund}
+                          </button>
+                          <button
+                            onClick={() => openTransfer(i)}
+                            className="flex-1 text-xs py-1.5 rounded-lg font-medium"
+                            style={btn.action(C.blue, false)}
+                          >
+                            Přendat →
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 );
