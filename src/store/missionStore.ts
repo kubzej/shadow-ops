@@ -585,7 +585,7 @@ export const useMissionStore = create<MissionStore>()(
               alertLevel: newAlert,
             };
             // missionTier increases after success/partial — never decreases
-            // Each tier requires progressively more missions: tier 1 after 3, tier 2 after 8, tier 3 after 18, tier 4 after 35
+            // Each tier requires progressively more missions: tier 1 after 8, tier 2 after 20, tier 3 after 45, tier 4 after 80
             if (result === 'success' || result === 'partial') {
               const currentTier = region.missionTier ?? 0;
               const missionsDone =
@@ -593,7 +593,7 @@ export const useMissionStore = create<MissionStore>()(
                   .where('regionId')
                   .equals(mission.regionId)
                   .count()) + 1;
-              const TIER_THRESHOLDS = [0, 3, 8, 18, 35];
+              const TIER_THRESHOLDS = [0, 8, 20, 45, 80];
               const newTier = TIER_THRESHOLDS.reduce(
                 (t, threshold, i) => (missionsDone >= threshold ? i : t),
                 0,

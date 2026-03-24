@@ -7,15 +7,15 @@ vysílá je na mise, expanduje na globální mapě a spravuje základny. Celá U
 
 ## Tech stack
 
-| Vrstva | Technologie |
-|--------|-------------|
-| UI | React 18, TypeScript, Tailwind CSS |
-| State | Zustand + immer middleware |
-| Perzistence | Dexie (IndexedDB wrapper) |
-| Ikony | lucide-react |
-| Routing | react-router-dom v6 |
-| Build | Vite |
-| PWA | vite-plugin-pwa (service worker, manifest) |
+| Vrstva      | Technologie                                |
+| ----------- | ------------------------------------------ |
+| UI          | React 18, TypeScript, Tailwind CSS         |
+| State       | Zustand + immer middleware                 |
+| Perzistence | Dexie (IndexedDB wrapper)                  |
+| Ikony       | lucide-react                               |
+| Routing     | react-router-dom v6                        |
+| Build       | Vite                                       |
+| PWA         | vite-plugin-pwa (service worker, manifest) |
 
 ---
 
@@ -118,17 +118,17 @@ Metadata slotů jsou v separátní DB `shadow-ops-meta` (tabulka `slots`).
 
 **Tabulky v herní DB:**
 
-| Tabulka | Klíč | Indexy |
-|---------|------|--------|
-| `gameState` | `id` (=1, singleton) | — |
-| `safeHouses` | `id` | — |
-| `agents` | `id` | `division, status, safeHouseId` |
-| `regions` | `id` | — |
-| `missions` | `id` | `regionId` |
-| `activeMissions` | `id` | — |
-| `recruitmentPools` | `id` | — |
-| `blackMarket` | `id` (=1) | — |
-| `missionLog` | `id` | `regionId` |
+| Tabulka            | Klíč                 | Indexy                          |
+| ------------------ | -------------------- | ------------------------------- |
+| `gameState`        | `id` (=1, singleton) | —                               |
+| `safeHouses`       | `id`                 | —                               |
+| `agents`           | `id`                 | `division, status, safeHouseId` |
+| `regions`          | `id`                 | —                               |
+| `missions`         | `id`                 | `regionId`                      |
+| `activeMissions`   | `id`                 | —                               |
+| `recruitmentPools` | `id`                 | —                               |
+| `blackMarket`      | `id` (=1)            | —                               |
+| `missionLog`       | `id`                 | `regionId`                      |
 
 ---
 
@@ -164,5 +164,5 @@ MODULE_MAX_PER_SAFEHOUSE       = 2
 RESCUE_EQUIPMENT_SELL_REFUND   = 30 %
 BLACK_MARKET_UNLOCK_AT         = 15 dokončených misí
 INSTANT_HEAL_COST              = 10 money × rankIndex (10/20/30/40)
-MISSIONTIER_THRESHOLDS         = [0, 3, 8, 18, 35] (počet misí v regionu)
+MISSIONTIER_THRESHOLDS         = [0, 8, 20, 45, 80] (počet misí v regionu)
 ```

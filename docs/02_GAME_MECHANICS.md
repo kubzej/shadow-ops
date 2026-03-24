@@ -319,7 +319,7 @@ Speciální typ mise označený ikonou ⚡. Generují se automaticky per region,
 
 **Podmínky spawnu:**
 
-- Region musí mít `missionTier ≥ 2` (aspoň 8 mise dokončeno v regionu)
+- Region musí mít `missionTier ≥ 2` (aspoň 20 misí dokončeno v regionu)
 - Spawn interval: náhodně 10–15 minut po spawnu předchozí flash mise v tomto regionu
 - V regionu může být nejvýše 1 flash mise najednou
 
