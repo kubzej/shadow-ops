@@ -15,7 +15,20 @@ export function useMissionTimer() {
     const id = setInterval(() => {
       tickRef.current();
     }, 1000);
-    return () => clearInterval(id);
+
+    // Catch up on missions that completed while the tab was in the background.
+    const handleVisible = () => {
+      if (document.visibilityState === 'visible') tickRef.current();
+    };
+    const handleFocus = () => tickRef.current();
+    document.addEventListener('visibilitychange', handleVisible);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', handleVisible);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 }
 

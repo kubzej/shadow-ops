@@ -160,11 +160,14 @@ function StatBar({
   label,
   value,
   color,
+  bonus,
 }: {
   label: string;
   value: number;
   color: string;
+  bonus?: number;
 }) {
+  const base = bonus ? value - bonus : value;
   return (
     <div className="flex items-center gap-2">
       <span className="text-xs w-12 flex-shrink-0" style={{ color: '#999' }}>
@@ -174,10 +177,12 @@ function StatBar({
         className="flex-1 h-1.5 rounded-full overflow-hidden"
         style={{ background: '#666666' }}
       >
-        <div
-          className="h-full rounded-full"
-          style={{ width: `${value}%`, background: color }}
-        />
+        <div className="h-full flex">
+          <div style={{ width: `${base}%`, background: color }} />
+          {bonus && bonus > 0 && (
+            <div style={{ width: `${bonus}%`, background: 'rgba(255,255,255,0.4)' }} />
+          )}
+        </div>
       </div>
       <span
         className="text-xs w-7 text-right font-mono"
@@ -462,6 +467,7 @@ function AgentDetailModal({
       status: 'available',
       healsAt: undefined,
       injuredAt: undefined,
+      injuryDescription: undefined,
     });
     onAgentUpdated();
     onClose();
@@ -584,6 +590,11 @@ function AgentDetailModal({
                 </span>
               )}
             </div>
+            {isInjured && agent.injuryDescription && (
+              <p className="text-xs mt-1 italic" style={{ color: '#aaa' }}>
+                {agent.injuryDescription}
+              </p>
+            )}
 
             {/* Instant heal button */}
             {isInjured && healRemaining > 0 && (
@@ -616,10 +627,26 @@ function AgentDetailModal({
               label="Stealth"
               value={agent.stats.stealth}
               color={color}
+              bonus={agent.stats.stealth - agent.baseStats.stealth}
             />
-            <StatBar label="Combat" value={agent.stats.combat} color={color} />
-            <StatBar label="Intel" value={agent.stats.intel} color={color} />
-            <StatBar label="Tech" value={agent.stats.tech} color={color} />
+            <StatBar
+              label="Combat"
+              value={agent.stats.combat}
+              color={color}
+              bonus={agent.stats.combat - agent.baseStats.combat}
+            />
+            <StatBar
+              label="Intel"
+              value={agent.stats.intel}
+              color={color}
+              bonus={agent.stats.intel - agent.baseStats.intel}
+            />
+            <StatBar
+              label="Tech"
+              value={agent.stats.tech}
+              color={color}
+              bonus={agent.stats.tech - agent.baseStats.tech}
+            />
           </div>
 
           {/* XP / Rank */}

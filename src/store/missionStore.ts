@@ -13,6 +13,7 @@ import {
   resolveMission,
   distributeXp,
   rollInjury,
+  rollInjuryDescription,
   healingDuration,
   type MissionApproach,
 } from '../engine/missionResolver';
@@ -40,6 +41,7 @@ export interface InjuredAgentInfo {
   id: string;
   name: string;
   severity: string;
+  description?: string;
   healsAt: number;
 }
 
@@ -290,14 +292,21 @@ export const useMissionStore = create<MissionStore>()(
             }
 
             if (injury !== 'none') {
+              const injuryDesc = rollInjuryDescription(
+                mission.category,
+                injury,
+                createRng(),
+              );
               updatedAgent.status = 'injured';
               updatedAgent.injuredAt = Date.now();
               updatedAgent.healsAt = Date.now() + healTime * 1000;
+              updatedAgent.injuryDescription = injuryDesc;
               affectedAgentIds.push(agent.id);
               injuredAgents.push({
                 id: agent.id,
                 name: agent.name,
                 severity: injury,
+                description: injuryDesc,
                 healsAt: Date.now() + healTime * 1000,
               });
             }
@@ -594,6 +603,7 @@ export const useMissionStore = create<MissionStore>()(
             status: 'available',
             healsAt: undefined,
             injuredAt: undefined,
+            injuryDescription: undefined,
           });
         }
 
@@ -644,6 +654,22 @@ export const useMissionStore = create<MissionStore>()(
             travelDestinationId: undefined,
             arrivesAt: undefined,
           });
+        }
+
+        // Recover stuck agents: on_mission but no matching active mission in DB
+        const onMissionAgents = await db.agents
+          .filter((a) => a.status === 'on_mission')
+          .toArray();
+        if (onMissionAgents.length > 0) {
+          const activeMissions = await db.activeMissions.toArray();
+          const assignedAgentIds = new Set(
+            activeMissions.flatMap((am) => am.agentIds),
+          );
+          for (const agent of onMissionAgents) {
+            if (!assignedAgentIds.has(agent.id)) {
+              await db.agents.update(agent.id, { status: 'available' });
+            }
+          }
         }
       } finally {
         _ticking = false;

@@ -80,6 +80,7 @@ export interface Agent {
   // Injury
   injuredAt?: number;
   healsAt?: number;
+  injuryDescription?: string;
   // Travel
   travelDestinationId?: string;
   arrivesAt?: number;

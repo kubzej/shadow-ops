@@ -19,10 +19,13 @@ import { randomId } from '../utils/rng';
 
 export type MissionApproach = 'standard' | 'aggressive' | 'covert';
 
-export const APPROACH_MODS: Record<MissionApproach, { successMult: number; durationMult: number; alertMult: number }> = {
-  standard:   { successMult: 1.00, durationMult: 1.00, alertMult: 1.00 },
-  aggressive: { successMult: 1.15, durationMult: 0.75, alertMult: 1.50 },
-  covert:     { successMult: 0.90, durationMult: 1.30, alertMult: 0.50 },
+export const APPROACH_MODS: Record<
+  MissionApproach,
+  { successMult: number; durationMult: number; alertMult: number }
+> = {
+  standard: { successMult: 1.0, durationMult: 1.0, alertMult: 1.0 },
+  aggressive: { successMult: 1.15, durationMult: 0.75, alertMult: 1.5 },
+  covert: { successMult: 0.9, durationMult: 1.3, alertMult: 0.5 },
 };
 
 // ─────────────────────────────────────────────
@@ -157,11 +160,16 @@ export function calculateSuccessChance(
 
   // Team bonus scales by fill ratio AND difficulty.
   // Full team on diff 1 = +4 pp, diff 5 = +12 pp (linearly).
-  const MAX_TEAM_BONUS_BY_DIFF: Record<number, number> = { 1: 0.06, 2: 0.07, 3: 0.08, 4: 0.10, 5: 0.12 };
+  const MAX_TEAM_BONUS_BY_DIFF: Record<number, number> = {
+    1: 0.06,
+    2: 0.07,
+    3: 0.08,
+    4: 0.1,
+    5: 0.12,
+  };
   const maxTeamBonus = MAX_TEAM_BONUS_BY_DIFF[mission.difficulty] ?? 0.08;
   const maxAgents = mission.maxAgents ?? agents.length;
-  const fillRatio =
-    maxAgents > 1 ? (agents.length - 1) / (maxAgents - 1) : 0;
+  const fillRatio = maxAgents > 1 ? (agents.length - 1) / (maxAgents - 1) : 0;
   const teamBonus = fillRatio * maxTeamBonus;
 
   // Equipment success bonuses — only the leader's 3 slots count
@@ -232,7 +240,12 @@ export function calculateDuration(
     if (eq?.durationMult) equipMult *= eq.durationMult;
   }
 
-  const duration = Math.round(mission.baseDuration * speedFactor * equipMult * APPROACH_MODS[approach].durationMult);
+  const duration = Math.round(
+    mission.baseDuration *
+      speedFactor *
+      equipMult *
+      APPROACH_MODS[approach].durationMult,
+  );
   return Math.max(30, duration); // minimum 30 seconds
 }
 
@@ -247,7 +260,12 @@ export function dispatchMission(
   alertLevel = 0,
   approach: MissionApproach = 'standard',
 ): ActiveMission {
-  const successChance = calculateSuccessChance(agents, mission, alertLevel, approach);
+  const successChance = calculateSuccessChance(
+    agents,
+    mission,
+    alertLevel,
+    approach,
+  );
   const duration = calculateDuration(mission, agents, equippedIds, approach);
 
   return {
@@ -394,7 +412,7 @@ export function rollInjury(
   //   diff 1: light 50% / serious 30% / critical 20%
   //   diff 3: light 38% / serious 34% / critical 28%
   //   diff 5: light 26% / serious 38% / critical 36%
-  const lightMult = 0.5 + (difficulty - 1) * 0.06;   // 0.50 → 0.74
+  const lightMult = 0.5 + (difficulty - 1) * 0.06; // 0.50 → 0.74
   const seriousMult = 0.2 + (difficulty - 1) * 0.04; // 0.20 → 0.36
 
   if (roll > chance * lightMult) return 'light';
@@ -414,4 +432,188 @@ export function healingDuration(severity: InjurySeverity): number {
     case 'critical':
       return 20 * 60; // 20 min
   }
+}
+
+// ─────────────────────────────────────────────
+// Injury flavor descriptions
+// ─────────────────────────────────────────────
+
+const INJURY_DESCRIPTIONS: Partial<Record<string, Record<string, string[]>>> = {
+  surveillance: {
+    light: [
+      'Odřeniny při úniku přes střechy',
+      'Zhmožděnina po pádu z požárního schodiště',
+      'Modřina od pronásledovatele',
+    ],
+    serious: [
+      'Zlomená žebra při skoku z budovy',
+      'Hluboká tržná rána od plotu',
+      'Zraněný kotník při pronásledování',
+    ],
+    critical: [
+      'Střelná rána do ramene při úniku',
+      'Vážná zlomenina po pádu z výšky',
+      'Dopravní nehoda při pronásledování',
+    ],
+  },
+  cyber: {
+    light: [
+      'Popáleniny od zkratovaného hardwaru',
+      'Řezná rána od rozbitého displeje',
+      'Mírný elektrický výboj',
+    ],
+    serious: [
+      'Střepiny z výbuchu serveru v obličeji',
+      'Chemické popáleniny od chladicí kapaliny',
+      'Střelná rána při obraně serverovny',
+    ],
+    critical: [
+      'Vážné popáleniny od výbuchu transformátoru',
+      'Poranění od elektromagnetického pulzu',
+      'Střelná rána při průniku do datového centra',
+    ],
+  },
+  extraction: {
+    light: [
+      'Odřeniny od lana při slaňování',
+      'Naražená žebra od dopadu',
+      'Natažený sval při útěku',
+    ],
+    serious: [
+      'Střelná rána do stehna — průstřel',
+      'Zlomená klíční kost při sestupu',
+      'Zranění zad při výskoku z vozidla',
+    ],
+    critical: [
+      'Střelná rána do hrudníku',
+      'Vážné poranění po nezdařeném seskoku',
+      'Výbuch při extrakci způsobil popáleniny',
+    ],
+  },
+  sabotage: {
+    light: [
+      'Drobné popáleniny od výbuchu',
+      'Střepiny z detonace v ruce',
+      'Poškozený sluch od záblesku',
+    ],
+    serious: [
+      'Střepiny z výbuchu v noze',
+      'Popáleniny 2. stupně na rukou',
+      'Poranění oka od záblesku nálože',
+    ],
+    critical: [
+      'Rozsáhlé tržné rány od výbuchu',
+      'Střelná rána do břicha při ústupu',
+      'Zápalný výbuch způsobil vážné popáleniny',
+    ],
+  },
+  influence: {
+    light: [
+      'Pohmožděnina po fyzickém útoku',
+      'Řezná rána při konfrontaci s cílem',
+      'Zlomený nos',
+    ],
+    serious: [
+      'Střelná rána do ramene při záskoku',
+      'Bodná rána do boku',
+      'Zlomená žebra po výslechu',
+    ],
+    critical: [
+      'Vážné zranění při pokusu o atentát',
+      'Střelná rána do hrudi',
+      'Otrava při manipulaci s terčem',
+    ],
+  },
+  finance: {
+    light: [
+      'Pohmožděnina ze rvačky v bance',
+      'Tržná rána od střepů',
+      'Podvrtnutý kotník při útěku',
+    ],
+    serious: [
+      'Střelná rána do paže od ostrahy',
+      'Zlomenina po pádu na schodišti',
+      'Bodná rána při přepadení kurýra',
+    ],
+    critical: [
+      'Vážná přestřelka v trezoru',
+      'Výbuch v sejfu způsobil rozsáhlá zranění',
+      'Kritická bodná rána nožem',
+    ],
+  },
+  logistics: {
+    light: [
+      'Zhmoždění od padlé přepravky',
+      'Řezná rána od drátěného plotu',
+      'Naražená žebra při nakládce',
+    ],
+    serious: [
+      'Zlomená ruka při sabotáži vozidla',
+      'Střelná rána do stehna od hlídky',
+      'Pád z rozjetého vozidla',
+    ],
+    critical: [
+      'Dopravní nehoda při pronásledování',
+      'Vážná střelná rána od bezpečnostní hlídky',
+      'Výbuch vozidla způsobil popáleniny',
+    ],
+  },
+  medical: {
+    light: [
+      'Kontaminace laboratorním vzorkem',
+      'Injekce neznámé látky při zmatku',
+      'Pohmožděnina při krádeži ze skladu',
+    ],
+    serious: [
+      'Kontaminace biologickým materiálem',
+      'Chemické popáleniny od laboratorní látky',
+      'Střelná rána při přepadení nemocnice',
+    ],
+    critical: [
+      'Vystavení nebezpečnému patogenu',
+      'Kritická otrava laboratorní chemikálií',
+      'Vážná střelná rána od ostrahy kliniky',
+    ],
+  },
+  blackops: {
+    light: [
+      'Řezná rána od nože v boji zblízka',
+      'Modřiny z tvrdého boje',
+      'Pohmožděnina od pažby zbraně',
+    ],
+    serious: [
+      'Střelná rána do ramene',
+      'Bodná rána do boku při záskoku',
+      'Tržná rána po výskoku z vozidla',
+    ],
+    critical: [
+      'Vážná střelná rána do hrudi',
+      'Kritická bodná rána v přímém boji',
+      'Průstřel trupu ze zálohy',
+    ],
+  },
+};
+
+const FALLBACK_INJURIES: Record<string, string[]> = {
+  light: ['Lehká zranění z akce', 'Odřeniny a modřiny', 'Drobné šrámy'],
+  serious: ['Střelná rána (průstřel)', 'Zlomená kost', 'Hluboká tržná rána'],
+  critical: [
+    'Vážná bojová zranění',
+    'Kritická střelná rána',
+    'Život ohrožující zranění',
+  ],
+};
+
+/** Pick a random injury description based on mission category and severity. */
+export function rollInjuryDescription(
+  category: string,
+  severity: InjurySeverity,
+  rng: () => number,
+): string {
+  const pool =
+    INJURY_DESCRIPTIONS[category]?.[severity] ??
+    FALLBACK_INJURIES[severity] ??
+    [];
+  if (pool.length === 0) return 'Zraněn při misi';
+  return pool[Math.floor(rng() * pool.length)];
 }

@@ -1261,24 +1261,28 @@ function ResultModal({
                         : 'Lehké';
                   const healsIn = Math.ceil((ia.healsAt - Date.now()) / 60000);
                   return (
-                    <div
-                      key={ia.id}
-                      className="flex items-center justify-between"
-                    >
-                      <span className="text-sm" style={{ color: '#e8e8e8' }}>
-                        {ia.name}
-                      </span>
-                      <div className="flex items-center gap-1.5">
-                        <span
-                          className="text-xs font-semibold"
-                          style={{ color: severityColor }}
-                        >
-                          {severityLabel}
+                    <div key={ia.id} className="flex flex-col gap-0.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm" style={{ color: '#e8e8e8' }}>
+                          {ia.name}
                         </span>
-                        <span className="text-xs" style={{ color: '#888' }}>
-                          ~{healsIn} min
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className="text-xs font-semibold"
+                            style={{ color: severityColor }}
+                          >
+                            {severityLabel}
+                          </span>
+                          <span className="text-xs" style={{ color: '#888' }}>
+                            ~{healsIn} min
+                          </span>
+                        </div>
                       </div>
+                      {ia.description && (
+                        <p className="text-xs italic" style={{ color: '#888' }}>
+                          {ia.description}
+                        </p>
+                      )}
                     </div>
                   );
                 })
@@ -1369,6 +1373,7 @@ export default function MissionsScreen() {
   const loading = useMissionStore((s) => s.loading);
   const loadMissions = useMissionStore((s) => s.loadMissions);
   const loadActiveMissions = useMissionStore((s) => s.loadActiveMissions);
+  const tickMissions = useMissionStore((s) => s.tickMissions);
   const checkExpirations = useMissionStore((s) => s.checkExpirations);
   const dispatch = useMissionStore((s) => s.dispatch);
   const dismissResult = useMissionStore((s) => s.dismissResult);
@@ -1401,7 +1406,9 @@ export default function MissionsScreen() {
   // Load missions on mount / when region changes
   useEffect(() => {
     if (!currentRegionId) return;
-    loadActiveMissions();
+    // Load active missions then immediately tick so any mission that completed
+    // while the app was closed gets collected without waiting for the 1-s timer.
+    loadActiveMissions().then(() => tickMissions());
     loadMissions(currentRegionId);
     checkExpirations(currentRegionId);
 
@@ -1410,7 +1417,13 @@ export default function MissionsScreen() {
       60_000,
     );
     return () => clearInterval(refresh);
-  }, [currentRegionId, loadMissions, loadActiveMissions, checkExpirations]);
+  }, [
+    currentRegionId,
+    loadMissions,
+    loadActiveMissions,
+    tickMissions,
+    checkExpirations,
+  ]);
 
   // Load mission data for active missions
   useEffect(() => {
@@ -1542,7 +1555,7 @@ export default function MissionsScreen() {
                 Momentálně žádné mise
               </p>
               <p className="text-xs text-center" style={{ color: '#777' }}>
-                Nové operace brzy přibydou.
+                Mise se obnoví automaticky.
               </p>
             </div>
           ) : (

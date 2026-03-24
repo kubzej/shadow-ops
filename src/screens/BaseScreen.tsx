@@ -187,6 +187,15 @@ function RecruitmentTab() {
     load();
   }, [load]);
 
+  // Auto-refresh: check every 30s if any pool has expired and reload
+  useEffect(() => {
+    const id = setInterval(() => {
+      const expired = pools.some((p) => p.refreshesAt <= Date.now());
+      if (expired) load();
+    }, 30_000);
+    return () => clearInterval(id);
+  }, [pools, load]);
+
   async function hire(offer: RecruitmentOffer, shId: string) {
     if (hiring) return;
     const sh = safeHouses.find((s) => s.id === shId);

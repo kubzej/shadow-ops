@@ -12,14 +12,14 @@ Primární store pro globální herní data. Vše co přežije session (uloženo
 
 ```typescript
 interface GameStore {
-  loaded: boolean;         // false dokud není loadGame() úspěšné
+  loaded: boolean; // false dokud není loadGame() úspěšné
   agencyName: string;
   bossName: string;
   startCityId: string;
   logoId: string;
   createdAt: number;
 
-  currencies: Currencies;  // { money, intel, shadow, influence }
+  currencies: Currencies; // { money, intel, shadow, influence }
 
   unlockedDivisions: DivisionId[];
   divisionLevels: Record<DivisionId, number>;
@@ -34,22 +34,22 @@ interface GameStore {
 
 ### Akce
 
-| Akce | Popis |
-|------|-------|
-| `setLoaded(meta)` | Naplní store daty z DB, resetuje session tracking |
-| `addCurrencies(delta)` | Přičte delta ke každé měně (floor 0), volá `_persist()` |
-| `spendCurrencies(cost)` | Odečte cost pokud canAfford(), vrátí boolean, volá `_persist()` |
-| `canAfford(cost)` | Ověří bez mutace |
-| `unlockDivision(id)` | Přidá do unlockedDivisions, nastaví divisionLevels[id]=1 |
-| `upgradeDivision(id)` | Incrementuje divisionLevels[id] (max 3) |
-| `unlockBlackMarket()` | Nastaví blackMarketUnlocked=true |
-| `incrementStat('agents')` | totalAgentsLost++ |
-| `incrementStat('expansions')` | totalExpansions++ |
-| `incrementMissionAttempted()` | totalMissionsAttempted++ |
-| `incrementMissionCompleted()` | totalMissionsCompleted++ |
-| `getPlayTimeSecs()` | `_loadedPlayTime + (now - _sessionStartedAt) / 1000` (session-level counter) |
-| `reset()` | Vynuluje všechen state (pro novou hru / slot switch) |
-| `_persist()` | Uloží do `db.gameState` + aktualizuje `metaDb.slots` snapshot |
+| Akce                          | Popis                                                                        |
+| ----------------------------- | ---------------------------------------------------------------------------- |
+| `setLoaded(meta)`             | Naplní store daty z DB, resetuje session tracking                            |
+| `addCurrencies(delta)`        | Přičte delta ke každé měně (floor 0), volá `_persist()`                      |
+| `spendCurrencies(cost)`       | Odečte cost pokud canAfford(), vrátí boolean, volá `_persist()`              |
+| `canAfford(cost)`             | Ověří bez mutace                                                             |
+| `unlockDivision(id)`          | Přidá do unlockedDivisions, nastaví divisionLevels[id]=1                     |
+| `upgradeDivision(id)`         | Incrementuje divisionLevels[id] (max 3)                                      |
+| `unlockBlackMarket()`         | Nastaví blackMarketUnlocked=true                                             |
+| `incrementStat('agents')`     | totalAgentsLost++                                                            |
+| `incrementStat('expansions')` | totalExpansions++                                                            |
+| `incrementMissionAttempted()` | totalMissionsAttempted++                                                     |
+| `incrementMissionCompleted()` | totalMissionsCompleted++                                                     |
+| `getPlayTimeSecs()`           | `_loadedPlayTime + (now - _sessionStartedAt) / 1000` (session-level counter) |
+| `reset()`                     | Vynuluje všechen state (pro novou hru / slot switch)                         |
+| `_persist()`                  | Uloží do `db.gameState` + aktualizuje `metaDb.slots` snapshot                |
 
 ### `_persist()` detail
 
@@ -71,9 +71,9 @@ Mission lifecycle: dispatch → tick → collect → dismiss.
 
 ```typescript
 interface MissionStore {
-  availableMissions: Mission[];      // mise pro aktuálně vybraný region
-  activeMissions: ActiveMission[];   // dispatched, zatím neskončené
-  completedQueue: CompletedMissionResult[];  // čeká na UI pickup
+  availableMissions: Mission[]; // mise pro aktuálně vybraný region
+  activeMissions: ActiveMission[]; // dispatched, zatím neskončené
+  completedQueue: CompletedMissionResult[]; // čeká na UI pickup
   loading: boolean;
 }
 
@@ -84,10 +84,10 @@ interface CompletedMissionResult {
   rewards: MissionRewards;
   alertGain: number;
   affectedAgentIds: string[];
-  injuredAgents: InjuredAgentInfo[];           // { id, name, severity, healsAt }
-  rankedUpAgents: Array<{ id, name, newRank }>;
-  killedAgent?: { id, name };
-  lostEquipment?: Array<{ id, name }>;         // při partial rescue
+  injuredAgents: InjuredAgentInfo[]; // { id, name, severity, description?, healsAt }
+  rankedUpAgents: Array<{ id; name; newRank }>;
+  killedAgent?: { id; name };
+  lostEquipment?: Array<{ id; name }>; // při partial rescue
 }
 ```
 
@@ -124,7 +124,8 @@ Nejkomplexnější akce — resolvuje výsledky mise v jedné DB transakci.
 6. DB transakce:
    a) activeMissions.update → { result, collected: true }
    b) Pro každého agenta:
-      - rollInjury() → pokud injured: status='injured', injuredAt, healsAt
+      - rollInjury() → pokud injured: status='injured', injuredAt, healsAt, injuryDescription
+      - rollInjuryDescription() → flavor text podle kategorie mise a severity
       - XP += perAgentXp; missionsAttempted++
       - Pokud success/partial: missionsCompleted++
       - canRankUp() → rankUp() → agents.put(ranked)
@@ -154,7 +155,7 @@ Nejkomplexnější akce — resolvuje výsledky mise v jedné DB transakci.
 Ochrana před re-entrancy: _ticking flag
 
 1. Auto-heal: agents WHERE status='injured' AND healsAt <= now
-   → status='available', healsAt/injuredAt cleared
+   → status='available', healsAt/injuredAt/injuryDescription cleared
 
 2. Capture expiry: agents WHERE status='captured'
    → Načti rescueMission → pokud expired nebo neexistuje:
@@ -194,7 +195,7 @@ interface UIStore {
   activeTab: 'map' | 'missions' | 'agents' | 'base' | 'menu';
   selectedRegionId: string | null;
   selectedAgentId: string | null;
-  toasts: Toast[];                    // max 3, LIFO
+  toasts: Toast[]; // max 3, LIFO
   saveSwitchRequested: boolean;
 }
 
@@ -202,21 +203,21 @@ interface Toast {
   id: string;
   type: 'success' | 'error' | 'warning' | 'info';
   message: string;
-  expiresAt: number;  // now + 3500ms
+  expiresAt: number; // now + 3500ms
 }
 ```
 
 ### Akce
 
-| Akce | Popis |
-|------|-------|
-| `setActiveTab(tab)` | Přepne aktivní tab |
-| `selectRegion(id)` | Nastaví selectedRegionId |
-| `selectAgent(id)` | Nastaví selectedAgentId |
+| Akce                       | Popis                                                                         |
+| -------------------------- | ----------------------------------------------------------------------------- |
+| `setActiveTab(tab)`        | Přepne aktivní tab                                                            |
+| `selectRegion(id)`         | Nastaví selectedRegionId                                                      |
+| `selectAgent(id)`          | Nastaví selectedAgentId                                                       |
 | `showToast(type, message)` | Přidá toast; max 3 (nejstarší odstraněn); auto-dismiss za 3.6s (`setTimeout`) |
-| `dismissToast(id)` | Odstraní konkrétní toast |
-| `requestSaveSelect()` | saveSwitchRequested=true → App.tsx přejde na landing |
-| `clearSaveSwitchRequest()` | Resetuje flag |
+| `dismissToast(id)`         | Odstraní konkrétní toast                                                      |
+| `requestSaveSelect()`      | saveSwitchRequested=true → App.tsx přejde na landing                          |
+| `clearSaveSwitchRequest()` | Resetuje flag                                                                 |
 
 Toast auto-dismiss: `showToast` nastaví `setTimeout(dismissToast, 3600ms)`.
 
@@ -264,9 +265,11 @@ useEffect(() => {
     const now = Date.now();
 
     // Dokonči expanze
-    const regions = await db.regions.filter(r =>
-      r.constructionInProgress && r.constructionCompletesAt <= now
-    ).toArray();
+    const regions = await db.regions
+      .filter(
+        (r) => r.constructionInProgress && r.constructionCompletesAt <= now,
+      )
+      .toArray();
     for (const region of regions) {
       // Vytvoř safe house pro region
       // Generuj mise + recruitment pool
@@ -276,9 +279,9 @@ useEffect(() => {
     }
 
     // Dokonči upgrady safe housů
-    const houses = await db.safeHouses.filter(sh =>
-      sh.upgradeInProgress && sh.upgradeCompletesAt <= now
-    ).toArray();
+    const houses = await db.safeHouses
+      .filter((sh) => sh.upgradeInProgress && sh.upgradeCompletesAt <= now)
+      .toArray();
     for (const sh of houses) {
       await db.safeHouses.update(sh.id, {
         level: sh.level + 1,

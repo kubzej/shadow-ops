@@ -60,14 +60,22 @@ Měny mají floor 0 (nikdy záporné). `addCurrencies()` floory každou složku.
 **Status lifecycle:**
 ```
 available
-  ↓ dispatch()
-on_mission
-  ↓ collectResult() — výsledky:
-  ├── (žádné zranění)  → available
-  ├── (zranění)        → injured → (healsAt <= now) → available
-  ├── (catastrophe)    → captured → rescue mission → available / dead
-  └── (rescue failure diff≥5) → dead
+  ├── dispatch()      → on_mission
+  │     ↓ collectResult() — výsledky:
+  │     ├── (žádné zranění)  → available
+  │     ├── (zranění)        → injured → (healsAt <= now) → available
+  │     ├── (catastrophe)    → captured → rescue mission → available / dead
+  │     └── (rescue failure diff≥5) → dead
+  └── přesun (Relokovat UI) → traveling
+        ↓ tickMissions(): arrivesAt <= now
+        → available (v cílové safe house)
 ```
+
+**Přesun agenta (Travel):**
+- Agent Detail Modal → "Přesunout" → výběr cílové safe house
+- Cena money + čas (dle vzdálenosti safe housů)
+- Během cestování: agent nelze dispatche, zobrazuje se countdown a cíl
+- `tickMissions()` každou sekundu kontroluje `arrivesAt` a mění status na `available`
 
 **Instant heal cost:** 10 money × rankIndex (recruit=10, operative=20, specialist=30, veteran=40)
 

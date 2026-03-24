@@ -10,15 +10,15 @@ Všechny výpočty jsou deterministické (seedovaný RNG přes `createRng()` z `
 
 ```typescript
 CATEGORY_STAT_WEIGHTS = {
-  surveillance: { stealth: 0.40, combat: 0.10, intel: 0.35, tech: 0.15 },
-  cyber:        { stealth: 0.20, combat: 0.05, intel: 0.30, tech: 0.45 },
-  extraction:   { stealth: 0.25, combat: 0.40, intel: 0.15, tech: 0.20 },
-  sabotage:     { stealth: 0.20, combat: 0.35, intel: 0.10, tech: 0.35 },
-  influence:    { stealth: 0.25, combat: 0.05, intel: 0.55, tech: 0.15 },
-  finance:      { stealth: 0.20, combat: 0.05, intel: 0.35, tech: 0.40 },
-  logistics:    { stealth: 0.30, combat: 0.20, intel: 0.25, tech: 0.25 },
-  blackops:     { stealth: 0.30, combat: 0.45, intel: 0.15, tech: 0.10 },
-}
+  surveillance: { stealth: 0.4, combat: 0.1, intel: 0.35, tech: 0.15 },
+  cyber: { stealth: 0.2, combat: 0.05, intel: 0.3, tech: 0.45 },
+  extraction: { stealth: 0.25, combat: 0.4, intel: 0.15, tech: 0.2 },
+  sabotage: { stealth: 0.2, combat: 0.35, intel: 0.1, tech: 0.35 },
+  influence: { stealth: 0.25, combat: 0.05, intel: 0.55, tech: 0.15 },
+  finance: { stealth: 0.2, combat: 0.05, intel: 0.35, tech: 0.4 },
+  logistics: { stealth: 0.3, combat: 0.2, intel: 0.25, tech: 0.25 },
+  blackops: { stealth: 0.3, combat: 0.45, intel: 0.15, tech: 0.1 },
+};
 ```
 
 ### calculateSuccessChance(agents, mission, alertLevel=0, approach='standard')
@@ -49,6 +49,7 @@ CATEGORY_STAT_WEIGHTS = {
 ```
 
 **Příklad:** diff-3 mise, 1 operativa (score 60), žádný equipment, alert=0, standard:
+
 - base = 0.67
 - statBonus = (60−50)/100 × 0.4 = +0.04
 - teamBonus = 0 (1 agent)
@@ -95,13 +96,13 @@ teamSplit  = max(0.4, 1 − (agentCount − 1) × 0.1)
 xpPerAgent = round(baseXp × resultMult[result] × teamSplit)
 ```
 
-| agentCount | teamSplit |
-|------------|-----------|
-| 1          | 1.0       |
-| 2          | 0.9       |
-| 3          | 0.8       |
-| 4          | 0.7       |
-| 5          | 0.6       |
+| agentCount | teamSplit                               |
+| ---------- | --------------------------------------- |
+| 1          | 1.0                                     |
+| 2          | 0.9                                     |
+| 3          | 0.8                                     |
+| 4          | 0.7                                     |
+| 5          | 0.6                                     |
 | 6          | 0.5 (ale min 0.4 platí od agentCount=7) |
 
 ### rollInjury(result, difficulty) → 'none' | 'light' | 'serious' | 'critical'
@@ -124,13 +125,31 @@ else                           → 'critical'
 
 **Healing durations (bez med_bay):**
 
-| Severity | Čas   |
-|----------|-------|
-| light    | 60s   |
-| serious  | 300s (5 min) |
+| Severity | Čas            |
+| -------- | -------------- |
+| light    | 60s            |
+| serious  | 300s (5 min)   |
 | critical | 1200s (20 min) |
 
 Med Bay modul: healing time × 0.5 (zaokrouhleno nahoru).
+
+### rollInjuryDescription(category, severity, rng) → string
+
+Vybere náhodný flavor text zranění podle kategorie mise a severity.
+
+```
+category: surveillance | cyber | extraction | sabotage | influence |
+          finance | logistics | medical | blackops
+severity: 'light' | 'serious' | 'critical'
+```
+
+Každá kombinace má 3 varianty. Příklady:
+
+- extraction + critical → "Střelná rána do hrudníku"
+- cyber + serious → "Střepiny z výbuchu serveru v obličeji"
+- surveillance + light → "Odřeniny při úniku přes střechy"
+
+Fallback pro neznámou kategorii: generické popisy dle severity.
 
 ### checkAgentEligibility(agent, mission)
 
@@ -362,20 +381,20 @@ intel = round((15   + 6   × distance + alertMod × 2)  × scaleMult)
 
 **Příklady (0 dosavadních expanzí, alertMod=0):**
 
-| Distance | Money  | Intel |
-|----------|--------|-------|
-| 1        | 1 200  | 21    |
-| 2        | 1 400  | 27    |
-| 3        | 1 600  | 33    |
+| Distance | Money | Intel |
+| -------- | ----- | ----- |
+| 1        | 1 200 | 21    |
+| 2        | 1 400 | 27    |
+| 3        | 1 600 | 33    |
 
 **Scale multiplier dle počtu expanzí:**
 
-| totalExpansions | scaleMult |
-|-----------------|-----------|
-| 0               | 1.0×      |
-| 1               | 1.4×      |
-| 2               | 1.8×      |
-| 3               | 2.2×      |
+| totalExpansions | scaleMult  |
+| --------------- | ---------- |
+| 0               | 1.0×       |
+| 1               | 1.4×       |
+| 2               | 1.8×       |
+| 3               | 2.2×       |
 | 5               | 3.0× (cap) |
 
 ### expansionBuildTime(distanceFromStart) → ms
@@ -385,10 +404,10 @@ intel = round((15   + 6   × distance + alertMod × 2)  × scaleMult)
 ```
 
 | Distance | Build time |
-|----------|-----------|
-| 1        | 90s       |
-| 2        | 120s      |
-| 5        | 210s      |
+| -------- | ---------- |
+| 1        | 90s        |
+| 2        | 120s       |
+| 5        | 210s       |
 
 ---
 

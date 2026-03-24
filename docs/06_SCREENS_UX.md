@@ -89,7 +89,8 @@ Nejkomplexnější obrazovka. 3 části: mission list, active missions, collecti
   - Timer do vypršení (expiresAt)
   - Chain badge pokud chainStep/chainTotal
   - "Intel required" pokud intelCost > 0
-- Klik → otevře Dispatch Modal
+  - Lock badge pokud `lockedByDivision` (název divize která musí být přiřazena)
+- Klik → otevře Dispatch Modal (locked mise nelze dispatchovat)
 
 ### Dispatch Modal
 
@@ -141,7 +142,7 @@ Bottom sheet, animovaný.
 
 ### Agent List
 
-- Filter tabu (pills): **Vše / Volní / Na misi / Zranění / Zajatí / Mrtví**
+- Filter tabu (pills): **Všichni / Volní / Na misi / Zranění**
 - Každá karta:
   - Avatar (divisionColor, iniciály nebo ikona)
   - Jméno, division chip (barva + název)
@@ -158,13 +159,14 @@ Klik na agenta → bottom sheet.
 
 **Sekce:**
 1. **Header:** avatar velký, jméno, divize, rank, status
-2. **Stats detail:** 4 řádky (stealth/combat/intel/tech), progress bar 0–99, číslo
+2. **Stats detail:** 4 řádky (stealth/combat/intel/tech), progress bar 0–99, číslo. Pokud agent nese equipment s bonusem, bar má dvě části: base v barvě divize + bonus segment v zelené (#4ade80)
 3. **XP progress:** "XP: {xp} / {xpToNextRank}" + progress bar
 4. **Mise statistiky:** missionsCompleted / missionsAttempted
-5. **Equipment sloty:** 3 sloty, každý: id nebo "(prázdný)"
+5. **Equipment sloty:** 3 sloty. Osazený slot: název itemu, rarity badge, stat bonusy jako barevné tagy, tlačítka "Prodat" (30% refund) a "Přendat →" (transfer na jiného agenta ve stejné safe house). Prázdný slot: zobrazí "Prázdný slot" (neklikatelný — equipment se kupuje v Obchodě).
 6. **Akce:**
    - Pokud injured: "Okamžitě uzdravit (10$×rank)" → `db.agents.update(status='available')` + `spendCurrencies`
-   - (Equip UI zatím chybí)
+   - Pokud available: "Přesunout" → výběr cílové safe house, cena + čas cestování → `status='traveling'`
+   - Pokud traveling: zobrazí "Cestuje do {název} za {countdown}"
 
 ---
 
@@ -190,8 +192,9 @@ Klik na agenta → bottom sheet.
   - `spendCurrencies()` → `db.safeHouses.update(upgradeInProgress=true, upgradeCompletesAt)`
 - Division assignment:
   - Přiřazené divize (chips, klik = odebrat)
-  - Dostupné divize k přiřazení (pouze odemčené, pokud slot volný)
-  - Po změně: `invalidateRegionMissions()` (regeneruje mise pro region)
+  - Dostupné divize k přiřazení (pouze odemčené, pokud slot volný); cena `DIVISION_ASSIGN_BASE_COST × sh.index`
+  - Po přiřazení: odemkne `lockedByDivision` mise pro tuto divizi, volá `invalidateRegionMissions()`
+  - Po odebrání: volá `invalidateRegionMissions()` (regeneruje mise pro region)
 - Module sekce:
   - Nainstalované moduly (max 2): jméno, popis, tlačítko "Odebrat"
   - Dostupné moduly k instalaci (pokud < 2): cena, popis, "Instalovat"
@@ -210,8 +213,19 @@ Klik na agenta → bottom sheet.
 
 ### Tab 4: Obchod
 
-Zatím placeholder. (Black market engine implementován, UI napojení chybí.)
-Ukazuje "Černý trh — brzy k dispozici" nebo locked message pokud < 15 misí.
+Rotující výběr 6 equipment itemů. Refresh každou hodinu (countdown v hlavičce).
+
+- **Locked stav:** pokud `totalMissionsCompleted < 15` → locked message s hint textem
+- **Tier hint:** pokud < 10 misí → text o rare/legendary itemech
+- Každý item: název, rarity badge (barva), stat bonusy, cena (money/intel/shadow/influence)
+- Tlačítko "Koupit" → otevře agent picker (agenti v aktuální safe house s volným slotem)
+  - Pokud `eq.requiredDivision`: filtruje pouze agenty té divize
+  - Po výběru agenta: `buyAssign(eq, agent)` → `spendCurrencies()` → `db.agents.update(equipment, stats)`
+  - Notifikace: "{název itemu} → {jméno agenta}" na 2.5s
+- **Černý trh** (pokud `blackMarketUnlocked`): 4 listingy za shadow+influence
+  - 30% šance: speciální agent (blackops/extraction/cyber/sabotage, specialist/veteran, cena 25◆+15✦)
+  - 20% šance: expansion skip (přeskočí build time, cena 30◆+20✦)
+  - Jinak: rare/legendary equipment
 
 ---
 
