@@ -25,10 +25,6 @@ Perk je uložen jako `veteranPerk?: string` na Agent entitě.
 
 ## 3. Mise — nové typy a mechaniky
 
-### 3.1 ✅ Urgentní mise (Flash Operations) — IMPLEMENTOVÁNO
-
-Speciální typ mise s ikonou ⚡. Dostupná jen 5 minut, obtížnost 3–5, reward ×1.5 + garantovaných +8 shadow. Generuje se náhodně 1× za 10–15 minut pro regiony s missionTier ≥ 2. Unikátní timer na kartě mise — bliká červeně pod 60 sekund.
-
 ### 3.2 Kooperativní mise (Multi-Site Operations)
 
 Mise vyžadující agenty ze **2 různých safe houses** (nová property `requiresMultipleSafeHouses: true`). Oba týmy jsou dispatched simultánně, výsledek je průměr obou success chances ale rewards × 1.8. Pro tuto misi je nutný modul `comms_hub` (nový — viz sekce 5).
