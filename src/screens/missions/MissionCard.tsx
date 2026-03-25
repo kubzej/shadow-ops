@@ -121,7 +121,7 @@ export function MissionCard({
               }}
             >
               <Zap size={9} />
-              QUICK MISE
+              URGENTNÍ MISE
             </div>
           )}
           {mission.isCounterOp && (

@@ -3,6 +3,7 @@ import { cardBase, btn } from '../../styles/tokens';
 import { db } from '../../db/db';
 import type { DivisionId } from '../../data/agentTypes';
 import { DIVISIONS } from '../../data/agentTypes';
+import { REGION_MAP } from '../../data/regions';
 import type { Mission } from '../../db/schema';
 import {
   DIVISION_UNLOCK_COSTS,
@@ -65,9 +66,10 @@ export function DivisionsTab() {
       }
       invalidateRegionMissions(sh.id);
       const divName = DIVISIONS.find((d) => d.id === id)?.name ?? id;
+      const houseName = REGION_MAP.get(sh.id)?.name ?? 'neznámé základny';
       showToast(
         'success',
-        `${divName} přiřazena do ${sh.id === startCityId ? 'domovské základny' : sh.id}`,
+        `${divName} přiřazena do ${sh.id === startCityId ? 'domovské základny' : houseName}`,
       );
     }
   }

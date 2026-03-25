@@ -299,6 +299,11 @@ export default function DemoScreen() {
     }
   }
 
+  function openMissionFilterDemo() {
+    useUIStore.getState().selectRegion('london');
+    navigate('/missions');
+  }
+
   return (
     <div
       className="flex flex-col min-h-full pb-20"
@@ -494,10 +499,19 @@ export default function DemoScreen() {
             Demo obsah
           </p>
           <div className="rounded-xl p-4 flex flex-col gap-2" style={cardBase}>
+            <button
+              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold mb-2"
+              style={btn.action(C.green)}
+              onClick={openMissionFilterDemo}
+            >
+              <Target size={13} />
+              Otevřít test filtrů misí (Londýn)
+            </button>
             {[
               '6 agentů v Londýně (volný, zraněný, na misi, plná výbava, veterán se serií, rank-up ready)',
               '4 agenti v Amsterdamu (specialist zraněný, agent zajat, veterán s výbavou, cestující)',
               'Berlin ve výstavbě',
+              'Bohatší pool misí v Londýně/Amsterdamu pro test filtrů a řazení',
               'Záchranná mise aktivní (Londýn)',
               'Mise se dokončí za ~30s — spustí modal sbírání',
               'Quick/Flash mise v Amsterdamu (časovač ~3.5 min)',

@@ -9,6 +9,10 @@ Všechny výpočty jsou deterministické (seedovaný RNG přes `createRng()` z `
 - Přidána `generateCounterOp(regionId, alertLevel, rivalOperationId?)`.
 - Přidána konstanta `COUNTER_OP_EXPIRY_MS = 20 min`.
 - Counter mise má `isCounterOp=true`, `category='counter'`, vlastní reward/penalty profil.
+- Přidána `maxMissionsForRegion(missionTier, alertLevel, ownedSafeHouses)`.
+  - Base cap: 6
+  - Dynamické bonusy dle tieru/alertu/sítě
+  - Hard cap: 10
 
 ### missionResolver.ts
 

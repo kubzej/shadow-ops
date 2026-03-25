@@ -13,27 +13,6 @@
 
 Mise vyžadující agenty ze **2 různých safe houses** (nová property `requiresMultipleSafeHouses: true`). Oba týmy jsou dispatched simultánně, výsledek je průměr obou success chances ale rewards × 1.8. Pro tuto misi je nutný modul `comms_hub` (nový — viz sekce 5).
 
-### 3.3 Defenzivní mise (Counter-Ops) ✅ IMPLEMENTOVÁNO
-
-Nová kategorie: **`counter`**. Generuje se automaticky při `alertLevel ≥ 2.5` nebo náhodně (10% šance per tick při alert ≥ 2.0). Pokud není dokončena do 20 minut, safe house **přijde o 1 modul** (náhodný). Ignorace má reálné důsledky.
-
-```typescript
-// Generace:
-if (alertLevel >= 2.5 && !activeCounterOpsInRegion) {
-  generateCounterOp(regionId);
-}
-```
-
-### 3.4 Sezonní / globální události ✅ IMPLEMENTOVÁNO
-
-Viz `docs/02_GAME_MECHANICS.md` sekce **Globální události**. Implementace zahrnuje 5 pozitivních + 5 negativních eventů s rozšířeným katalogem oproti původnímu návrhu.
-
-### 3.5 Osobní mise agenta (Agent Personal Missions)
-
-Veterán agenti mají 10% šanci za 24h generovat **osobní misi** — single-agent, narrative-heavy, bez komplikací. Rewards jsou nízké (spíš XP + speciální perk point), ale missne naznačují backstory agenta. Příklad: _"Phantom chce splatit dluh z minulosti v Bejrútu."_
-
----
-
 ## 4. Základna a progrese
 
 ### 4.3 Nový modul: Communications Hub
@@ -54,30 +33,6 @@ Regiony různých typů dávají bonus safe housu:
 | port      | Logistics mise reward × 1.3                   |
 | military  | Blackops mise reward × 1.3, alert decay −0.05 |
 | border    | Přesun agentů −30% cena                       |
-
----
-
-## 6. Rivalita a protistrana
-
-### 6.1 Rival agentura (Shadow Faction) ✅ IMPLEMENTOVÁNO
-
-Oblast inspirace: existující `alertLevel` systém. K lore přidá protivníka.
-
-Hráč dostane jméno **rival agentury** (generované při onboardingu — 5 možností: NEXUS, CIPHER, HELIX, VORTEX, SPECTER). Rival provádí vlastní operace — každých 30–45 minut se v náhodném **vlastněném** regionu s alertLevel ≥ 1.5 vygeneruje `RIVAL_OPERATION event`:
-
-| Event typ         | Efekt                                          |
-| ----------------- | ---------------------------------------------- |
-| Asset Compromise  | Jeden náhodný agent dostane −10 k primaryStat  |
-| Intel Theft       | Ztráta 15–30◈                                  |
-| Sabotage          | Modul v safe house přestane fungovat na 10 min |
-| Agent Recruitment | Rival "přetáhne" nejslabšího agenta (zmizel)   |
-| Disinformation    | Alert v regionu +0.5                           |
-
-Rival eventy jdou ignorovat — ale mají nepříjemné důsledky. Nebo je lze "blokovat" dispatching **Counter-Op mise** (viz 3.3).
-
-### 6.2 Rival eskalace ✅ IMPLEMENTOVÁNO
-
-Čím víc misí player dokončí, tím agresivnější rival je (`rivalAggressionLevel = floor(totalMissionsCompleted / 25)`). Na level 3+ rival začne generovat "Hunt Squads" — rescue mise pro **hráčovy captured agenty** jsou obtížnější (+1 diff).
 
 ---
 
@@ -119,16 +74,6 @@ Hidden achievementy, viditelné v MenuScreen po splnění:
 ---
 
 ## 8. UX / workflow vylepšení
-
-### 8.2 Mise filter + sort
-
-Na MissionsScreen toolbar se filtry:
-
-- **Kategorie** (chip filtry dle divize — barevné)
-- **Obtížnost** (1★ – 5★ slider)
-- **Sort:** reward / alert gain / time / difficulty
-- **Pouze dostupné** (toggle — skryje locked mise)
-- Šlo by tedy generovat i více misí možná
 
 ## 9. Nový obsah — vybavení a typy
 

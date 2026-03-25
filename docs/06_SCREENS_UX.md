@@ -7,6 +7,23 @@
 - Counter mise mají vlastní badge (`COUNTER-OP`) a časový limit.
 - Pokud je counter mise navázaná na pending rival operation, karta zobrazuje kontext "Rival hrozba".
 
+### MissionsScreen — Mobile Toolbar V2
+
+- Toolbar je navržen čistě pro mobilní layout.
+- Sticky sekce pod `CityBar`:
+  - Kategorie chips (horizontální swipe)
+  - Quick sort (`Doporučené`, `Odměna`, `Riziko`)
+  - Toggle `Dostupné`
+  - Tlačítko `Filtry` (bottom sheet)
+- Bottom sheet filtry:
+  - Obtížnost min/max 1–5
+  - Rozšířené sort režimy
+  - Reset filtrů
+- Prioritní mise (`rescue`, `counter-op`) jsou vždy připnuté nahoře.
+- Výchozí nastavení:
+  - `Sort = Doporučené`
+  - `Pouze dostupné = zapnuto`
+
 ### SafeHouse tab
 
 - Sabotované moduly jsou v seznamu modulů označeny badge "Nefunkční" + countdown.

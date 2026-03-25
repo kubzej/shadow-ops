@@ -5,6 +5,8 @@ import { useUIStore } from '../store/uiStore';
 import { randomId } from '../utils/rng';
 import { demoteRank, generateRecruitmentPool } from './agentGenerator';
 import type { DivisionId } from '../data/agentTypes';
+import { REGION_MAP } from '../data/regions';
+import { MODULE_CATALOG } from '../data/costs';
 
 export const RIVAL_OPERATION_INTERVAL_MIN_MS = 30 * 60 * 1000;
 export const RIVAL_OPERATION_INTERVAL_MAX_MS = 45 * 60 * 1000;
@@ -34,7 +36,7 @@ export const RIVAL_EVENT_META: Record<
     description: 'Alert v regionu se zvýší o +0.5.',
   },
   rival_leak: {
-    label: 'Rival leak',
+    label: 'Únik intelu',
     description: 'Mise v regionu mají dočasně +3 intel cost.',
   },
   burned_contracts: {
@@ -111,24 +113,27 @@ export async function applyRivalOperation(
           a.status !== 'captured',
       )
       .toArray();
-    if (!agents.length) return 'Rival Asset Compromise: žádný vhodný agent.';
+    if (!agents.length)
+      return 'Rival: kompromitace aktiva — žádný vhodný agent.';
     const target = agents[Math.floor(Math.random() * agents.length)];
     await db.agents.put(demoteRank(target));
-    return `Rival Asset Compromise: ${target.name} byl degradován.`;
+    return `Rival: kompromitace aktiva — ${target.name} byl degradován.`;
   }
 
   if (op.eventType === 'intel_theft') {
     const loss = 15 + Math.floor(Math.random() * 16);
     game.addCurrencies({ intel: -loss });
-    return `Rival Intel Theft: ztráta ${loss} intel.`;
+    return `Rival: krádež intel — ztráta ${loss} intel.`;
   }
 
   if (op.eventType === 'sabotage') {
     const sh = await db.safeHouses.get(op.regionId);
     if (!sh || !sh.modules.length) {
-      return 'Rival Sabotage: žádný modul k sabotáži.';
+      return 'Rival: sabotáž — žádný modul k sabotáži.';
     }
     const moduleId = sh.modules[Math.floor(Math.random() * sh.modules.length)];
+    const moduleName =
+      MODULE_CATALOG.find((m) => m.id === moduleId)?.name ?? 'neznámý modul';
     const disabled = (sh.disabledModules ?? []).filter(
       (m) => m.until > Date.now() && m.moduleId !== moduleId,
     );
@@ -138,7 +143,7 @@ export async function applyRivalOperation(
       reason: 'rival_sabotage',
     });
     await db.safeHouses.update(sh.id, { disabledModules: disabled });
-    return `Rival Sabotage: modul ${moduleId} je nefunkční 10 min.`;
+    return `Rival: sabotáž — modul ${moduleName} je nefunkční 10 min.`;
   }
 
   if (op.eventType === 'agent_recruitment') {
@@ -150,7 +155,7 @@ export async function applyRivalOperation(
           a.status !== 'captured',
       )
       .toArray();
-    if (!agents.length) return 'Rival Agent Recruitment: žádný vhodný agent.';
+    if (!agents.length) return 'Rival: přetáhnutí agenta — žádný vhodný agent.';
     const weakest = [...agents].sort((a, b) => {
       const sa =
         a.stats.stealth + a.stats.combat + a.stats.intel + a.stats.tech;
@@ -167,21 +172,21 @@ export async function applyRivalOperation(
       ],
     });
     game.incrementStat('agents');
-    return `Rival Agent Recruitment: ${weakest.name} byl ztracen.`;
+    return `Rival: přetáhnutí agenta — ${weakest.name} byl ztracen.`;
   }
 
   if (op.eventType === 'disinformation') {
     await db.regions.update(op.regionId, {
       alertLevel: Math.min(3, (region.alertLevel ?? 0) + 0.5),
     });
-    return 'Rival Disinformation: alert v regionu +0.5.';
+    return 'Rival: dezinformace — alert v regionu +0.5.';
   }
 
   if (op.eventType === 'rival_leak') {
     await db.regions.update(op.regionId, {
       rivalLeakUntil: Date.now() + 15 * 60 * 1000,
     });
-    return 'Rival Leak: mise v regionu mají +3 intel cost na 15 min.';
+    return 'Rival: únik intelu — mise v regionu mají +3 intel cost na 15 min.';
   }
 
   if (op.eventType === 'burned_contracts') {
@@ -203,7 +208,7 @@ export async function applyRivalOperation(
       );
       await db.recruitmentPools.put(pool);
     }
-    return 'Rival Burned Contracts: nábor je oslaben na 10 min.';
+    return 'Rival: spálené kontrakty — nábor je oslaben na 10 min.';
   }
 
   const allOwned = await db.safeHouses
@@ -213,12 +218,13 @@ export async function applyRivalOperation(
     .filter((a) => a.safeHouseId === op.regionId && a.status === 'available')
     .toArray();
   if (!allOwned.length || !agents.length) {
-    return 'Rival Safe House Swap: žádný validní cíl.';
+    return 'Rival: přesun agenta — žádný validní cíl.';
   }
   const agent = agents[Math.floor(Math.random() * agents.length)];
   const target = allOwned[Math.floor(Math.random() * allOwned.length)];
   await db.agents.update(agent.id, { safeHouseId: target.id });
-  return `Rival Safe House Swap: ${agent.name} přesunut do ${target.id}.`;
+  const targetName = REGION_MAP.get(target.id)?.name ?? 'neznámého regionu';
+  return `Rival: přesun agenta — ${agent.name} přesunut do ${targetName}.`;
 }
 
 export function notifyRival(

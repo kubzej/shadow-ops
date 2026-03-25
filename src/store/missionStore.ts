@@ -20,12 +20,13 @@ import {
 import { canRankUp, rankUp } from '../engine/agentGenerator';
 import {
   generateMissionsForRegion,
-  missionsNeeded,
   generateRescueMission,
   generateChainMission,
   generateFlashMission,
   MISSION_REGEN_INTERVAL_MS,
+  MIN_MISSIONS_PER_REGION,
   MAX_MISSIONS_PER_REGION,
+  maxMissionsForRegion,
   FLASH_MISSION_INTERVAL_MIN_MS,
   FLASH_MISSION_INTERVAL_MAX_MS,
   FLASH_MISSION_MIN_TIER,
@@ -48,6 +49,8 @@ import {
 } from '../engine/worldEvents';
 import { randomId } from '../utils/rng';
 import { EQUIPMENT_CATALOG } from '../data/equipmentCatalog';
+import { REGION_MAP } from '../data/regions';
+import { MODULE_CATALOG } from '../data/costs';
 
 const RESCUE_EQUIPMENT_SELL_REFUND = 0.3;
 
@@ -179,7 +182,7 @@ async function _spawnFlashMissionsIfDue(now: number): Promise<void> {
       .getState()
       .showToast(
         'info',
-        `⚡ Urgentní mise v ${region.id} — 5 minut na odeslání!`,
+        `⚡ Urgentní mise v ${REGION_MAP.get(region.id)?.name ?? 'neznámém regionu'} — 5 minut na odeslání!`,
       );
   }
 }
@@ -900,6 +903,9 @@ export const useMissionStore = create<MissionStore>()(
           if (sh && sh.modules.length > 0) {
             const removed =
               sh.modules[Math.floor(Math.random() * sh.modules.length)];
+            const moduleName =
+              MODULE_CATALOG.find((m) => m.id === removed)?.name ??
+              'neznámý modul';
             await db.safeHouses.update(sh.id, {
               modules: sh.modules.filter((m) => m !== removed),
             });
@@ -907,7 +913,7 @@ export const useMissionStore = create<MissionStore>()(
               .getState()
               .showToast(
                 'error',
-                `Counter-Op vypršela: ztracen modul ${removed}.`,
+                `Counter-Op vypršela: ztracen modul ${moduleName}.`,
               );
           } else {
             useUIStore
@@ -1019,6 +1025,14 @@ export const useMissionStore = create<MissionStore>()(
         (d) => d !== 'medical',
       );
       const missionTier = region.missionTier ?? 0;
+      const ownedSafeHouses = await db.safeHouses
+        .filter((sh) => !sh.constructionInProgress)
+        .count();
+      const dynamicMax = maxMissionsForRegion(
+        missionTier,
+        region.alertLevel ?? 0,
+        ownedSafeHouses,
+      );
 
       // Emergency: if no diff-1 mission exists, inject one immediately by
       // replacing the most recently added non-diff-1 mission (or adding if under MAX).
@@ -1035,7 +1049,7 @@ export const useMissionStore = create<MissionStore>()(
           undefined, // guaranteeEasy overrides minDifficulty
         )[0];
         // If at max capacity, drop the newest non-rescue, non-flash mission to make room
-        if (workingValid.length >= MAX_MISSIONS_PER_REGION) {
+        if (workingValid.length >= dynamicMax) {
           const dropTarget = [...workingValid]
             .reverse()
             .find((m) => !m.isRescue && !m.isFlash);
@@ -1057,10 +1071,13 @@ export const useMissionStore = create<MissionStore>()(
       }
 
       // Top up to minimum if below MIN, or add 1 via timed regen if interval elapsed
-      const needed = missionsNeeded(workingValid.length);
+      const needed =
+        workingValid.length < MIN_MISSIONS_PER_REGION
+          ? MIN_MISSIONS_PER_REGION - workingValid.length
+          : 0;
       const timedRegen =
         needed === 0 &&
-        workingValid.length < MAX_MISSIONS_PER_REGION &&
+        workingValid.length < dynamicMax &&
         (region.lastMissionGeneratedAt === undefined ||
           now - region.lastMissionGeneratedAt >= MISSION_REGEN_INTERVAL_MS);
       const generateCount = needed > 0 ? needed : timedRegen ? 1 : 0;

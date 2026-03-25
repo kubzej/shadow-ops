@@ -32,6 +32,7 @@ const MIN_DURATION = 60;
 /** Minimum missions available per region. */
 export const MIN_MISSIONS_PER_REGION = 3;
 export const MAX_MISSIONS_PER_REGION = 6;
+export const MAX_MISSIONS_HARD_CAP = 10;
 
 /** One new mission is added per region every this many ms (timed regen). */
 export const MISSION_REGEN_INTERVAL_MS = 20 * 60 * 1000; // 20 minutes
@@ -490,6 +491,20 @@ export const FLASH_MISSION_EXPIRY_MS = 5 * 60 * 1000;
 
 /** Guaranteed shadow bonus on top of all other rewards. */
 export const FLASH_MISSION_SHADOW_BONUS = 8;
+
+export function maxMissionsForRegion(
+  missionTier = 0,
+  alertLevel = 0,
+  ownedSafeHouses = 1,
+): number {
+  const tierBonus = missionTier >= 3 ? 2 : missionTier >= 1 ? 1 : 0;
+  const alertBonus = alertLevel >= 2.2 ? 1 : 0;
+  const networkBonus = ownedSafeHouses >= 4 ? 1 : 0;
+  return Math.min(
+    MAX_MISSIONS_HARD_CAP,
+    MAX_MISSIONS_PER_REGION + tierBonus + alertBonus + networkBonus,
+  );
+}
 
 /**
  * Generates a Flash Operation for a region.

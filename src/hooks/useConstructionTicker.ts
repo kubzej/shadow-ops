@@ -67,7 +67,7 @@ export function useConstructionTicker() {
         );
         await db.recruitmentPools.put(recruitPool);
         incrementStat('expansions');
-        const regionName = REGION_MAP.get(r.id)?.name ?? r.id;
+        const regionName = REGION_MAP.get(r.id)?.name ?? 'neznámý region';
         showToast('success', `Expanze dokončena: ${regionName}`);
       }
 

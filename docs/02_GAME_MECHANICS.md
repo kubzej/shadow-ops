@@ -1,5 +1,28 @@
 # Shadow Ops — Herní mechaniky
 
+## Aktualizace: Mobile Missions Toolbar V2
+
+- MissionsScreen má mobilní filtry/sort optimalizované pro ovládání jedním palcem.
+- Výchozí stav:
+  - `Sort = Doporučené`
+  - `Pouze dostupné = zapnuto`
+  - Prioritní mise (`rescue`, `counter-op`) jsou vždy připnuté nahoře.
+- Filtry běžných misí:
+  - Kategorie (multi-chip)
+  - Obtížnost (min/max 1–5)
+  - Sort (`recommended`, `reward`, `reward/min`, `alert`, `time`, `difficulty`)
+- Filter mode skrývá nedostupné mise (locked, event-blocked, bez kompetentních agentů), ale priorita zůstává viditelná.
+
+## Aktualizace: Adaptivní počet misí v regionu
+
+- Maximální počet misí už není fixně 6 ve všech situacích.
+- Nová kapacita regionu se škáluje podle:
+  - `missionTier`
+  - `alertLevel`
+  - velikosti sítě safe housů
+- Hard cap je 10 misí na region.
+- Cíl: aby filtry a sort měly i ve střední/pozdní fázi dostatek kandidátů.
+
 ## Aktualizace: Counter-Ops + Rival
 
 ### Counter-Ops

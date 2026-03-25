@@ -22,6 +22,7 @@ import { useGameStore } from '../store/gameStore';
 import { useUIStore } from '../store/uiStore';
 import type { DivisionId } from '../data/agentTypes';
 import type { ActiveWorldEvent, Mission } from '../db/schema';
+import { REGION_MAP } from '../data/regions';
 
 const TICK_INTERVAL = 30_000; // 30 seconds
 
@@ -77,7 +78,8 @@ export function usePassiveIncome() {
       await db.regions.update(regionId, {
         availableMissionIds: [...region.availableMissionIds, counter.id],
       });
-      notifyRival('warning', `Counter-Op dostupná v ${regionId}.`);
+      const regionName = REGION_MAP.get(regionId)?.name ?? 'neznámém regionu';
+      notifyRival('warning', `Counter-Op dostupná v ${regionName}.`);
     }
 
     async function tick() {
@@ -162,9 +164,11 @@ export function usePassiveIncome() {
           const eventType = pickRivalEventType();
           const op = createRivalOperation(target.id, eventType, now);
           gameStore.setRivalOperation(op, nextRivalOperationAt(now));
+          const targetName =
+            REGION_MAP.get(target.id)?.name ?? 'neznámém regionu';
           notifyRival(
             'warning',
-            `Rival operace: ${RIVAL_EVENT_META[eventType].label} v ${target.id}.`,
+            `Rival operace: ${RIVAL_EVENT_META[eventType].label} v ${targetName}.`,
           );
           await ensureCounterOp(target.id, target.alertLevel, op.id);
         } else {

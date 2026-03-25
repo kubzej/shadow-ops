@@ -15,6 +15,12 @@ import { ActiveMissionCard } from './missions/ActiveMissionCard';
 import { MissionCard } from './missions/MissionCard';
 import { AgentSelectorModal } from './missions/AgentSelectorModal';
 import { ResultModal } from './missions/ResultModal';
+import { MissionFiltersToolbar } from './missions/MissionFiltersToolbar';
+import {
+  type MissionSortMode,
+  type SortDirection,
+  sortMissions,
+} from './missions/missionFilters';
 
 export default function MissionsScreen() {
   const startCityId = useGameStore((s) => s.startCityId);
@@ -40,6 +46,9 @@ export default function MissionsScreen() {
   const [regionAgents, setRegionAgents] = useState<Agent[]>([]);
   const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
   const [dispatching, setDispatching] = useState(false);
+  const [quickDifficulty, setQuickDifficulty] = useState<number | null>(null);
+  const [sortMode, setSortMode] = useState<MissionSortMode>('recommended');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   // Load owned regions for the picker
   useEffect(() => {
@@ -127,8 +136,31 @@ export default function MissionsScreen() {
   }
 
   const pendingResult = completedQueue[0] ?? null;
-  const counterMissions = availableMissions.filter((m) => m.isCounterOp);
-  const regularMissions = availableMissions.filter((m) => !m.isCounterOp);
+  const priorityMissions = availableMissions.filter(
+    (m) => m.isCounterOp || m.isRescue,
+  );
+  const baseMissions = availableMissions.filter(
+    (m) => !m.isCounterOp && !m.isRescue,
+  );
+
+  const filteredBaseMissions = baseMissions.filter((m) => {
+    if (quickDifficulty !== null && m.difficulty !== quickDifficulty) {
+      return false;
+    }
+    return true;
+  });
+
+  const filteredRegularMissions = sortMissions(
+    filteredBaseMissions,
+    sortMode,
+    regionAgents,
+    null,
+    sortDirection,
+  );
+
+  const difficultiesInRegion = Array.from(
+    new Set(baseMissions.map((m) => m.difficulty)),
+  ).length;
 
   return (
     <div
@@ -142,6 +174,19 @@ export default function MissionsScreen() {
           <CurrenciesBar />
         </div>
         <CityBar />
+
+        <MissionFiltersToolbar
+          availableDifficultyCount={difficultiesInRegion}
+          quickDifficulty={quickDifficulty}
+          sortMode={sortMode}
+          sortDirection={sortDirection}
+          onSetQuickDifficulty={setQuickDifficulty}
+          onClearQuickDifficulty={() => setQuickDifficulty(null)}
+          onSetSortMode={setSortMode}
+          onToggleSortDirection={() =>
+            setSortDirection((d) => (d === 'desc' ? 'asc' : 'desc'))
+          }
+        />
       </div>
 
       <div className="flex-1 px-4 flex flex-col gap-5">
@@ -208,15 +253,15 @@ export default function MissionsScreen() {
             </div>
           ) : (
             <div className="flex flex-col gap-3">
-              {counterMissions.length > 0 && (
+              {priorityMissions.length > 0 && (
                 <div className="flex flex-col gap-2">
                   <p
                     className="text-[11px] font-medium tracking-widest uppercase"
                     style={{ color: C.yellow }}
                   >
-                    Counter-Ops ({counterMissions.length})
+                    Priorita ({priorityMissions.length})
                   </p>
-                  {counterMissions.map((m) => (
+                  {priorityMissions.map((m) => (
                     <MissionCard
                       key={m.id}
                       mission={m}
@@ -227,7 +272,7 @@ export default function MissionsScreen() {
                 </div>
               )}
 
-              {regularMissions.map((m) => (
+              {filteredRegularMissions.map((m) => (
                 <MissionCard
                   key={m.id}
                   mission={m}

@@ -337,15 +337,15 @@ export async function seedDemoDb(force = false): Promise<void> {
     const existingLondonIds = existingLondonMissions.map((m) => m.id);
     await db.missions.bulkDelete(existingLondonIds);
 
-    // Generate 6 fresh missions for London
+    // Generate richer mission mix for filter/sort testing
     const londonMissions = generateMissionsForRegion(
       'london',
       0.8,
-      6,
+      8,
       new Set(),
       ['surveillance', 'cyber', 'extraction'] as DivisionId[],
       false,
-      1,
+      2,
     );
     await db.missions.bulkAdd(londonMissions);
 
@@ -397,11 +397,11 @@ export async function seedDemoDb(force = false): Promise<void> {
     const amsterdamMissions = generateMissionsForRegion(
       'amsterdam',
       1.2,
-      5,
+      8,
       new Set(),
       ['blackops', 'sabotage'] as DivisionId[],
       false,
-      1,
+      2,
     );
     await db.missions.bulkAdd(amsterdamMissions);
 

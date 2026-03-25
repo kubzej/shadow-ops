@@ -205,6 +205,12 @@ Ochrana před re-entrancy: _ticking flag
    Pokud pool plný: drop nejnovější non-rescue misi
 3. Pokud needed > 0 (pod MIN=3): generuj chybějící
 4. Timed regen: pokud pod MAX=4 AND interval prošel: generuj 1
+
+Aktualizace:
+
+- Region používá adaptivní `dynamicMax` (není fixně 6) přes `maxMissionsForRegion()`.
+- Timed regen běží do `dynamicMax`.
+- Emergency doplnění diff-1 mise respektuje `dynamicMax` při případném nahrazení nejnovější běžné mise.
 ```
 
 ### invalidateRegionMissions(regionId)
