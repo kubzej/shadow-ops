@@ -879,7 +879,7 @@ export const useMissionStore = create<MissionStore>()(
           .count();
         if (stillActive === 0) {
           const recentResults = await db.activeMissions
-            .filter((am) => am.result === 'catastrophe' && am.collected)
+            .filter((am) => am.result === 'catastrophe' && !!am.collected)
             .count();
           if (recentResults >= 4) onAllCatastrophe();
         }

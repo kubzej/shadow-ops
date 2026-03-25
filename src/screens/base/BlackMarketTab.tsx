@@ -1,10 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import {
-  onExpansionSkipBought,
-  onLegendaryItemAcquired,
-  onAgentFullyEquipped,
-  onAgentRecruited,
-} from '../../engine/achievementEngine';
+import { onExpansionSkipBought } from '../../engine/achievementEngine';
 import {
   ChevronRight,
   Clock,

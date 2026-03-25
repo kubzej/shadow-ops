@@ -55,7 +55,6 @@ export async function onMissionCompleted(
     currencies,
     unlockedAchievements,
     achievementCounters,
-    activeWorldEvent,
   } = store;
 
   const unlocked = new Set(unlockedAchievements);
@@ -113,10 +112,6 @@ export async function onMissionCompleted(
   if (isSuccess && payload.difficulty === 5) {
     if (!unlocked.has('mission_diff5_first'))
       tryUnlock('mission_diff5_first', 'Přes hranu');
-    const diff5count =
-      (counters.totalFlashMissionsCompleted ?? 0) + (isSuccess ? 1 : 0);
-    // Sledujeme diff5 přes separátní check v DB - jednodušší: počítáme ze všech splněných
-    // Tato evaluace proběhne níže přes checkDiff5Achievements()
   }
 
   // ── Mise: katastrofa přežita ────────────────────────────────────────────────

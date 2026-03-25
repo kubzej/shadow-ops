@@ -99,6 +99,8 @@ const CATEGORY_COLORS: Record<AchievementCategory, string> = {
   playtime: C.divInfluence,
   milestones: C.yellow,
   secret: C.bm,
+  economy: '#facc15',
+  rivals: '#ef4444',
 };
 
 // ─────────────────────────────────────────────
