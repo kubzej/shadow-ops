@@ -17,7 +17,7 @@ export default function BottomNav() {
       style={{
         background: C.bgBase,
         flexShrink: 0,
-        marginBottom: -8,
+        marginBottom: 0,
       }}
     >
       {tabs.map(({ to, icon: Icon, label }) => (
