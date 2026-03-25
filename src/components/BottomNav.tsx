@@ -15,8 +15,6 @@ export default function BottomNav() {
     <nav
       className="flex"
       style={{
-        position: 'sticky',
-        bottom: 0,
         background: C.bgBase,
         flexShrink: 0,
         paddingBottom: 'env(safe-area-inset-bottom)',
