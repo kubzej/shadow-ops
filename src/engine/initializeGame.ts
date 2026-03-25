@@ -6,8 +6,9 @@ import { createAgent, generateRecruitmentPool } from './agentGenerator';
 import { generateMissionsForRegion } from './missionGenerator';
 import { generateBlackMarketOffer } from './blackMarket';
 import type { DivisionId } from '../data/agentTypes';
-import { useGameStore } from '../store/gameStore';
+import { useGameStore, DEFAULT_ACHIEVEMENT_COUNTERS } from '../store/gameStore';
 import { DEFAULT_LOGO_ID } from '../data/orgLogos';
+import { onGameLoaded } from './achievementEngine';
 // ─────────────────────────────────────────────
 // Starting values
 // ─────────────────────────────────────────────
@@ -27,6 +28,7 @@ const STARTING_DIVISION_LEVELS: Record<DivisionId, number> = {
 };
 const STARTING_AGENT_TYPES = ['shadow', 'hacker']; // one per starting division
 const STARTING_MISSIONS_COUNT = 4;
+const RIVAL_NAME = 'NEXUS';
 
 // ─────────────────────────────────────────────
 // Main init function
@@ -35,6 +37,7 @@ const STARTING_MISSIONS_COUNT = 4;
 export async function initializeGame(
   agencyName: string,
   bossName: string,
+  rivalNameInput: string,
   startCityId: string,
   logoId: string,
   slotId: string,
@@ -44,6 +47,10 @@ export async function initializeGame(
   localStorage.setItem('shadow-ops-active-slot', slotId);
 
   const now = Date.now();
+  const rivalName =
+    rivalNameInput.trim().length >= 2 ? rivalNameInput.trim() : RIVAL_NAME;
+  const nextRivalOperationAt =
+    now + (30 + Math.floor(Math.random() * 16)) * 60 * 1000;
 
   // 1. Clear any existing data
   await db.transaction(
@@ -93,6 +100,11 @@ export async function initializeGame(
         totalMissionsAttempted: 0,
         totalAgentsLost: 0,
         totalExpansions: 0,
+        rivalName,
+        nextRivalOperationAt,
+        rivalAggressionLevel: 0,
+        unlockedAchievements: [],
+        achievementCounters: { ...DEFAULT_ACHIEVEMENT_COUNTERS },
       };
       await db.gameState.add(gameState);
 
@@ -166,6 +178,11 @@ export async function initializeGame(
     totalMissionsAttempted: 0,
     totalAgentsLost: 0,
     totalExpansions: 0,
+    rivalName,
+    nextRivalOperationAt,
+    rivalAggressionLevel: 0,
+    unlockedAchievements: [],
+    achievementCounters: { ...DEFAULT_ACHIEVEMENT_COUNTERS },
   });
 
   // Write slot metadata for the save picker
@@ -210,7 +227,23 @@ export async function loadGame(): Promise<boolean> {
     totalMissionsAttempted: state.totalMissionsAttempted,
     totalAgentsLost: state.totalAgentsLost,
     totalExpansions: state.totalExpansions,
+    activeWorldEvent: state.activeWorldEvent ?? null,
+    nextWorldEventAt: state.nextWorldEventAt ?? 0,
+    rivalName: state.rivalName ?? RIVAL_NAME,
+    nextRivalOperationAt: state.nextRivalOperationAt ?? 0,
+    activeRivalOperation: state.activeRivalOperation ?? null,
+    rivalAggressionLevel:
+      state.rivalAggressionLevel ??
+      Math.floor(state.totalMissionsCompleted / 25),
+    directorAgentId: state.directorAgentId ?? null,
+    unlockedAchievements: state.unlockedAchievements ?? [],
+    achievementCounters: state.achievementCounters ?? {
+      ...DEFAULT_ACHIEVEMENT_COUNTERS,
+    },
   });
+
+  // Achievement trigger: noční sova
+  onGameLoaded();
 
   return true;
 }

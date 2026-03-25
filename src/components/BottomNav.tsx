@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { Map, Target, Users, Building2, Menu } from 'lucide-react';
+import { C } from '../styles/tokens';
 
 const tabs = [
   { to: '/map', icon: Map, label: 'Mapa' },
@@ -12,26 +13,27 @@ const tabs = [
 export default function BottomNav() {
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 flex border-t"
+      className="fixed bottom-0 left-0 right-0 flex"
       style={{
-        background: '#111111',
-        borderColor: '#2a2a2a',
-        paddingLeft: 'env(safe-area-inset-left)',
-        paddingRight: 'env(safe-area-inset-right)',
+        background: C.bgBase,
       }}
     >
       {tabs.map(({ to, icon: Icon, label }) => (
-        <NavLink
-          key={to}
-          to={to}
-          className={({ isActive }) =>
-            `flex flex-col items-center justify-center gap-0.5 flex-1 pt-2 pb-1 text-xs transition-colors ${
-              isActive ? 'text-green-400' : 'text-gray-500'
-            }`
-          }
-        >
-          <Icon size={22} />
-          <span>{label}</span>
+        <NavLink key={to} to={to} className="flex flex-1">
+          {({ isActive }) => (
+            <span
+              className="flex flex-col items-center justify-center gap-0.5 flex-1 py-2 text-xs transition-all"
+              style={{
+                color: isActive ? C.green : C.textMuted,
+                background: isActive ? C.bgSurface2 : 'transparent',
+                borderRadius: 12,
+                margin: '4px 4px',
+              }}
+            >
+              <Icon size={isActive ? 22 : 20} />
+              <span style={{ fontWeight: isActive ? 600 : 400 }}>{label}</span>
+            </span>
+          )}
         </NavLink>
       ))}
     </nav>

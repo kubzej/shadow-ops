@@ -14,6 +14,21 @@ import { clamp, createRng } from '../utils/rng';
 import { randomId } from '../utils/rng';
 
 // ─────────────────────────────────────────────
+// Approach modifiers
+// ─────────────────────────────────────────────
+
+export type MissionApproach = 'standard' | 'aggressive' | 'covert';
+
+export const APPROACH_MODS: Record<
+  MissionApproach,
+  { successMult: number; durationMult: number; alertMult: number }
+> = {
+  standard: { successMult: 1.0, durationMult: 1.0, alertMult: 1.0 },
+  aggressive: { successMult: 1.15, durationMult: 0.75, alertMult: 1.5 },
+  covert: { successMult: 0.9, durationMult: 1.3, alertMult: 0.5 },
+};
+
+// ─────────────────────────────────────────────
 // Eligibility checks
 // ─────────────────────────────────────────────
 
@@ -37,8 +52,10 @@ export function checkAgentEligibility(
     actual: number;
   }> = [];
 
+  // Director bypasses division requirements — they qualify for any mission
   // Difficulty-1 missions are open to any agent regardless of division
   if (
+    agent.rank !== 'director' &&
     mission.difficulty > 1 &&
     mission.requiredDivisions &&
     mission.requiredDivisions.length > 0
@@ -97,6 +114,7 @@ const CATEGORY_STAT_WEIGHTS: Record<
   finance: { stealth: 0.2, combat: 0.05, intel: 0.35, tech: 0.4 },
   logistics: { stealth: 0.3, combat: 0.2, intel: 0.25, tech: 0.25 },
   blackops: { stealth: 0.3, combat: 0.45, intel: 0.15, tech: 0.1 },
+  counter: { stealth: 0.25, combat: 0.25, intel: 0.3, tech: 0.2 },
 };
 
 // ─────────────────────────────────────────────
@@ -113,10 +131,18 @@ const CATEGORY_STAT_WEIGHTS: Record<
  *   equipBonus  = successBonus of the leader's equipped items only (3 slots max)
  *   Adding any agent never reduces the overall chance.
  */
+/**
+ * Director passive aura: if the safe house where the mission originates has
+ * a Director-rank agent, all dispatched teams from that safe house get +5 pp.
+ */
+export const DIRECTOR_AURA_BONUS = 0.05;
+
 export function calculateSuccessChance(
   agents: Agent[],
   mission: Mission,
   alertLevel = 0,
+  approach: MissionApproach = 'standard',
+  hasSafeHouseDirector = false,
 ): number {
   if (agents.length === 0) return 0.05;
 
@@ -142,8 +168,19 @@ export function calculateSuccessChance(
 
   const statBonus = ((leaderScore - 50) / 100) * 0.4;
 
-  // Each additional agent contributes a flat support bonus (never negative)
-  const teamBonus = Math.min((agents.length - 1) * 0.03, 0.12);
+  // Team bonus scales by fill ratio AND difficulty.
+  // Full team on diff 1 = +4 pp, diff 5 = +12 pp (linearly).
+  const MAX_TEAM_BONUS_BY_DIFF: Record<number, number> = {
+    1: 0.06,
+    2: 0.07,
+    3: 0.08,
+    4: 0.1,
+    5: 0.12,
+  };
+  const maxTeamBonus = MAX_TEAM_BONUS_BY_DIFF[mission.difficulty] ?? 0.08;
+  const maxAgents = mission.maxAgents ?? agents.length;
+  const fillRatio = maxAgents > 1 ? (agents.length - 1) / (maxAgents - 1) : 0;
+  const teamBonus = fillRatio * maxTeamBonus;
 
   // Equipment success bonuses — only the leader's 3 slots count
   let equipBonus = 0;
@@ -155,6 +192,12 @@ export function calculateSuccessChance(
     if (eq?.successBonus) equipBonus += eq.successBonus / 100;
   }
 
+  // Streak bonus: leader's consecutive clean missions (+2% per 5, max +10%)
+  const streakBonus = Math.min(
+    0.1,
+    Math.floor((agents[leaderIdx].missionStreak ?? 0) / 5) * 0.02,
+  );
+
   // Complication penalty
   let compPenalty = 0;
   if (mission.complicationId) {
@@ -165,14 +208,18 @@ export function calculateSuccessChance(
   // Alert level penalty: up to -20 pp at max alert (3.0)
   const alertPenalty = (alertLevel / 3) * 0.2;
 
+  const directorAura = hasSafeHouseDirector ? DIRECTOR_AURA_BONUS : 0;
+
   const raw =
     mission.baseSuccessChance +
     statBonus +
     teamBonus +
-    equipBonus -
+    equipBonus +
+    streakBonus +
+    directorAura -
     compPenalty -
     alertPenalty;
-  return clamp(raw, 0.05, 1.0);
+  return clamp(raw * APPROACH_MODS[approach].successMult, 0.05, 1.0);
 }
 
 // ─────────────────────────────────────────────
@@ -188,6 +235,7 @@ export function calculateDuration(
   mission: Mission,
   agents: Agent[],
   equippedIds: string[] = [],
+  approach: MissionApproach = 'standard',
 ): number {
   if (agents.length === 0) return mission.baseDuration;
 
@@ -212,7 +260,12 @@ export function calculateDuration(
     if (eq?.durationMult) equipMult *= eq.durationMult;
   }
 
-  const duration = Math.round(mission.baseDuration * speedFactor * equipMult);
+  const duration = Math.round(
+    mission.baseDuration *
+      speedFactor *
+      equipMult *
+      APPROACH_MODS[approach].durationMult,
+  );
   return Math.max(30, duration); // minimum 30 seconds
 }
 
@@ -225,9 +278,17 @@ export function dispatchMission(
   agents: Agent[],
   equippedIds: string[] = [],
   alertLevel = 0,
+  approach: MissionApproach = 'standard',
+  hasSafeHouseDirector = false,
 ): ActiveMission {
-  const successChance = calculateSuccessChance(agents, mission, alertLevel);
-  const duration = calculateDuration(mission, agents, equippedIds);
+  const successChance = calculateSuccessChance(
+    agents,
+    mission,
+    alertLevel,
+    approach,
+    hasSafeHouseDirector,
+  );
+  const duration = calculateDuration(mission, agents, equippedIds, approach);
 
   return {
     id: randomId(),
@@ -237,6 +298,7 @@ export function dispatchMission(
     startedAt: Date.now(),
     completesAt: Date.now() + duration * 1000,
     successChance,
+    approach,
     collected: false,
   };
 }
@@ -256,6 +318,8 @@ export function resolveMission(
   const rng = createRng();
   const roll = rng();
   const sc = activeMission.successChance;
+  const approach: MissionApproach = activeMission.approach ?? 'standard';
+  const alertMult = APPROACH_MODS[approach].alertMult;
 
   let result: MissionResult;
   let rewards: MissionRewards;
@@ -265,17 +329,17 @@ export function resolveMission(
     // Critical success (top 15% of success window) — bonus rewards
     result = 'success';
     rewards = scaleRewards(mission.rewards, 1.3);
-    alertGain = mission.alertGain * 0.2; // very discreet
+    alertGain = mission.alertGain * 0.2 * alertMult; // very discreet
   } else if (roll < sc) {
     // Normal success
     result = 'success';
     rewards = { ...mission.rewards };
-    alertGain = mission.alertGain * 0.5;
+    alertGain = mission.alertGain * 0.5 * alertMult;
   } else if (roll < sc + (1 - sc) * 0.4) {
     // Partial failure (40% of failure window) — partial rewards
     result = 'partial';
     rewards = scaleRewards(mission.rewards, 0.4);
-    alertGain = mission.alertGain * 1.0;
+    alertGain = mission.alertGain * 1.0 * alertMult;
   } else {
     // Catastrophe chance scales with difficulty: 0% on diff 1, up to 16% on diff 5
     // This prevents agent capture on easy missions (death-spiral protection)
@@ -286,12 +350,12 @@ export function resolveMission(
     ) {
       result = 'catastrophe';
       rewards = scaleRewards(mission.failurePenalty, 1.5);
-      alertGain = mission.alertGain * 2.0;
+      alertGain = mission.alertGain * 2.0 * alertMult;
     } else {
       // Full failure
       result = 'failure';
       rewards = mission.failurePenalty;
-      alertGain = mission.alertGain * 1.5;
+      alertGain = mission.alertGain * 1.5 * alertMult;
     }
   }
 
@@ -364,8 +428,17 @@ export function rollInjury(
   const chance = baseChance[result] + (difficulty - 1) * 0.02;
 
   if (roll > chance) return 'none';
-  if (roll > chance * 0.5) return 'light';
-  if (roll > chance * 0.2) return 'serious';
+
+  // Severity shifts toward serious/critical at higher difficulty.
+  // lightMult = lower bound of light zone as fraction of chance:
+  //   diff 1: light 50% / serious 30% / critical 20%
+  //   diff 3: light 38% / serious 34% / critical 28%
+  //   diff 5: light 26% / serious 38% / critical 36%
+  const lightMult = 0.5 + (difficulty - 1) * 0.06; // 0.50 → 0.74
+  const seriousMult = 0.2 + (difficulty - 1) * 0.04; // 0.20 → 0.36
+
+  if (roll > chance * lightMult) return 'light';
+  if (roll > chance * seriousMult) return 'serious';
   return 'critical';
 }
 
@@ -381,4 +454,188 @@ export function healingDuration(severity: InjurySeverity): number {
     case 'critical':
       return 20 * 60; // 20 min
   }
+}
+
+// ─────────────────────────────────────────────
+// Injury flavor descriptions
+// ─────────────────────────────────────────────
+
+const INJURY_DESCRIPTIONS: Partial<Record<string, Record<string, string[]>>> = {
+  surveillance: {
+    light: [
+      'Odřeniny při úniku přes střechy',
+      'Zhmožděnina po pádu z požárního schodiště',
+      'Modřina od pronásledovatele',
+    ],
+    serious: [
+      'Zlomená žebra při skoku z budovy',
+      'Hluboká tržná rána od plotu',
+      'Zraněný kotník při pronásledování',
+    ],
+    critical: [
+      'Střelná rána do ramene při úniku',
+      'Vážná zlomenina po pádu z výšky',
+      'Dopravní nehoda při pronásledování',
+    ],
+  },
+  cyber: {
+    light: [
+      'Popáleniny od zkratovaného hardwaru',
+      'Řezná rána od rozbitého displeje',
+      'Mírný elektrický výboj',
+    ],
+    serious: [
+      'Střepiny z výbuchu serveru v obličeji',
+      'Chemické popáleniny od chladicí kapaliny',
+      'Střelná rána při obraně serverovny',
+    ],
+    critical: [
+      'Vážné popáleniny od výbuchu transformátoru',
+      'Poranění od elektromagnetického pulzu',
+      'Střelná rána při průniku do datového centra',
+    ],
+  },
+  extraction: {
+    light: [
+      'Odřeniny od lana při slaňování',
+      'Naražená žebra od dopadu',
+      'Natažený sval při útěku',
+    ],
+    serious: [
+      'Střelná rána do stehna — průstřel',
+      'Zlomená klíční kost při sestupu',
+      'Zranění zad při výskoku z vozidla',
+    ],
+    critical: [
+      'Střelná rána do hrudníku',
+      'Vážné poranění po nezdařeném seskoku',
+      'Výbuch při extrakci způsobil popáleniny',
+    ],
+  },
+  sabotage: {
+    light: [
+      'Drobné popáleniny od výbuchu',
+      'Střepiny z detonace v ruce',
+      'Poškozený sluch od záblesku',
+    ],
+    serious: [
+      'Střepiny z výbuchu v noze',
+      'Popáleniny 2. stupně na rukou',
+      'Poranění oka od záblesku nálože',
+    ],
+    critical: [
+      'Rozsáhlé tržné rány od výbuchu',
+      'Střelná rána do břicha při ústupu',
+      'Zápalný výbuch způsobil vážné popáleniny',
+    ],
+  },
+  influence: {
+    light: [
+      'Pohmožděnina po fyzickém útoku',
+      'Řezná rána při konfrontaci s cílem',
+      'Zlomený nos',
+    ],
+    serious: [
+      'Střelná rána do ramene při záskoku',
+      'Bodná rána do boku',
+      'Zlomená žebra po výslechu',
+    ],
+    critical: [
+      'Vážné zranění při pokusu o atentát',
+      'Střelná rána do hrudi',
+      'Otrava při manipulaci s terčem',
+    ],
+  },
+  finance: {
+    light: [
+      'Pohmožděnina ze rvačky v bance',
+      'Tržná rána od střepů',
+      'Podvrtnutý kotník při útěku',
+    ],
+    serious: [
+      'Střelná rána do paže od ostrahy',
+      'Zlomenina po pádu na schodišti',
+      'Bodná rána při přepadení kurýra',
+    ],
+    critical: [
+      'Vážná přestřelka v trezoru',
+      'Výbuch v sejfu způsobil rozsáhlá zranění',
+      'Kritická bodná rána nožem',
+    ],
+  },
+  logistics: {
+    light: [
+      'Zhmoždění od padlé přepravky',
+      'Řezná rána od drátěného plotu',
+      'Naražená žebra při nakládce',
+    ],
+    serious: [
+      'Zlomená ruka při sabotáži vozidla',
+      'Střelná rána do stehna od hlídky',
+      'Pád z rozjetého vozidla',
+    ],
+    critical: [
+      'Dopravní nehoda při pronásledování',
+      'Vážná střelná rána od bezpečnostní hlídky',
+      'Výbuch vozidla způsobil popáleniny',
+    ],
+  },
+  medical: {
+    light: [
+      'Kontaminace laboratorním vzorkem',
+      'Injekce neznámé látky při zmatku',
+      'Pohmožděnina při krádeži ze skladu',
+    ],
+    serious: [
+      'Kontaminace biologickým materiálem',
+      'Chemické popáleniny od laboratorní látky',
+      'Střelná rána při přepadení nemocnice',
+    ],
+    critical: [
+      'Vystavení nebezpečnému patogenu',
+      'Kritická otrava laboratorní chemikálií',
+      'Vážná střelná rána od ostrahy kliniky',
+    ],
+  },
+  blackops: {
+    light: [
+      'Řezná rána od nože v boji zblízka',
+      'Modřiny z tvrdého boje',
+      'Pohmožděnina od pažby zbraně',
+    ],
+    serious: [
+      'Střelná rána do ramene',
+      'Bodná rána do boku při záskoku',
+      'Tržná rána po výskoku z vozidla',
+    ],
+    critical: [
+      'Vážná střelná rána do hrudi',
+      'Kritická bodná rána v přímém boji',
+      'Průstřel trupu ze zálohy',
+    ],
+  },
+};
+
+const FALLBACK_INJURIES: Record<string, string[]> = {
+  light: ['Lehká zranění z akce', 'Odřeniny a modřiny', 'Drobné šrámy'],
+  serious: ['Střelná rána (průstřel)', 'Zlomená kost', 'Hluboká tržná rána'],
+  critical: [
+    'Vážná bojová zranění',
+    'Kritická střelná rána',
+    'Život ohrožující zranění',
+  ],
+};
+
+/** Pick a random injury description based on mission category and severity. */
+export function rollInjuryDescription(
+  category: string,
+  severity: InjurySeverity,
+  rng: () => number,
+): string {
+  const pool =
+    INJURY_DESCRIPTIONS[category]?.[severity] ??
+    FALLBACK_INJURIES[severity] ??
+    [];
+  if (pool.length === 0) return 'Zraněn při misi';
+  return pool[Math.floor(rng() * pool.length)];
 }

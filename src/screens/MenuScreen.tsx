@@ -1,23 +1,40 @@
 import { useEffect, useState } from 'react';
 import {
   AlertTriangle,
+  Award,
   BarChart3,
+  ChevronRight,
   Clock,
+  Coins,
+  Eye,
+  FlaskConical,
   FolderOpen,
+  Ghost,
+  Globe,
+  Map,
+  Radio,
   Shield,
+  Skull,
+  Target,
+  Users,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/gameStore';
 import { useUIStore } from '../store/uiStore';
 import { db } from '../db/db';
+import { seedDemoDb } from '../demo/seed';
+import { C, cardBase, btn } from '../styles/tokens';
+import { ACHIEVEMENTS } from '../data/achievements';
+import AchievementsScreen from './AchievementsScreen';
 
 // ─────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────
 
-function formatPlayTime(createdAt: number): string {
-  const sec = Math.floor((Date.now() - createdAt) / 1000);
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
+function formatPlayTimeSecs(totalSec: number): string {
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
   if (h > 0) return `${h}h ${m}m`;
   return `${m}m`;
 }
@@ -27,26 +44,25 @@ function formatPlayTime(createdAt: number): string {
 // ─────────────────────────────────────────────
 
 function StatRow({
-  icon,
+  icon: Icon,
+  iconColor,
   label,
   value,
 }: {
-  icon: string;
+  icon: LucideIcon;
+  iconColor?: string;
   label: string;
   value: string | number;
 }) {
   return (
-    <div
-      className="flex items-center justify-between py-2"
-      style={{ borderBottom: '1px solid #1a1a1a' }}
-    >
+    <div className="flex items-center justify-between py-2">
       <div className="flex items-center gap-2">
-        <span>{icon}</span>
+        <Icon size={15} color={iconColor ?? '#888'} />
         <span className="text-sm" style={{ color: '#888' }}>
           {label}
         </span>
       </div>
-      <span className="text-sm font-semibold" style={{ color: '#e8e8e8' }}>
+      <span className="text-sm font-semibold" style={{ color: C.textPrimary }}>
         {value}
       </span>
     </div>
@@ -58,10 +74,11 @@ function StatRow({
 // ─────────────────────────────────────────────
 
 export default function MenuScreen() {
+  const navigate = useNavigate();
   const agencyName = useGameStore((s) => s.agencyName);
   const bossName = useGameStore((s) => s.bossName);
   const currencies = useGameStore((s) => s.currencies);
-  const createdAt = useGameStore((s) => s.createdAt);
+  const getPlayTimeSecs = useGameStore((s) => s.getPlayTimeSecs);
 
   const totalMissionsCompleted = useGameStore((s) => s.totalMissionsCompleted);
   const totalMissionsAttempted = useGameStore((s) => s.totalMissionsAttempted);
@@ -70,10 +87,16 @@ export default function MenuScreen() {
   const resetStore = useGameStore((s) => s.reset);
   const requestSaveSelect = useUIStore((s) => s.requestSaveSelect);
 
+  const unlockedAchievements = useGameStore((s) => s.unlockedAchievements);
+
   const [agentCount, setAgentCount] = useState(0);
   const [regionCount, setRegionCount] = useState(0);
   const [showReset, setShowReset] = useState(false);
-  const [playTime, setPlayTime] = useState(formatPlayTime(createdAt));
+  const [showAchievements, setShowAchievements] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
+  const [playTime, setPlayTime] = useState(
+    formatPlayTimeSecs(getPlayTimeSecs()),
+  );
 
   useEffect(() => {
     db.agents
@@ -89,11 +112,11 @@ export default function MenuScreen() {
   // Update play time every minute
   useEffect(() => {
     const id = setInterval(
-      () => setPlayTime(formatPlayTime(createdAt)),
+      () => setPlayTime(formatPlayTimeSecs(getPlayTimeSecs())),
       60_000,
     );
     return () => clearInterval(id);
-  }, [createdAt]);
+  }, [getPlayTimeSecs]);
 
   const successRate =
     totalMissionsAttempted > 0
@@ -116,10 +139,14 @@ export default function MenuScreen() {
     window.location.reload();
   }
 
+  if (showAchievements) {
+    return <AchievementsScreen onBack={() => setShowAchievements(false)} />;
+  }
+
   return (
     <div
       className="flex flex-col min-h-full pb-20"
-      style={{ background: '#0a0a0a', color: '#e8e8e8' }}
+      style={{ background: C.bgBase, color: '#e8e8e8' }}
     >
       {/* Header */}
       <div className="px-4 pt-4 pb-6">
@@ -127,15 +154,15 @@ export default function MenuScreen() {
         <div className="flex items-center gap-3 mb-5">
           <div
             className="w-12 h-12 rounded-xl flex items-center justify-center"
-            style={{ background: '#111', border: '1px solid #2a2a2a' }}
+            style={cardBase}
           >
-            <Shield size={24} color="#4ade80" />
+            <Shield size={24} color={C.green} />
           </div>
           <div>
             <h1 className="text-xl font-bold tracking-tight">
               {agencyName || 'Agentura'}
             </h1>
-            <p className="text-sm" style={{ color: '#666' }}>
+            <p className="text-sm" style={{ color: '#999' }}>
               Dir. {bossName}
             </p>
           </div>
@@ -145,40 +172,38 @@ export default function MenuScreen() {
         <div className="grid grid-cols-4 gap-2">
           {[
             {
-              icon: '$',
-              color: '#4ade80',
+              Icon: Coins,
+              color: C.green,
               val: currencies.money,
               label: 'Peníze',
             },
             {
-              icon: '◈',
-              color: '#60a5fa',
+              Icon: Eye,
+              color: C.blue,
               val: currencies.intel,
               label: 'Intel',
             },
             {
-              icon: '◆',
-              color: '#a78bfa',
+              Icon: Ghost,
+              color: C.bm,
               val: currencies.shadow,
               label: 'Shadow',
             },
             {
-              icon: '✦',
-              color: '#f97316',
+              Icon: Radio,
+              color: C.divExtraction,
               val: currencies.influence,
               label: 'Vliv',
             },
-          ].map(({ icon, color: iconColor, val, label }) => (
+          ].map(({ Icon, color: iconColor, val, label }) => (
             <div
               key={label}
               className="rounded-xl p-2.5 flex flex-col items-center gap-0.5"
-              style={{ background: '#111', border: '1px solid #1a1a1a' }}
+              style={cardBase}
             >
-              <span className="text-base" style={{ color: iconColor }}>
-                {icon}
-              </span>
+              <Icon size={18} color={iconColor} />
               <span className="text-sm font-bold">{val}</span>
-              <span className="text-[10px]" style={{ color: '#555' }}>
+              <span className="text-[10px]" style={{ color: '#888' }}>
                 {label}
               </span>
             </div>
@@ -188,48 +213,52 @@ export default function MenuScreen() {
 
       <div className="px-4 flex flex-col gap-4">
         {/* Agency stats */}
-        <div
-          className="rounded-xl"
-          style={{ background: '#111', border: '1px solid #2a2a2a' }}
-        >
+        <div className="rounded-xl" style={cardBase}>
           <div className="flex items-center gap-2 px-3 pt-3 pb-2">
-            <BarChart3 size={15} color="#4ade80" />
+            <BarChart3 size={15} color={C.green} />
             <p
               className="text-xs font-medium tracking-widest uppercase"
-              style={{ color: '#555' }}
+              style={{ color: '#888' }}
             >
               Statistiky
             </p>
           </div>
           <div className="px-3 pb-3">
             <StatRow
-              icon="🎯"
+              icon={Target}
               label="Mise splněny"
               value={totalMissionsCompleted}
             />
             <StatRow
-              icon="📊"
+              icon={Shield}
+              label="Mise celkem"
+              value={totalMissionsAttempted}
+            />
+            <StatRow
+              icon={BarChart3}
+              iconColor={C.green}
               label="Úspěšnost"
               value={successRate !== null ? `${successRate} %` : '—'}
             />
             <StatRow
-              icon="💀"
+              icon={Skull}
+              iconColor={C.red}
               label="Agenti ztraceni"
               value={totalAgentsLost}
             />
-            <StatRow icon="🌍" label="Expanze" value={totalExpansions} />
-            <StatRow icon="👥" label="Aktivní agenti" value={agentCount} />
-            <StatRow icon="🏢" label="Ovládané regiony" value={regionCount} />
+            <StatRow icon={Globe} label="Expanze" value={totalExpansions} />
+            <StatRow icon={Users} label="Aktivní agenti" value={agentCount} />
+            <StatRow icon={Map} label="Ovládané regiony" value={regionCount} />
             <div className="flex items-center justify-between pt-2">
               <div className="flex items-center gap-2">
-                <Clock size={14} style={{ color: '#555' }} />
+                <Clock size={14} style={{ color: '#888' }} />
                 <span className="text-sm" style={{ color: '#888' }}>
                   Čas hry
                 </span>
               </div>
               <span
                 className="text-sm font-semibold"
-                style={{ color: '#e8e8e8' }}
+                style={{ color: C.textPrimary }}
               >
                 {playTime}
               </span>
@@ -237,18 +266,69 @@ export default function MenuScreen() {
           </div>
         </div>
 
+        {/* Achievements */}
+        <button
+          onClick={() => setShowAchievements(true)}
+          className="w-full rounded-xl p-3 flex items-center gap-3"
+          style={cardBase}
+        >
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: `${C.yellow}18` }}
+          >
+            <Award size={18} color={C.yellow} />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="text-sm font-semibold" style={{ color: C.textPrimary }}>
+              Achievements
+            </p>
+            <p className="text-xs" style={{ color: C.textMuted }}>
+              {unlockedAchievements.length} / {ACHIEVEMENTS.length} odemčeno
+            </p>
+          </div>
+          <ChevronRight size={16} color={C.textMuted} />
+        </button>
+
         {/* Switch save */}
         <button
           onClick={requestSaveSelect}
           className="w-full py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2"
-          style={{
-            background: '#0f1a0f',
-            color: '#4ade80',
-            border: '1px solid #1f3d1f',
-          }}
+          style={btn.primary()}
         >
           <FolderOpen size={15} />
           Uložené hry
+        </button>
+
+        {/* Demo mode */}
+        <button
+          onClick={async () => {
+            if (demoLoading) return;
+            setDemoLoading(true);
+            try {
+              sessionStorage.setItem(
+                'shadow-ops-pre-demo-slot',
+                localStorage.getItem('shadow-ops-active-slot') || '',
+              );
+              await seedDemoDb();
+              useUIStore.getState().setDemoMode(true);
+              navigate('/demo');
+            } catch (err) {
+              console.error('[MenuScreen] Demo init failed:', err);
+              setDemoLoading(false);
+            }
+          }}
+          disabled={demoLoading}
+          className="w-full py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2"
+          style={{
+            background: 'transparent',
+            color: demoLoading ? C.textMuted : C.green,
+            border: `1px solid ${demoLoading ? C.textMuted : C.green}40`,
+            cursor: demoLoading ? 'not-allowed' : 'pointer',
+            borderRadius: 14,
+          }}
+        >
+          <FlaskConical size={15} />
+          {demoLoading ? 'Inicializuji...' : 'Testovací prostředí'}
         </button>
 
         {/* Reset */}
@@ -256,19 +336,12 @@ export default function MenuScreen() {
           <button
             onClick={() => setShowReset(true)}
             className="w-full py-3 rounded-xl text-sm font-medium"
-            style={{
-              background: '#0f0f0f',
-              color: '#555',
-              border: '1px solid #1a1a1a',
-            }}
+            style={btn.secondary()}
           >
             Resetovat hru
           </button>
         ) : (
-          <div
-            className="rounded-xl p-4"
-            style={{ background: '#2e0f0f', border: '1px solid #ef444433' }}
-          >
+          <div className="rounded-xl p-4" style={{ background: '#2e0f0f' }}>
             <div className="flex items-center gap-2 mb-3">
               <AlertTriangle size={16} color="#ef4444" />
               <p className="text-sm font-semibold" style={{ color: '#ef4444' }}>
@@ -282,18 +355,14 @@ export default function MenuScreen() {
               <button
                 onClick={() => setShowReset(false)}
                 className="flex-1 py-2.5 rounded-xl text-sm font-medium"
-                style={{
-                  background: '#1a1a1a',
-                  color: '#888',
-                  border: '1px solid #2a2a2a',
-                }}
+                style={btn.secondary()}
               >
                 Zrušit
               </button>
               <button
                 onClick={handleReset}
                 className="flex-1 py-2.5 rounded-xl text-sm font-bold"
-                style={{ background: '#ef4444', color: '#fff' }}
+                style={btn.destructive}
               >
                 Resetovat
               </button>
@@ -302,7 +371,7 @@ export default function MenuScreen() {
         )}
 
         {/* Version */}
-        <p className="text-center text-xs pb-2" style={{ color: '#333' }}>
+        <p className="text-center text-xs pb-2" style={{ color: '#999' }}>
           Shadow Ops v0.1.0 · Offline PWA
         </p>
       </div>

@@ -1,4 +1,68 @@
 import type { DivisionId, AgentRank } from '../data/agentTypes';
+import type { WorldEventId } from '../data/worldEvents';
+
+// ============ ACHIEVEMENT COUNTERS ============
+/**
+ * Countery potřebné pro vyhodnocení achievementů, které nelze odvodit z ostatních
+ * herních statistik. Persistovány jako součást GameState.
+ */
+export interface AchievementCounters {
+  totalAgentsRecruited: number;
+  totalFlashMissionsCompleted: number;
+  totalChainMissionsCompleted: number;
+  totalCovertMissionsCompleted: number;
+  totalAggressiveMissionsCompleted: number;
+  totalRescueMissionsCompleted: number;
+  totalCounterOpMissionsCompleted: number;
+  totalNoAlertMissionsCompleted: number;
+  totalModulesInstalled: number;
+  totalRivalOperationsEncountered: number;
+  totalRivalOperationsBlocked: number;
+  totalWorldEventMissionsCompleted: number;
+  /** Počet misí dokončených bez ztráty agenta (resetuje se při ztrátě) */
+  missionsWithoutLoss: number;
+  /** Lifetime počet agentů vychovaných na hodnost Ředitel */
+  totalDirectorsRaised: number;
+  /** Celkové celoherní příjmy (money) — trackovány z addCurrencies */
+  lifetimeMoneyEarned: number;
+  /** Celkové celoherní výdaje (money) — trackovány ze spendCurrencies */
+  lifetimeMoneySpent: number;
+  /** Celkové celoherní příjmy (intel) — trackovány z addCurrencies */
+  lifetimeIntelEarned: number;
+  /** Počet vyléčených zraněných agentů (instant heal) */
+  agentsHealed: number;
+  /** Počet rival operací, které nebyly zablokovány */
+  rivalOpsLetThrough: number;
+  /** Počet rival operací v aktuálním dni */
+  rivalOpsTodayCount: number;
+  /** Login streak (počet po sobě jdoucích dní) */
+  loginStreak: number;
+  /** Timestampy dokončených misí pro check "5 misí za hodinu" (max 20) */
+  missionsCompletedTimestamps?: number[];
+  /** Datum (ISO string YYYY-MM-DD) kdy byly naposled zaznamenány rival operace — pro daily check */
+  rivalOpsTodayDate?: string;
+  /** Datum (ISO string YYYY-MM-DD) posledního přihlášení — pro daily login check */
+  lastLoginDate?: string;
+}
+
+export type RivalEventType =
+  | 'asset_compromise'
+  | 'intel_theft'
+  | 'sabotage'
+  | 'agent_recruitment'
+  | 'disinformation'
+  | 'rival_leak'
+  | 'burned_contracts'
+  | 'safe_house_swap';
+
+export interface ActiveRivalOperation {
+  id: string;
+  regionId: string;
+  eventType: RivalEventType;
+  createdAt: number;
+  expiresAt: number;
+  blockedByCounterMissionId?: string;
+}
 
 // ============ CORE GAME STATE ============
 export interface GameState {
@@ -26,6 +90,19 @@ export interface GameState {
   totalMissionsAttempted: number;
   totalAgentsLost: number;
   totalExpansions: number;
+  // World Events
+  activeWorldEvent?: ActiveWorldEvent;
+  nextWorldEventAt?: number;
+  // Rival
+  rivalName?: string;
+  nextRivalOperationAt?: number;
+  activeRivalOperation?: ActiveRivalOperation;
+  rivalAggressionLevel?: number;
+  // Director rank — only 1 agent globally may hold this rank at a time
+  directorAgentId?: string;
+  // Achievements
+  unlockedAchievements?: string[];
+  achievementCounters?: AchievementCounters;
 }
 
 // ============ SAFE HOUSE ============
@@ -41,6 +118,11 @@ export interface SafeHouse {
   upgradeCompletesAt?: number; // timestamp
   constructionInProgress?: boolean;
   constructionCompletesAt?: number; // timestamp (for new safe houses)
+  disabledModules?: Array<{
+    moduleId: string;
+    until: number;
+    reason: 'rival_sabotage';
+  }>;
   createdAt: number;
 }
 
@@ -80,17 +162,20 @@ export interface Agent {
   // Injury
   injuredAt?: number;
   healsAt?: number;
+  injuryDescription?: string;
   // Travel
   travelDestinationId?: string;
   arrivesAt?: number;
   // Mission stats
   missionsCompleted: number;
   missionsAttempted: number;
+  missionStreak: number; // consecutive successes without injury or failure
   // Capture
   capturedAt?: number;
   rescueMissionId?: string;
   // Meta
   recruitedAt: number;
+  nickname?: string; // awarded on promotion to veteran rank
 }
 
 // ============ REGION STATE ============
@@ -106,6 +191,10 @@ export interface RegionState {
   constructionCompletesAt?: number;
   /** Persistent minimum difficulty floor (0–4). Increases as missions are completed here, never decreases. */
   missionTier?: number;
+  /** Timestamp when the next Flash Operation should spawn for this region. */
+  nextFlashMissionAt?: number;
+  rivalLeakUntil?: number;
+  burnedContractsUntil?: number;
 }
 
 // ============ MISSION ============
@@ -125,6 +214,11 @@ export interface Mission {
   category: string; // MissionCategory
   targetId: string; // MissionTarget.id
   complicationId?: string;
+  intelCost?: number; // intel required to dispatch
+  chainNextTargetId?: string; // on success, auto-generate follow-up with this target
+  chainStep?: number; // 1-based position in tc chain (e.g. 2)
+  chainTotal?: number; // total tc steps in this chain (e.g. 3)
+  lockedByDivision?: string; // chain mission blocked until this division is assigned
   title: string;
   flavor: string;
   difficulty: number; // 1–5
@@ -139,6 +233,9 @@ export interface Mission {
   alertGain: number;
   isRescue?: boolean;
   capturedAgentId?: string; // set on rescue missions — agent to free on success/partial
+  isFlash?: boolean; // Flash Operation — 5 min dispatch window, ×1.5 rewards + guaranteed shadow bonus
+  isCounterOp?: boolean;
+  rivalOperationId?: string;
   expiresAt?: number; // timestamp
   createdAt: number;
 }
@@ -152,6 +249,7 @@ export interface ActiveMission {
   startedAt: number;
   completesAt: number; // timestamp
   successChance: number;
+  approach: 'standard' | 'aggressive' | 'covert';
   result?: MissionResult; // set when complete, pending collection
   collected?: boolean;
 }
@@ -186,6 +284,13 @@ export interface BlackMarket {
   id: 1;
   listings: BlackMarketListing[];
   refreshesAt: number;
+}
+
+// ============ WORLD EVENTS ============
+export interface ActiveWorldEvent {
+  eventId: WorldEventId;
+  startedAt: number;
+  expiresAt: number;
 }
 
 // ============ MISSION LOG ============

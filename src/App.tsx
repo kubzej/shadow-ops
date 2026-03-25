@@ -6,6 +6,7 @@ import MissionsScreen from './screens/MissionsScreen';
 import AgentsScreen from './screens/AgentsScreen';
 import BaseScreen from './screens/BaseScreen';
 import MenuScreen from './screens/MenuScreen';
+import DemoScreen from './screens/DemoScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
 import LandingScreen from './screens/LandingScreen';
 import { loadGame } from './engine/initializeGame';
@@ -126,10 +127,22 @@ function GameShell() {
   useMissionTimer();
   useConstructionTicker();
 
+  const startCityId = useGameStore((s) => s.startCityId);
+  const selectedRegionId = useUIStore((s) => s.selectedRegionId);
+  const selectRegion = useUIStore((s) => s.selectRegion);
+  const demoMode = useUIStore((s) => s.demoMode);
+
+  // Auto-select home city on first load / save slot switch if nothing is selected
+  useEffect(() => {
+    if (!selectedRegionId && startCityId) {
+      selectRegion(startCityId);
+    }
+  }, [startCityId, selectedRegionId, selectRegion]);
+
   return (
     <div
       className="flex flex-col"
-      style={{ height: '100%', background: '#0a0a0a' }}
+      style={{ height: '100%', background: '#222222' }}
     >
       <main
         className="flex-1 overflow-y-auto"
@@ -145,8 +158,25 @@ function GameShell() {
           <Route path="/agents" element={<AgentsScreen />} />
           <Route path="/base" element={<BaseScreen />} />
           <Route path="/menu" element={<MenuScreen />} />
+          <Route path="/demo" element={<DemoScreen />} />
         </Routes>
       </main>
+      {demoMode && (
+        <div
+          className="flex items-center justify-center gap-1.5 py-1 text-xs"
+          style={{
+            background: '#4ade8010',
+            color: '#4ade80',
+            borderTop: '1px solid #4ade8030',
+          }}
+        >
+          <div
+            className="w-1.5 h-1.5 rounded-full animate-pulse"
+            style={{ background: '#4ade80' }}
+          />
+          DEMO MODE
+        </div>
+      )}
       <BottomNav />
       <ToastContainer />
     </div>
@@ -173,15 +203,14 @@ function ToastContainer() {
   return (
     <div
       className="fixed left-0 right-0 flex flex-col gap-1.5 pointer-events-none"
-      style={{ bottom: '4.5rem', zIndex: 100, padding: '0 12px' }}
+      style={{ top: '4.5rem', zIndex: 100, padding: '0 12px' }}
     >
       {toasts.map((t) => (
         <div
           key={t.id}
           className="rounded-xl px-3 py-2.5 text-sm font-medium shadow-lg pointer-events-auto flex items-center gap-2"
           style={{
-            background: '#0f0f0f',
-            border: `1px solid ${TOAST_COLORS[t.type]}40`,
+            background: '#262626',
             color: TOAST_COLORS[t.type],
           }}
           onClick={() => dismiss(t.id)}
@@ -197,7 +226,7 @@ function LoadingScreen() {
   return (
     <div
       className="flex items-center justify-center h-full flex-col gap-3"
-      style={{ background: '#0a0a0a', color: '#e8e8e8' }}
+      style={{ background: '#222222', color: '#e8e8e8' }}
     >
       <div
         className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"

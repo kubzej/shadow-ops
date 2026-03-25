@@ -1,23 +1,41 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg: #0a0a0a;
-  --color-surface: #111111;
-  --color-surface-2: #1a1a1a;
-  --color-border: #2a2a2a;
-  --color-text: #e8e8e8;
-  --color-text-muted: #888888;
+  /* Pozadí — synchronizováno s C.bg* v tokens.ts */
+  --color-bg:        #181818;
+  --color-surface:   #212121;
+  --color-surface-2: #2a2a2a;
+  --color-elevated:  #323232;
+
+  /* Bordery */
+  --color-border-subtle:  #1e1e1e;
+  --color-border:         #2c2c2c;
+  --color-border-strong:  #3a3a3a;
+
+  /* Text */
+  --color-text:         #f0f0f0;
+  --color-text-muted:   #888888;
+  --color-text-subtle:  #4a4a4a;
+  --color-text-disabled: #303030;
+
+  /* Primární akce */
+  --color-green:  #4ade80;
+
+  /* Sémantické */
+  --color-red:    #ef4444;
+  --color-yellow: #facc15;
+  --color-blue:   #60a5fa;
 
   /* Division colors */
   --color-surveillance: #4ade80;
-  --color-cyber: #60a5fa;
-  --color-extraction: #f97316;
-  --color-sabotage: #ef4444;
-  --color-influence: #a78bfa;
-  --color-finance: #facc15;
-  --color-logistics: #94a3b8;
-  --color-medical: #2dd4bf;
-  --color-blackops: #6b7280;
+  --color-cyber:        #60a5fa;
+  --color-extraction:   #f97316;
+  --color-sabotage:     #ef4444;
+  --color-influence:    #a78bfa;
+  --color-finance:      #facc15;
+  --color-logistics:    #94a3b8;
+  --color-medical:      #2dd4bf;
+  --color-blackops:     #6b7280;
 
   /* Alert level colors */
   --color-alert-0: #4ade80;
@@ -28,9 +46,14 @@
 
 html, body, #root {
   height: 100%;
-  background-color: #0a0a0a;
-  color: #e8e8e8;
+  background-color: #181818;
+  color: #f0f0f0;
   font-family: system-ui, -apple-system, sans-serif;
   overscroll-behavior: none;
   margin: 0;
+}
+
+@keyframes flash-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.25; }
 }
