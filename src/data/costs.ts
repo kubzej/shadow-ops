@@ -80,8 +80,8 @@ export const EXPANSION_COST_PER_DISTANCE = { money: 200, intel: 6 };
 /** Each previously completed expansion adds this fraction to the total cost.
  *  e.g. 0.4 means 3rd expansion costs 80% more than the 1st. */
 export const EXPANSION_COST_SCALE = 0.4;
-export const EXPANSION_BUILD_TIME_BASE = 60; // seconds
-export const EXPANSION_BUILD_TIME_PER_DISTANCE = 30; // seconds per distance unit
+export const EXPANSION_BUILD_TIME_BASE = 600; // seconds
+export const EXPANSION_BUILD_TIME_PER_DISTANCE = 300; // seconds per distance unit
 
 // Recruitment refresh cost (manual refresh of recruitment pool)
 export const RECRUITMENT_REFRESH_COST = { money: 100 };
@@ -107,61 +107,71 @@ export const MODULE_CATALOG: ModuleDef[] = [
   {
     id: 'server_room',
     name: 'Server Room',
-    description: 'Dedikovaný serverový uzel pro zpracování dat z operací. Pasivně generuje +3 intel za každý 30s tick.',
+    description:
+      'Dedikovaný serverový uzel pro zpracování dat z operací. Pasivně generuje +3 intel za každý 30s tick.',
     cost: { money: 3000, intel: 30 },
   },
   {
     id: 'lab',
     name: 'Výzkumná laboratoř',
-    description: 'Analytické pracoviště pro vyhodnocování terénních zpráv. Generuje +2 intel za každý 30s tick.',
+    description:
+      'Analytické pracoviště pro vyhodnocování terénních zpráv. Generuje +2 intel za každý 30s tick.',
     cost: { money: 2000, intel: 20 },
   },
   {
     id: 'armory',
     name: 'Zbrojnice',
-    description: 'Zabezpečený sklad zbraní a vybavení s nepřetržitým zásobováním. Generuje +0.1 shadow za každý 30s tick.',
+    description:
+      'Zabezpečený sklad zbraní a vybavení s nepřetržitým zásobováním. Generuje +0.1 shadow za každý 30s tick.',
     cost: { money: 6000, shadow: 40 },
   },
   {
     id: 'finance_hub',
     name: 'Finanční centrum',
-    description: 'Síť krycích společností a offshore účtů pro praní operačních příjmů. Generuje +4 money za každý 30s tick.',
+    description:
+      'Síť krycích společností a offshore účtů pro praní operačních příjmů. Generuje +4 money za každý 30s tick.',
     cost: { money: 5000, intel: 40 },
   },
   {
     id: 'signal_jammer',
     name: 'Signal Jammer',
-    description: 'Rušičky signálu a protisledovací systémy snižují viditelnost aktivit v regionu. Alert level klesá o +0.1 rychleji za každý 30s tick.',
+    description:
+      'Rušičky signálu a protisledovací systémy snižují viditelnost aktivit v regionu. Alert level klesá o +0.1 rychleji za každý 30s tick.',
     cost: { money: 3500, intel: 15, shadow: 10 },
   },
   {
     id: 'med_bay',
     name: 'Med Bay',
-    description: 'Vybavené lékařské středisko s chirurgickým zázemím. Doba léčení zraněných agentů se zkracuje na polovinu.',
+    description:
+      'Vybavené lékařské středisko s chirurgickým zázemím. Doba léčení zraněných agentů se zkracuje na polovinu.',
     cost: { money: 3000, intel: 20 },
   },
   {
     id: 'training_center',
     name: 'Výcvikové centrum',
-    description: 'Taktický simulátor a instruktorský program pro terénní agenty. Všichni agenti získávají o 25 % více XP z misí prováděných z této základny.',
+    description:
+      'Taktický simulátor a instruktorský program pro terénní agenty. Všichni agenti získávají o 25 % více XP z misí prováděných z této základny.',
     cost: { money: 4000, intel: 30 },
   },
   {
     id: 'forgery_lab',
     name: 'Padělatelna',
-    description: 'Dílna pro výrobu falešných dokladů, razítek a diplomatických průkazů. Generuje +0.3 influence za každý 30s tick.',
+    description:
+      'Dílna pro výrobu falešných dokladů, razítek a diplomatických průkazů. Generuje +0.3 influence za každý 30s tick.',
     cost: { money: 4500, intel: 30, influence: 10 },
   },
   {
     id: 'black_site',
     name: 'Black Site',
-    description: 'Utajené operační centrum s protokoly pro čisté operace. Snižuje alert gain ze všech misí v tomto regionu o 20 %.',
+    description:
+      'Utajené operační centrum s protokoly pro čisté operace. Snižuje alert gain ze všech misí v tomto regionu o 20 %.',
     cost: { money: 5500, intel: 20, shadow: 15 },
   },
   {
     id: 'saferoom',
     name: 'Saferoom',
-    description: 'Bezpečnostní trezorová místnost s únikovým protokolem. Při katastrofálním výsledku mise má agent 30% šanci vyhnout se zajetí — místo toho utrpí serious zranění.',
+    description:
+      'Bezpečnostní trezorová místnost s únikovým protokolem. Při katastrofálním výsledku mise má agent 30% šanci vyhnout se zajetí — místo toho utrpí serious zranění.',
     cost: { money: 7000, intel: 30, shadow: 25 },
   },
 ];

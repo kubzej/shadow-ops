@@ -44,15 +44,9 @@
   --color-alert-3: #ef4444;
 }
 
-html, body {
+html, body, #root {
   height: 100%;
   margin: 0;
-  overflow: hidden;
-}
-
-#root {
-  position: fixed;
-  inset: 0;
   overflow: hidden;
   background-color: #181818;
   color: #f0f0f0;

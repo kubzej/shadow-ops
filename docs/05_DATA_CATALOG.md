@@ -223,14 +223,14 @@ interface Region {
 
 **Region type efekty (herní mechaniky):**
 
-| CityType  | Pasivní příjem bonus/tick              | Ostatní efekty                              |
-| --------- | -------------------------------------- | ------------------------------------------- |
-| capital   | +2.0 money, +0.5 influence             | —                                           |
-| financial | +3.0 money                             | —                                           |
-| tech      | +2.0 intel                             | —                                           |
-| port      | +1.5 money, +0.5 shadow                | mise ×1.3 money+intel (success/partial)     |
-| border    | +1.0 intel, +1.0 shadow                | travel cost −20 % pro/z border regionu      |
-| military  | +1.5 shadow                            | mise ×1.3 money+intel (success/partial)     |
+| CityType  | Pasivní příjem bonus/tick  | Ostatní efekty                          |
+| --------- | -------------------------- | --------------------------------------- |
+| capital   | +2.0 money, +0.5 influence | —                                       |
+| financial | +3.0 money                 | —                                       |
+| tech      | +2.0 intel                 | —                                       |
+| port      | +1.5 money, +0.5 shadow    | mise ×1.3 money+intel (success/partial) |
+| border    | +1.0 intel, +1.0 shadow    | travel cost −20 % pro/z border regionu  |
+| military  | +1.5 shadow                | mise ×1.3 money+intel (success/partial) |
 
 Pokud region má `secondaryType`, bonusy obou typů se sčítají (additivně).
 Bonus je viditelný v SafeHouseTab income breakdown, v CityCard a ExpansionCardItem.
@@ -346,8 +346,8 @@ interface Country {
 EXPANSION_BASE_COST           = { money: 1000, intel: 15 }
 EXPANSION_COST_PER_DISTANCE   = { money: 200,  intel: 6  }
 EXPANSION_COST_SCALE          = 0.4  (per completed expansion)
-EXPANSION_BUILD_TIME_BASE     = 60s
-EXPANSION_BUILD_TIME_PER_DIST = 30s
+EXPANSION_BUILD_TIME_BASE     = 600s
+EXPANSION_BUILD_TIME_PER_DIST = 300s
 DIVISION_ASSIGN_BASE_COST     = 500 money (×safe house index)
 RECRUITMENT_REFRESH_COST      = 100 money
 ```
