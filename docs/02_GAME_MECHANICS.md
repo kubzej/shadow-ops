@@ -294,6 +294,21 @@ newAlert  = max(0, alertLevel - decayRate)
 **City bonus:** +10% per extra owned miasto (mimo první), cap +50% při 5+ vlastněných.
 `cityBonus = min(1.5, 1 + 0.1 × max(0, activeSafeHouses.length - 1))`
 
+**Region type bonus (additivní flat bonus per tick):**
+
+Každý safe house dostane bonus podle typu regionu kde stojí. Pokud má region `secondaryType`, oba typy se sčítají.
+
+| CityType  | Money | Intel | Shadow | Influence | Ostatní efekty                         |
+| --------- | ----- | ----- | ------ | --------- | -------------------------------------- |
+| capital   | +2.0  | 0     | 0      | +0.5      | —                                      |
+| financial | +3.0  | 0     | 0      | 0         | —                                      |
+| tech      | 0     | +2.0  | 0      | 0         | —                                      |
+| port      | +1.5  | 0     | +0.5   | 0         | mise ×1.3 money+intel (success/partial)|
+| border    | 0     | +1.0  | +1.0   | 0         | travel cost −20 % pro/z border regionu |
+| military  | 0     | 0     | +1.5   | 0         | mise ×1.3 money+intel (success/partial)|
+
+Bonus se aplikuje na base income **před** city bonus multiplikátorem. Je viditelný v breakdown "Příjmy a výdaje / tick" v SafeHouseTab.
+
 **Náklady:**
 
 - Agent salary per tick: `agentType.salary × RANK_SALARY_MULT[rank]`

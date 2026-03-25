@@ -129,6 +129,24 @@ export async function seedDemoDb(force = false): Promise<void> {
       nextFlashMissionAt: now + 12 * 60 * 1000,
     });
 
+    // ── 4b. Add Lille safe house (border type — demo for border income + travel discount) ──
+    await db.safeHouses.put({
+      id: 'lille',
+      regionId: 'lille',
+      level: 1,
+      index: 4,
+      assignedDivisions: ['cyber'] as DivisionId[],
+      modules: [],
+      createdAt: now - 3 * 24 * 60 * 60 * 1000,
+    });
+
+    await db.regions.update('lille', {
+      owned: true,
+      safeHouseId: 'lille',
+      alertLevel: 0.4,
+      missionTier: 1,
+    });
+
     // ── 5. Add Berlin safe house (under construction) ─────────────────────────
     const berlinConstructionAt = now + 10 * 60 * 1000;
     await db.safeHouses.put({
@@ -484,7 +502,13 @@ export async function seedDemoDb(force = false): Promise<void> {
       1,
       3,
     );
-    await db.recruitmentPools.bulkAdd([londonPool, amsterdamPool, berlinPool]);
+    const lillePool = generateRecruitmentPool(
+      'lille',
+      ['cyber'] as DivisionId[],
+      1,
+      3,
+    );
+    await db.recruitmentPools.bulkAdd([londonPool, amsterdamPool, berlinPool, lillePool]);
 
     // ── 12. Refresh game store ────────────────────────────────────────────────
     await loadGame();

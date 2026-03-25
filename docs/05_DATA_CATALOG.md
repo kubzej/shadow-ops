@@ -219,7 +219,23 @@ interface Region {
 - tech → ⚙
 - port → ⚓
 - military → ✕
-- border → ·
+- border → ⬡
+
+**Region type efekty (herní mechaniky):**
+
+| CityType  | Pasivní příjem bonus/tick              | Ostatní efekty                              |
+| --------- | -------------------------------------- | ------------------------------------------- |
+| capital   | +2.0 money, +0.5 influence             | —                                           |
+| financial | +3.0 money                             | —                                           |
+| tech      | +2.0 intel                             | —                                           |
+| port      | +1.5 money, +0.5 shadow                | mise ×1.3 money+intel (success/partial)     |
+| border    | +1.0 intel, +1.0 shadow                | travel cost −20 % pro/z border regionu      |
+| military  | +1.5 shadow                            | mise ×1.3 money+intel (success/partial)     |
+
+Pokud region má `secondaryType`, bonusy obou typů se sčítají (additivně).
+Bonus je viditelný v SafeHouseTab income breakdown, v CityCard a ExpansionCardItem.
+
+Implementováno v: `src/engine/passiveIncome.ts` (`getRegionTypeBonus`), `src/screens/agents/travelHelpers.ts` (`hasBorderDiscount`), `src/store/missionStore.ts` (port/military mult).
 
 **Startovní města (11 možností):**
 

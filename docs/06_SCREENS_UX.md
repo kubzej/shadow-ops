@@ -28,6 +28,15 @@
 
 - Sabotované moduly jsou v seznamu modulů označeny badge "Nefunkční" + countdown.
 - Nejde o odstranění modulu, pouze dočasné vyřazení efektu.
+- Breakdown "Příjmy a výdaje / tick" nově obsahuje řádek **region type bonus** (ikona `MapPin`, modrý text) pokud region přináší pasivní typ bonus. Zobrazuje human-readable label typu (např. "Přístav" nebo "Finanční + Přístav").
+
+### Map screen — CityCard a ExpansionCardItem
+
+- Pod názvem země se nově zobrazuje malý modrý text s popisem type bonusů regionu (výstup `regionTypeBonusSummary()`).
+- Příklady:
+  - `+peníze & shadow, mise ×1.3` (port)
+  - `+intel & shadow, slevy cestování` (border)
+  - `+peníze · +peníze & shadow, mise ×1.3` (financial + port)
 
 ### Toasty
 

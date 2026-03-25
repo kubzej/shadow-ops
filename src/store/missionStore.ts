@@ -349,11 +349,31 @@ export const useMissionStore = create<MissionStore>()(
       } = resolveMission(missionToResolve, mission);
 
       // Apply event reward multipliers and alert gain multiplier
-      const rewards = applyEventRewards(
+      const eventRewards = applyEventRewards(
         rawRewards,
         mission.category,
         activeEvent,
       );
+
+      // Port / military region bonus: ×1.3 on money+intel rewards for success/partial
+      const missionRegion = REGION_MAP.get(mission.regionId);
+      const regionType = missionRegion?.type;
+      const regionSecondary = missionRegion?.secondaryType;
+      const hasPortOrMilitary =
+        regionType === 'port' ||
+        regionType === 'military' ||
+        regionSecondary === 'port' ||
+        regionSecondary === 'military';
+      const regionMult =
+        hasPortOrMilitary && (result === 'success' || result === 'partial')
+          ? 1.3
+          : 1.0;
+      const rewards = {
+        ...eventRewards,
+        money: Math.round(eventRewards.money * regionMult),
+        intel: Math.round(eventRewards.intel * regionMult),
+      };
+
       const alertGain = rawAlertGain * getEventAlertGainMult(activeEvent);
 
       // Fetch agents — if none found (DB corruption), abort to avoid stuck on_mission state

@@ -401,6 +401,27 @@ Pokud activeDivisions prázdné, default ['surveillance', 'cyber'].
 
 ## passiveIncome.ts
 
+### getRegionTypeBonus(safeHouseId) → IncomeResult
+
+```
+region = REGION_MAP.get(safeHouseId)
+primary   = REGION_TYPE_INCOME_BONUS[region.type]
+secondary = region.secondaryType ? REGION_TYPE_INCOME_BONUS[region.secondaryType] : zero
+
+return primary + secondary   ← additivní součet
+```
+
+`REGION_TYPE_INCOME_BONUS` per tick per typ:
+
+| CityType  | Money | Intel | Shadow | Influence |
+| --------- | ----- | ----- | ------ | --------- |
+| capital   | 2.0   | 0     | 0      | 0.5       |
+| financial | 3.0   | 0     | 0      | 0         |
+| tech      | 0     | 2.0   | 0      | 0         |
+| port      | 1.5   | 0     | 0.5    | 0         |
+| border    | 0     | 1.0   | 1.0    | 0         |
+| military  | 0     | 0     | 1.5    | 0         |
+
 ### calculateSafeHouseIncome(safeHouse, divisionLevels, agents)
 
 ```
@@ -423,7 +444,16 @@ forEach agent (safeHouseId == safeHouse.id):
 
 // Upkeep
 income.money -= SAFE_HOUSE_UPKEEP_PER_HOUR[safeHouse.level] / 120
+
+// Region type bonus (primary + secondary, additive)
+income += getRegionTypeBonus(safeHouse.id)
 ```
+
+### calculateSafeHouseBreakdown(safeHouse, divisionLevels, agents)
+
+Vrací `IncomeBreakdown` s detailním rozpisem příjmů a výdajů. Nově obsahuje:
+
+- `regionTypeBonus?: IncomeLineItem` — bonus dle typu regionu (label = `"primary + secondary"` pokud secundaryType existuje, jinak jen primary)
 
 ### calculatePassiveIncome(safeHouses, divisionLevels, agents)
 

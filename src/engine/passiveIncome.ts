@@ -4,6 +4,54 @@ import { AGENT_TYPES } from '../data/agentTypes';
 import type { Agent } from '../db/schema';
 import { SAFE_HOUSE_UPKEEP_PER_HOUR } from '../data/costs';
 import type { AgentRank } from '../data/agentTypes';
+import { REGION_MAP } from '../data/regions';
+import type { CityType } from '../data/regions';
+
+// ─────────────────────────────────────────────
+// Region type income bonuses (applied once per safe house per tick)
+// ─────────────────────────────────────────────
+
+/**
+ * Additive income bonus per region type per 30-second tick.
+ * Both primaryType and secondaryType contribute (additive).
+ */
+export const REGION_TYPE_INCOME_BONUS: Record<
+  CityType,
+  { money: number; intel: number; shadow: number; influence: number }
+> = {
+  capital:    { money: 2.0, intel: 0,   shadow: 0,   influence: 0.5 },
+  financial:  { money: 3.0, intel: 0,   shadow: 0,   influence: 0   },
+  tech:       { money: 0,   intel: 2.0, shadow: 0,   influence: 0   },
+  port:       { money: 1.5, intel: 0,   shadow: 0.5, influence: 0   },
+  border:     { money: 0,   intel: 1.0, shadow: 1.0, influence: 0   },
+  military:   { money: 0,   intel: 0,   shadow: 1.5, influence: 0   },
+};
+
+/**
+ * Returns the combined additive income bonus for a region based on
+ * its primaryType and optional secondaryType.
+ */
+export function getRegionTypeBonus(safeHouseId: string): {
+  money: number;
+  intel: number;
+  shadow: number;
+  influence: number;
+} {
+  const region = REGION_MAP.get(safeHouseId);
+  if (!region) return { money: 0, intel: 0, shadow: 0, influence: 0 };
+
+  const primary = REGION_TYPE_INCOME_BONUS[region.type];
+  const secondary = region.secondaryType
+    ? REGION_TYPE_INCOME_BONUS[region.secondaryType]
+    : null;
+
+  return {
+    money: primary.money + (secondary?.money ?? 0),
+    intel: primary.intel + (secondary?.intel ?? 0),
+    shadow: primary.shadow + (secondary?.shadow ?? 0),
+    influence: primary.influence + (secondary?.influence ?? 0),
+  };
+}
 
 /** Income bonus per tick from each module (modules without income effect are omitted). */
 export const MODULE_INCOME_EFFECTS: Partial<
@@ -100,6 +148,8 @@ export interface IncomeBreakdown {
   salaries: IncomeLineItem[];
   /** Fixed upkeep */
   upkeep: IncomeLineItem;
+  /** Region type bonus (primary + secondary type combined) */
+  regionTypeBonus?: IncomeLineItem;
 }
 
 /**
@@ -189,7 +239,24 @@ export function calculateSafeHouseBreakdown(
     influence: 0,
   };
 
-  return { divisions, modules, salaries, upkeep };
+  const region = REGION_MAP.get(safeHouse.id);
+  let regionTypeBonus: IncomeLineItem | undefined;
+  if (region) {
+    const bonus = getRegionTypeBonus(safeHouse.id);
+    const hasBonus =
+      bonus.money !== 0 ||
+      bonus.intel !== 0 ||
+      bonus.shadow !== 0 ||
+      bonus.influence !== 0;
+    if (hasBonus) {
+      const typeLabel = region.secondaryType
+        ? `${region.type} + ${region.secondaryType}`
+        : region.type;
+      regionTypeBonus = { label: typeLabel, ...bonus };
+    }
+  }
+
+  return { divisions, modules, salaries, upkeep, regionTypeBonus };
 }
 
 /**
@@ -246,6 +313,13 @@ export function calculateSafeHouseIncome(
   // Safe house upkeep (fixed hourly cost, divided across 120 ticks/hour)
   const upkeepPerHour = SAFE_HOUSE_UPKEEP_PER_HOUR[safeHouse.level] ?? 40;
   income.money -= upkeepPerHour / 120;
+
+  // Region type bonus — additive flat bonus from primaryType + secondaryType
+  const typeBonus = getRegionTypeBonus(safeHouse.id);
+  income.money += typeBonus.money;
+  income.intel += typeBonus.intel;
+  income.shadow += typeBonus.shadow;
+  income.influence += typeBonus.influence;
 
   return income;
 }

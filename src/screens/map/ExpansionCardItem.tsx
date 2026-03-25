@@ -5,7 +5,7 @@ import type { Currencies } from '../../store/gameStore';
 import { REGION_MAP } from '../../data/regions';
 import { COUNTRY_MAP } from '../../data/countries';
 import { expansionCost, expansionBuildTime } from '../../engine/mapGenerator';
-import { typeChar } from './mapHelpers';
+import { typeChar, regionTypeBonusSummary } from './mapHelpers';
 
 export function ExpansionCardItem({
   state,
@@ -58,6 +58,11 @@ export function ExpansionCardItem({
           <p className="text-xs mt-0.5" style={{ color: '#888' }}>
             {country?.name ?? ''} · vzdálenost {state.distanceFromStart}
           </p>
+          {region && (
+            <p className="text-[10px] mt-0.5" style={{ color: '#60a5fa88' }}>
+              {regionTypeBonusSummary(region.type, region.secondaryType)}
+            </p>
+          )}
         </div>
         <div
           className="flex items-center gap-1 text-xs flex-shrink-0 ml-2"

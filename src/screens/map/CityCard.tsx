@@ -5,7 +5,7 @@ import type { SafeHouse, RegionState } from '../../db/schema';
 import { DIVISIONS } from '../../data/agentTypes';
 import { REGION_MAP } from '../../data/regions';
 import { COUNTRY_MAP } from '../../data/countries';
-import { alertColor, typeChar } from './mapHelpers';
+import { alertColor, typeChar, regionTypeBonusSummary } from './mapHelpers';
 
 export function CityCard({
   sh,
@@ -56,6 +56,11 @@ export function CityCard({
               <span style={{ color: '#4ade8055' }}> · Domovská</span>
             )}
           </p>
+          {region && (
+            <p className="text-[10px] mt-0.5" style={{ color: '#60a5fa88' }}>
+              {regionTypeBonusSummary(region.type, region.secondaryType)}
+            </p>
+          )}
         </div>
         {/* Alert */}
         <div className="flex items-center gap-1 flex-shrink-0 ml-2">

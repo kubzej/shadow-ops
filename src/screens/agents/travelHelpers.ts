@@ -9,6 +9,12 @@ const TRAVEL_MS_PER_100 = 30 * 60 * 1000; // 30 min
 /** Base travel time in ms */
 const TRAVEL_BASE_MS = 60 * 60 * 1000; // 1 hour
 
+/**
+ * Border regions grant a 20 % cost discount on travel.
+ * Applies when either the source or the destination is a border city.
+ */
+const BORDER_TRAVEL_DISCOUNT = 0.8;
+
 function travelDistance(fromId: string, toId: string): number {
   const a = REGION_MAP.get(fromId);
   const b = REGION_MAP.get(toId);
@@ -18,11 +24,21 @@ function travelDistance(fromId: string, toId: string): number {
   return Math.sqrt(dx * dx + dy * dy);
 }
 
+function hasBorderType(regionId: string): boolean {
+  const r = REGION_MAP.get(regionId);
+  if (!r) return false;
+  return r.type === 'border' || r.secondaryType === 'border';
+}
+
 export function travelCost(fromId: string, toId: string): number {
-  return (
+  const base =
     TRAVEL_BASE_COST +
-    Math.round((travelDistance(fromId, toId) / 100) * TRAVEL_COST_PER_100)
-  );
+    Math.round((travelDistance(fromId, toId) / 100) * TRAVEL_COST_PER_100);
+  const discount =
+    hasBorderType(fromId) || hasBorderType(toId)
+      ? BORDER_TRAVEL_DISCOUNT
+      : 1.0;
+  return Math.round(base * discount);
 }
 
 export function travelDuration(fromId: string, toId: string): number {
@@ -30,4 +46,9 @@ export function travelDuration(fromId: string, toId: string): number {
     TRAVEL_BASE_MS +
     Math.round((travelDistance(fromId, toId) / 100) * TRAVEL_MS_PER_100)
   );
+}
+
+/** Returns true if travel between these two regions qualifies for a border discount. */
+export function hasBorderDiscount(fromId: string, toId: string): boolean {
+  return hasBorderType(fromId) || hasBorderType(toId);
 }

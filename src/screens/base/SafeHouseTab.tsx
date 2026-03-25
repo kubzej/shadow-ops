@@ -6,6 +6,7 @@ import {
   Ghost,
   House,
   Lock,
+  MapPin,
   Radio,
   ShieldCheck,
   TrendingUp,
@@ -45,6 +46,7 @@ import {
   getCityBonus,
 } from '../../engine/passiveIncome';
 import { divColor, divName } from './baseHelpers';
+import { typeLabel } from '../map/mapHelpers';
 
 function CurrencyLine({
   money,
@@ -487,6 +489,25 @@ export function SafeHouseTab() {
                         </span>
                         <CurrencyLine {...bd.upkeep} />
                       </div>
+
+                      {bd.regionTypeBonus && (
+                        <div className="flex items-center justify-between gap-2">
+                          <span
+                            className="flex items-center gap-1 text-[11px] truncate"
+                            style={{ color: C.blue }}
+                          >
+                            <MapPin size={9} style={{ flexShrink: 0 }} />
+                            {typeLabel(bd.regionTypeBonus.label.split(' + ')[0])}
+                            {bd.regionTypeBonus.label.includes(' + ') && (
+                              <span style={{ color: C.textMuted }}>
+                                {' '}+{' '}
+                                {typeLabel(bd.regionTypeBonus.label.split(' + ')[1])}
+                              </span>
+                            )}
+                          </span>
+                          <CurrencyLine {...bd.regionTypeBonus} />
+                        </div>
+                      )}
 
                       {cityBonus > 1.0 && (
                         <div className="flex items-center justify-between gap-2">
