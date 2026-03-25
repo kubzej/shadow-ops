@@ -8,7 +8,8 @@
       "Bash(cat dist/assets/*.js)",
       "Bash(npx tsc:*)",
       "Bash(npx vite:*)",
-      "Bash(grep -c \"{ id: ''t[0-9]\\\\|{ id: ''tc[0-9]\" /Users/jakubmares/Documents/Projects/shadow-ops/src/data/missionTemplates.ts)"
+      "Bash(grep -c \"{ id: ''t[0-9]\\\\|{ id: ''tc[0-9]\" /Users/jakubmares/Documents/Projects/shadow-ops/src/data/missionTemplates.ts)",
+      "Bash(grep -A7 \"id: ''bali''\" /Users/jakubmares/Documents/Projects/shadow-ops/src/data/regions.ts)"
     ]
   }
 }

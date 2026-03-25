@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import BottomNav from './components/BottomNav';
 import MapScreen from './screens/MapScreen';
@@ -133,34 +133,6 @@ function GameShell() {
   const selectRegion = useUIStore((s) => s.selectRegion);
   const demoMode = useUIStore((s) => s.demoMode);
 
-  // Track real viewport height to work around iOS PWA bugs where
-  // dvh / 100% become stale after app suspend/resume or rotation.
-  const shellRef = useRef<HTMLDivElement>(null);
-  const updateHeight = useCallback(() => {
-    const h = window.visualViewport?.height ?? window.innerHeight;
-    if (shellRef.current) shellRef.current.style.height = `${h}px`;
-  }, []);
-
-  useEffect(() => {
-    updateHeight();
-    const vv = window.visualViewport;
-    vv?.addEventListener('resize', updateHeight);
-    window.addEventListener('resize', updateHeight);
-    // iOS fires pageshow with persisted=true on back-forward cache restore
-    window.addEventListener('pageshow', updateHeight);
-    // Also catch orientation changes and focus (app resume)
-    window.addEventListener('orientationchange', () =>
-      setTimeout(updateHeight, 100),
-    );
-    window.addEventListener('focus', updateHeight);
-    return () => {
-      vv?.removeEventListener('resize', updateHeight);
-      window.removeEventListener('resize', updateHeight);
-      window.removeEventListener('pageshow', updateHeight);
-      window.removeEventListener('focus', updateHeight);
-    };
-  }, [updateHeight]);
-
   // Auto-select home city on first load / save slot switch if nothing is selected
   useEffect(() => {
     if (!selectedRegionId && startCityId) {
@@ -170,9 +142,8 @@ function GameShell() {
 
   return (
     <div
-      ref={shellRef}
       className="flex flex-col"
-      style={{ background: C.bgBase }}
+      style={{ height: '100%', background: C.bgBase }}
     >
       <main
         className="flex-1 overflow-y-auto"
