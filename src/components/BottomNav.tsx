@@ -13,11 +13,8 @@ const tabs = [
 export default function BottomNav() {
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 flex"
-      style={{
-        background: C.bgBase,
-        paddingBottom: 'env(safe-area-inset-bottom)',
-      }}
+      className="fixed bottom-0 left-0 right-0 flex pb-safe"
+      style={{ background: C.bgBase }}
     >
       {tabs.map(({ to, icon: Icon, label }) => (
         <NavLink key={to} to={to} className="flex flex-1">

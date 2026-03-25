@@ -144,13 +144,7 @@ function GameShell() {
       className="flex flex-col"
       style={{ height: '100dvh', background: '#222222' }}
     >
-      <main
-        className="flex-1 overflow-y-auto"
-        style={{
-          paddingTop: 'env(safe-area-inset-top)',
-          paddingBottom: 'calc(4rem + env(safe-area-inset-bottom))',
-        }}
-      >
+      <main className="flex-1 overflow-y-auto main-content-safe">
         <Routes>
           <Route path="/" element={<Navigate to="/map" replace />} />
           <Route path="/map" element={<MapScreen />} />
