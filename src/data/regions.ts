@@ -1974,7 +1974,7 @@ export const REGIONS: Region[] = [
     type: 'port',
     secondaryType: 'financial',
     position: { x: 748, y: 308 },
-    neighbors: ['surabaya', 'jakarta'],
+    neighbors: ['surabaya', 'jakarta', 'darwin'],
   },
   {
     id: 'medan',
@@ -3067,6 +3067,53 @@ export const REGIONS: Region[] = [
     type: 'border',
     position: { x: 717, y: 261 },
     neighbors: ['naypyidaw', 'chengdu'],
+  },
+
+  // ===== OCEANIA / AUSTRALIA =====
+  {
+    id: 'darwin',
+    name: 'Darwin',
+    countryId: 'au',
+    type: 'military',
+    secondaryType: 'port',
+    position: { x: 768, y: 320 },
+    neighbors: ['bali', 'perth', 'brisbane'],
+  },
+  {
+    id: 'perth',
+    name: 'Perth',
+    countryId: 'au',
+    type: 'financial',
+    secondaryType: 'port',
+    position: { x: 748, y: 360 },
+    neighbors: ['darwin', 'melbourne'],
+  },
+  {
+    id: 'brisbane',
+    name: 'Brisbane',
+    countryId: 'au',
+    type: 'port',
+    secondaryType: 'financial',
+    position: { x: 796, y: 350 },
+    neighbors: ['darwin', 'sydney'],
+  },
+  {
+    id: 'sydney',
+    name: 'Sydney',
+    countryId: 'au',
+    type: 'financial',
+    secondaryType: 'port',
+    position: { x: 794, y: 365 },
+    neighbors: ['brisbane', 'melbourne'],
+  },
+  {
+    id: 'melbourne',
+    name: 'Melbourne',
+    countryId: 'au',
+    type: 'tech',
+    secondaryType: 'financial',
+    position: { x: 786, y: 373 },
+    neighbors: ['sydney', 'perth'],
   },
 ];
 

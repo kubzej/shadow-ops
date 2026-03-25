@@ -44,13 +44,20 @@
   --color-alert-3: #ef4444;
 }
 
-html, body, #root {
+html, body {
   height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+#root {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
   background-color: #181818;
   color: #f0f0f0;
   font-family: system-ui, -apple-system, sans-serif;
   overscroll-behavior: none;
-  margin: 0;
 }
 
 @keyframes flash-blink {

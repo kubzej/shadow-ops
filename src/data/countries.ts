@@ -1,4 +1,4 @@
-export type WorldRegion = 'europe' | 'north_america' | 'south_america' | 'asia' | 'middle_east' | 'africa'
+export type WorldRegion = 'europe' | 'north_america' | 'south_america' | 'asia' | 'middle_east' | 'africa' | 'oceania'
 
 export interface Country {
   id: string
@@ -128,6 +128,9 @@ export const COUNTRIES: Country[] = [
   { id: 'za', name: 'J. Afrika',    worldRegion: 'africa', baseAlertLevel: 1, cityIds: ['johannesburg', 'cape_town', 'durban', 'pretoria'] },
   { id: 'mz', name: 'Mozambik',     worldRegion: 'africa', baseAlertLevel: 2, cityIds: ['maputo'] },
   { id: 'zw', name: 'Zimbabwe',     worldRegion: 'africa', baseAlertLevel: 2, cityIds: ['harare'] },
+
+  // ===== OCEANIA =====
+  { id: 'au', name: 'Austrálie',    worldRegion: 'oceania', baseAlertLevel: 1, cityIds: ['darwin', 'perth', 'brisbane', 'sydney', 'melbourne'] },
 ]
 
 export const COUNTRY_MAP = new Map(COUNTRIES.map(c => [c.id, c]))

@@ -143,7 +143,7 @@ function GameShell() {
   return (
     <div
       className="flex flex-col"
-      style={{ height: '100dvh', background: C.bgBase }}
+      style={{ height: '100%', background: C.bgBase }}
     >
       <main
         className="flex-1 overflow-y-auto"

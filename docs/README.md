@@ -17,7 +17,6 @@ pro AI agenty při komplexních implementačních úkolech.
 | [05_DATA_CATALOG.md](05_DATA_CATALOG.md) | Datový katalog: všech 36 typů agentů s base stats, tabulky costs (safe house/divize/moduly/expanze), equipment catalog rozhraní, regiony/země přehled |
 | [06_SCREENS_UX.md](06_SCREENS_UX.md) | Screens a UX: navigace, LandingScreen, OnboardingScreen (4 kroky), MapScreen, MissionsScreen (dispatch modal detail), AgentsScreen, BaseScreen (4 taby), MenuScreen, toast systém |
 | [07_DESIGN_SYSTEM.md](07_DESIGN_SYSTEM.md) | Design systém: celá barevná paleta C, rank/status/result/category meta, cardBase/btn/modal utility styly, alert color gradient, layout struktura |
-| [08_KNOWN_GAPS.md](08_KNOWN_GAPS.md) | Known gaps: co je implementované v enginu ale chybí v UI (black market, equipment UI, travel), potenciální problémy, budoucí návrhy |
 
 ---
 
