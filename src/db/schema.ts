@@ -54,6 +54,8 @@ export interface GameState {
   nextRivalOperationAt?: number;
   activeRivalOperation?: ActiveRivalOperation;
   rivalAggressionLevel?: number;
+  // Director rank — only 1 agent globally may hold this rank at a time
+  directorAgentId?: string;
 }
 
 // ============ SAFE HOUSE ============

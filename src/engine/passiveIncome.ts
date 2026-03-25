@@ -73,6 +73,7 @@ const RANK_SALARY_MULT: Record<AgentRank, number> = {
   operative: 1.3,
   specialist: 1.7,
   veteran: 2.2,
+  director: 3.0,
 };
 
 // ─────────────────────────────────────────────

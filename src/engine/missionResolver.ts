@@ -52,8 +52,10 @@ export function checkAgentEligibility(
     actual: number;
   }> = [];
 
+  // Director bypasses division requirements — they qualify for any mission
   // Difficulty-1 missions are open to any agent regardless of division
   if (
+    agent.rank !== 'director' &&
     mission.difficulty > 1 &&
     mission.requiredDivisions &&
     mission.requiredDivisions.length > 0
@@ -129,11 +131,18 @@ const CATEGORY_STAT_WEIGHTS: Record<
  *   equipBonus  = successBonus of the leader's equipped items only (3 slots max)
  *   Adding any agent never reduces the overall chance.
  */
+/**
+ * Director passive aura: if the safe house where the mission originates has
+ * a Director-rank agent, all dispatched teams from that safe house get +5 pp.
+ */
+export const DIRECTOR_AURA_BONUS = 0.05;
+
 export function calculateSuccessChance(
   agents: Agent[],
   mission: Mission,
   alertLevel = 0,
   approach: MissionApproach = 'standard',
+  hasSafeHouseDirector = false,
 ): number {
   if (agents.length === 0) return 0.05;
 
@@ -199,12 +208,15 @@ export function calculateSuccessChance(
   // Alert level penalty: up to -20 pp at max alert (3.0)
   const alertPenalty = (alertLevel / 3) * 0.2;
 
+  const directorAura = hasSafeHouseDirector ? DIRECTOR_AURA_BONUS : 0;
+
   const raw =
     mission.baseSuccessChance +
     statBonus +
     teamBonus +
     equipBonus +
-    streakBonus -
+    streakBonus +
+    directorAura -
     compPenalty -
     alertPenalty;
   return clamp(raw * APPROACH_MODS[approach].successMult, 0.05, 1.0);
@@ -267,12 +279,14 @@ export function dispatchMission(
   equippedIds: string[] = [],
   alertLevel = 0,
   approach: MissionApproach = 'standard',
+  hasSafeHouseDirector = false,
 ): ActiveMission {
   const successChance = calculateSuccessChance(
     agents,
     mission,
     alertLevel,
     approach,
+    hasSafeHouseDirector,
   );
   const duration = calculateDuration(mission, agents, equippedIds, approach);
 

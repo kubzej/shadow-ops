@@ -81,8 +81,8 @@ export async function seedDemoDb(force = false): Promise<void> {
       blackMarketUnlocked: true,
       unlockedDivisions: allDivisions,
       divisionLevels,
-      totalMissionsCompleted: 47,
-      totalMissionsAttempted: 55,
+      totalMissionsCompleted: 105,
+      totalMissionsAttempted: 118,
       // Demo: start with Media Frenzy active so the CurrenciesBar badge is visible
       activeWorldEvent: {
         eventId: 'media_frenzy',
@@ -233,14 +233,16 @@ export async function seedDemoDb(force = false): Promise<void> {
       ],
     });
 
-    // London agent 6: shadow veteran "the Ghost"
+    // London agent 6: shadow veteran "the Ghost" — ready for Director promotion (xp maxed out)
     const agent6 = createAgent('shadow', 'veteran', 'london');
     const agent6Id = await db.agents.add({
       ...agent6,
+      xp: 4000,
+      xpToNextRank: 4000,
       missionStreak: 15,
       status: 'available',
-      missionsCompleted: 28,
-      missionsAttempted: 30,
+      missionsCompleted: 42,
+      missionsAttempted: 45,
       nickname: 'the Ghost',
       equipment: [
         { equipmentId: 'night_vision' },

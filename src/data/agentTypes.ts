@@ -9,7 +9,7 @@ export type DivisionId =
   | 'medical'
   | 'blackops';
 
-export type AgentRank = 'recruit' | 'operative' | 'specialist' | 'veteran';
+export type AgentRank = 'recruit' | 'operative' | 'specialist' | 'veteran' | 'director';
 
 export interface AgentTypeStats {
   stealth: [number, number]; // [base, variance]
@@ -38,6 +38,7 @@ const RANK_MULT: Record<AgentRank, number> = {
   operative: 1.5,
   specialist: 2.0,
   veteran: 2.6,
+  director: 4.5,
 };
 
 // Each division has 4 agent types

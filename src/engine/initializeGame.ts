@@ -230,6 +230,7 @@ export async function loadGame(): Promise<boolean> {
     rivalAggressionLevel:
       state.rivalAggressionLevel ??
       Math.floor(state.totalMissionsCompleted / 25),
+    directorAgentId: state.directorAgentId ?? null,
   });
 
   return true;

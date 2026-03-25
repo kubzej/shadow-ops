@@ -269,12 +269,24 @@ export const useMissionStore = create<MissionStore>()(
       // Read current alert level for the region before dispatching
       const region = await db.regions.get(mission.regionId);
       const alertLevel = region?.alertLevel ?? 0;
+
+      // Check if there is a Director-rank agent stationed in this region's safe house
+      const directorId = useGameStore.getState().directorAgentId;
+      let hasSafeHouseDirector = false;
+      if (directorId) {
+        const directorAgent = await db.agents.get(directorId);
+        hasSafeHouseDirector =
+          directorAgent?.safeHouseId === mission.regionId &&
+          directorAgent?.status !== 'dead';
+      }
+
       const activeMission = engineDispatch(
         mission,
         agents,
         equippedIds,
         alertLevel,
         approach,
+        hasSafeHouseDirector,
       );
 
       // Persist — intel is deducted only after the transaction succeeds
@@ -523,9 +535,13 @@ export const useMissionStore = create<MissionStore>()(
 
             const merged = { ...agent, ...updatedAgent };
 
-            // Rank up if eligible
-            if (canRankUp(merged as Agent)) {
-              const ranked = rankUp(merged as Agent);
+            // Rank up if eligible — veteran→director is manual only, all others are automatic
+            const currentDirectorId =
+              useGameStore.getState().directorAgentId;
+            const currentDirectorCount = currentDirectorId ? 1 : 0;
+            const wouldPromoteToDirector = (merged as Agent).rank === 'veteran';
+            if (canRankUp(merged as Agent, currentDirectorCount) && !wouldPromoteToDirector) {
+              const ranked = rankUp(merged as Agent, currentDirectorCount);
               await db.agents.put(ranked);
               rankedUpAgents.push({
                 id: agent.id,
@@ -604,6 +620,12 @@ export const useMissionStore = create<MissionStore>()(
                     status: 'dead',
                   });
                   useGameStore.getState().incrementStat('agents');
+                  if (
+                    useGameStore.getState().directorAgentId ===
+                    capturedAgent.id
+                  ) {
+                    useGameStore.getState().setDirectorAgent(null);
+                  }
                 } else {
                   // Escalate: generate harder rescue mission
                   const escalated = generateRescueMission(

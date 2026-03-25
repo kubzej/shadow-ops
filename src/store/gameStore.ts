@@ -49,6 +49,9 @@ interface GameStore {
   activeRivalOperation: ActiveRivalOperation | null;
   rivalAggressionLevel: number;
 
+  // ── Director ──────────────────────────────────
+  directorAgentId: string | null;
+
   // ── Actions ───────────────────────────────────
   setLoaded: (meta: {
     agencyName: string;
@@ -71,6 +74,7 @@ interface GameStore {
     nextRivalOperationAt?: number;
     activeRivalOperation?: ActiveRivalOperation | null;
     rivalAggressionLevel?: number;
+    directorAgentId?: string | null;
   }) => void;
 
   addCurrencies: (delta: Partial<Currencies>) => void;
@@ -88,6 +92,8 @@ interface GameStore {
   /** Set (or clear) the active world event and optionally schedule the next one. */
   setWorldEvent: (event: ActiveWorldEvent | null, nextAt?: number) => void;
   setRivalOperation: (op: ActiveRivalOperation | null, nextAt?: number) => void;
+  /** Register or clear the global Director agent. */
+  setDirectorAgent: (agentId: string | null) => void;
   reset: () => void;
   _persist: () => void;
 }
@@ -115,6 +121,7 @@ export const useGameStore = create<GameStore>()(
     nextRivalOperationAt: 0,
     activeRivalOperation: null,
     rivalAggressionLevel: 0,
+    directorAgentId: null,
 
     // ── Actions ────────────────────────────────
     setLoaded: (meta) =>
@@ -141,6 +148,7 @@ export const useGameStore = create<GameStore>()(
         state.rivalAggressionLevel =
           meta.rivalAggressionLevel ??
           Math.floor((meta.totalMissionsCompleted ?? 0) / 25);
+        state.directorAgentId = meta.directorAgentId ?? null;
         // Reset session tracking for this load
         _loadedPlayTime = meta.totalPlayTime ?? 0;
         _sessionStartedAt = Date.now();
@@ -259,6 +267,7 @@ export const useGameStore = create<GameStore>()(
         state.nextRivalOperationAt = 0;
         state.activeRivalOperation = null;
         state.rivalAggressionLevel = 0;
+        state.directorAgentId = null;
       });
     },
     setWorldEvent: (event, nextAt) => {
@@ -272,6 +281,12 @@ export const useGameStore = create<GameStore>()(
       set((state) => {
         state.activeRivalOperation = op;
         if (nextAt !== undefined) state.nextRivalOperationAt = nextAt;
+      });
+      get()._persist();
+    },
+    setDirectorAgent: (agentId) => {
+      set((state) => {
+        state.directorAgentId = agentId;
       });
       get()._persist();
     },
@@ -305,6 +320,7 @@ export const useGameStore = create<GameStore>()(
         nextRivalOperationAt: s.nextRivalOperationAt,
         activeRivalOperation: s.activeRivalOperation ?? undefined,
         rivalAggressionLevel: s.rivalAggressionLevel,
+        directorAgentId: s.directorAgentId ?? undefined,
       });
       // Keep meta snapshot in sync for the slot picker display
       const slotId = localStorage.getItem('shadow-ops-active-slot');

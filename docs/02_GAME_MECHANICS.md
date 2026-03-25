@@ -103,7 +103,7 @@ Měny mají floor 0 (nikdy záporné). `addCurrencies()` floory každou složku.
 
 ## Agenti — přehled
 
-- **4 ranky:** recruit → operative → specialist → veteran
+- **5 ranků:** recruit → operative → specialist → veteran → director
 - **9 divizí** × **4 typy** = **36 typů agentů** celkem
 - **Stats:** stealth, combat, intel, tech (každý 0–99)
 - **Equipment:** 3 sloty, každý může nést 1 item
@@ -117,6 +117,22 @@ Měny mají floor 0 (nikdy záporné). `addCurrencies()` floory každou složku.
 | operative  | 1.3× |
 | specialist | 1.7× |
 | veteran    | 2.2× |
+| director   | 3.0× |
+
+### Director rank (Ředitel)
+
+Pátý a nejvyšší rank agenta. Platí tato pravidla:
+
+- **Globální limit:** Pouze 1 agent agentury může být Ředitelem najednou. Pokud je slot obsazen, veterán čeká s XP na uvolnění slotu.
+- **XP threshold:** 4 000 XP (z veterána → ředitele).
+- **Stat bonus:** stats generovány s multiplikátorem 4.5× (vs veteran 2.6×) — staty se pohybují na horní hranici (cap 99).
+- **Divize — univerzální:** Director splňuje divizi na jakékoliv misi bez ohledu na svoji vlastní divizi (`checkAgentEligibility` přeskočí division check pro rank=director).
+- **Pasivní efekt — Velitelská aura:** Všechny mise odeslané ze stejného safe house kde Director stojí mají +5% success chance. Director musí být přítomen v safe house regionu mise (ne na misi, ne mrtvý).
+- **Salary:** 3.0× základní salary agentova typu (vyšší než veteran 2.2×).
+- **Nemůže zemřít:** Při fatálním výsledku mise jde Director do stavu `captured` místo `dead`.
+- **Degradace (hráčem):** Tlačítko "Degradovat" v AgentDetailModal vrátí Directora na `veteran` (xp=0, xpToNextRank=4000). Director slot se uvolní — další veterán s dostatkem XP může postoupit.
+- **Propuštění:** Zakázáno — Director nelze propustit, pouze degradovat.
+- **Rival efekty:** `asset_compromise` může degradovat Directora zpět na veterána (uvolní slot). `agent_recruitment` může zabít Directora (uvolní slot).
 
 **Status lifecycle:**
 

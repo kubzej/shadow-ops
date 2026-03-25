@@ -94,6 +94,7 @@ export const RANK_LABEL: Record<string, string> = {
   operative: 'Agent',
   specialist: 'Specialista',
   veteran: 'Veterán',
+  director: 'Ředitel',
 };
 
 export const RANK_STARS: Record<string, number> = {
@@ -101,6 +102,7 @@ export const RANK_STARS: Record<string, number> = {
   operative: 2,
   specialist: 3,
   veteran: 4,
+  director: 5,
 };
 
 // ─── STAV AGENTA ──────────────────────────────────────────────────────────────

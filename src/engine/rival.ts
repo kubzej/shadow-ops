@@ -117,6 +117,9 @@ export async function applyRivalOperation(
       return 'Rival: kompromitace aktiva — žádný vhodný agent.';
     const target = agents[Math.floor(Math.random() * agents.length)];
     await db.agents.put(demoteRank(target));
+    if (target.rank === 'director' && game.directorAgentId === target.id) {
+      game.setDirectorAgent(null);
+    }
     return `Rival: kompromitace aktiva — ${target.name} byl degradován.`;
   }
 
@@ -172,6 +175,9 @@ export async function applyRivalOperation(
       ],
     });
     game.incrementStat('agents');
+    if (game.directorAgentId === weakest.id) {
+      game.setDirectorAgent(null);
+    }
     return `Rival: přetáhnutí agenta — ${weakest.name} byl ztracen.`;
   }
 

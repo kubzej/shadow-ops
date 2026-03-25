@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   AlertTriangle,
+  ArrowDownCircle,
   ChevronRight,
   Coins,
   Heart,
@@ -19,7 +20,7 @@ import type { Agent, SafeHouse } from '../../db/schema';
 import { AGENT_TYPES } from '../../data/agentTypes';
 import { REGION_MAP } from '../../data/regions';
 import { EQUIPMENT_CATALOG } from '../../data/equipmentCatalog';
-import { canRankUp, applyEquipmentBonuses } from '../../engine/agentGenerator';
+import { canRankUp, rankUp, applyEquipmentBonuses } from '../../engine/agentGenerator';
 import { useGameStore } from '../../store/gameStore';
 import {
   RARITY_COLOR,
@@ -54,7 +55,12 @@ export function AgentDetailModal({
   const currencies = useGameStore((s) => s.currencies);
   const spendCurrencies = useGameStore((s) => s.spendCurrencies);
   const addCurrencies = useGameStore((s) => s.addCurrencies);
+  const directorAgentId = useGameStore((s) => s.directorAgentId);
+  const setDirectorAgent = useGameStore((s) => s.setDirectorAgent);
+  const totalMissionsCompleted = useGameStore((s) => s.totalMissionsCompleted);
+  const agencyRank = Math.floor(totalMissionsCompleted / 10);
 
+  const [showDemote, setShowDemote] = useState(false);
   const [transferSlotIdx, setTransferSlotIdx] = useState<number | null>(null);
   const [transferCandidates, setTransferCandidates] = useState<Agent[]>([]);
   const [confirmSellSlot, setConfirmSellSlot] = useState<number | null>(null);
@@ -85,7 +91,30 @@ export function AgentDetailModal({
       if (eq) refundTotal += Math.ceil(eq.costMoney * SELL_REFUND);
     }
     if (refundTotal > 0) addCurrencies({ money: refundTotal });
+    if (directorAgentId === agent.id) setDirectorAgent(null);
     await db.agents.delete(agent.id);
+    onAgentUpdated();
+    onClose();
+  }
+
+  async function handleDemote() {
+    await db.agents.update(agent.id, {
+      rank: 'veteran',
+      xp: 0,
+      xpToNextRank: 4000,
+    });
+    await db.gameState.update(1, { directorAgentId: undefined });
+    setDirectorAgent(null);
+    setShowDemote(false);
+    onAgentUpdated();
+    onClose();
+  }
+
+  async function handlePromoteToDirector() {
+    const promoted = rankUp(agent, 0);
+    await db.agents.put(promoted);
+    await db.gameState.update(1, { directorAgentId: agent.id });
+    setDirectorAgent(agent.id);
     onAgentUpdated();
     onClose();
   }
@@ -249,17 +278,30 @@ export function AgentDetailModal({
                   >
                     {divisionName(agent.division)}
                   </span>
-                  <span className="text-xs" style={{ color: '#999' }}>
-                    {RANK_LABEL[agent.rank]}
-                  </span>
+                  {agent.rank === 'director' ? (
+                    <span
+                      className="text-xs px-1.5 py-0.5 rounded font-bold"
+                      style={{ background: `${C.yellow}22`, color: C.yellow }}
+                    >
+                      ★ {RANK_LABEL[agent.rank]}
+                    </span>
+                  ) : (
+                    <span className="text-xs" style={{ color: '#999' }}>
+                      {RANK_LABEL[agent.rank]}
+                    </span>
+                  )}
                   <span className="flex gap-0.5">
-                    {Array.from({ length: 4 }).map((_, i) => (
+                    {Array.from({ length: 5 }).map((_, i) => (
                       <span
                         key={i}
                         className="w-1.5 h-1.5 rounded-full"
                         style={{
                           background:
-                            i < RANK_STARS[agent.rank] ? color : '#777777',
+                            i < (RANK_STARS[agent.rank] ?? 1)
+                              ? agent.rank === 'director'
+                                ? C.yellow
+                                : color
+                              : C.textMuted,
                         }}
                       />
                     ))}
@@ -389,9 +431,9 @@ export function AgentDetailModal({
               >
                 Zkušenosti
               </p>
-              {agent.rank === 'veteran' ? (
-                <span className="text-xs" style={{ color }}>
-                  MAX RANK
+              {agent.rank === 'director' ? (
+                <span className="text-xs font-semibold" style={{ color: C.yellow }}>
+                  ŘEDITEL
                 </span>
               ) : (
                 <span className="text-xs" style={{ color: '#999' }}>
@@ -407,18 +449,42 @@ export function AgentDetailModal({
                 className="h-full rounded-full transition-all"
                 style={{
                   width: `${xpPct}%`,
-                  background: canRankUp(agent) ? '#facc15' : color,
+                  background: canRankUp(agent, directorAgentId ? 1 : 0) ? C.yellow : color,
                 }}
               />
             </div>
-            {canRankUp(agent) && (
+            {/* Auto rank-up hint — only for non-veteran ranks */}
+            {canRankUp(agent, directorAgentId ? 1 : 0) && agent.rank !== 'veteran' && (
               <div
                 className="flex items-center gap-1 text-xs"
-                style={{ color: '#facc15' }}
+                style={{ color: C.yellow }}
               >
                 <TrendingUp size={12} />
                 Připraven k postupu — nastane automaticky při dokončení mise
               </div>
+            )}
+            {/* Manual Director promotion */}
+            {agent.rank === 'veteran' && agent.xp >= agent.xpToNextRank && (
+              directorAgentId !== null && directorAgentId !== agent.id ? (
+                <div className="flex items-center gap-1 text-xs" style={{ color: C.textMuted }}>
+                  <TrendingUp size={12} />
+                  Postup na Ředitele blokován — slot obsazen jiným agentem
+                </div>
+              ) : agencyRank < 10 ? (
+                <div className="flex items-center gap-1 text-xs" style={{ color: C.textMuted }}>
+                  <TrendingUp size={12} />
+                  Rank Ředitele vyžaduje Agency Rank 10 ({totalMissionsCompleted}/100 misí)
+                </div>
+              ) : (
+                <button
+                  onClick={handlePromoteToDirector}
+                  className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg mt-1"
+                  style={{ background: '#eab30822', color: '#eab308', border: '1px solid #eab30844' }}
+                >
+                  <TrendingUp size={12} />
+                  Povýšit na Ředitele
+                </button>
+              )
             )}
           </div>
 
@@ -767,14 +833,25 @@ export function AgentDetailModal({
                 <Truck size={12} />
                 Přesunout
               </button>
-              <button
-                onClick={() => setShowDismiss(true)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium"
-                style={btn.destructive}
-              >
-                <UserX size={12} />
-                Propustit
-              </button>
+              {agent.rank === 'director' ? (
+                <button
+                  onClick={() => setShowDemote(true)}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium"
+                  style={btn.destructive}
+                >
+                  <ArrowDownCircle size={12} />
+                  Degradovat
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowDismiss(true)}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium"
+                  style={btn.destructive}
+                >
+                  <UserX size={12} />
+                  Propustit
+                </button>
+              )}
             </div>
           )}
 
@@ -825,6 +902,43 @@ export function AgentDetailModal({
                     style={btn.destructive}
                   >
                     Propustit
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Demote confirmation modal */}
+          {showDemote && (
+            <div
+              className="fixed inset-0 z-[70] flex items-center justify-center px-6"
+              style={{ background: 'rgba(0,0,0,0.85)' }}
+            >
+              <div className="rounded-2xl p-5 w-full max-w-xs" style={cardBase}>
+                <p
+                  className="text-base font-bold mb-1"
+                  style={{ color: '#e8e8e8' }}
+                >
+                  Degradovat {agent.name}?
+                </p>
+                <p className="text-xs mb-4" style={{ color: '#999' }}>
+                  Agent ztratí hodnost Ředitele a vrátí se na Veterána. Slot
+                  Ředitele se uvolní pro jiného agenta. XP bude resetováno.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowDemote(false)}
+                    className="flex-1 py-2 rounded-xl text-sm font-medium"
+                    style={btn.secondary()}
+                  >
+                    Zrušit
+                  </button>
+                  <button
+                    onClick={handleDemote}
+                    className="flex-1 py-2 rounded-xl text-sm font-medium"
+                    style={btn.destructive}
+                  >
+                    Degradovat
                   </button>
                 </div>
               </div>

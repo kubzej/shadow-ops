@@ -2,6 +2,16 @@
 
 Všechny typy jsou definovány v `src/db/schema.ts`.
 
+## Aktualizace: Director rank (pátý rank)
+
+- `GameState` nově obsahuje `directorAgentId?: string` — ID agenta s Director rankem (globálně unikátní).
+- `AgentRank` rozšířen o `'director'`.
+- `XP_TO_RANK` pro veteran: 4 000 (dříve Infinity), pro director: Infinity.
+- `RANK_MULT` pro director: 3.4×.
+- `RANK_SALARY_MULT` pro director: 3.0×.
+
+---
+
 ## Aktualizace: Rival + Counter-Ops
 
 - `GameState` nově obsahuje rival stav:
@@ -51,6 +61,8 @@ interface GameState {
   totalMissionsAttempted: number;
   totalAgentsLost: number;
   totalExpansions: number;
+  // Director — globálně unikátní rank
+  directorAgentId?: string; // ID agenta s Director rankem (max 1 najednou)
 }
 ```
 
@@ -151,12 +163,16 @@ interface Agent {
 
 **XP pro rank-up:**
 
-| Rank → nový rank       | XP threshold |
-| ---------------------- | ------------ |
-| recruit → operative    | 400          |
-| operative → specialist | 1 000        |
-| specialist → veteran   | 2 000        |
-| veteran (max)          | Infinity     |
+| Rank → nový rank         | XP threshold |
+| ------------------------ | ------------ |
+| recruit → operative      | 400          |
+| operative → specialist   | 1 000        |
+| specialist → veteran     | 2 000        |
+| veteran → director       | 4 000        |
+| director (max)           | Infinity     |
+
+Director rank je globálně unikátní — pouze 1 agent agentury může být Ředitelem najednou.
+Pokud je slot obsazen, veterán s dostatkem XP čeká na uvolnění slotu (smrt nebo dismiss direktora).
 
 **Stat multiplikátor dle ranku (pro generaci statů):**
 
@@ -166,6 +182,7 @@ interface Agent {
 | operative  | 1.5× |
 | specialist | 2.0× |
 | veteran    | 2.6× |
+| director   | 3.4× |
 
 ---
 

@@ -36,7 +36,7 @@ export function AgentSelectorModal({
   const [approach, setApproach] = useState<MissionApproach>('standard');
   const currencies = useGameStore((s) => s.currencies);
   const activeWorldEvent = useGameStore((s) => s.activeWorldEvent);
-  const eventDef = getEventDef(activeWorldEvent);
+  getEventDef(activeWorldEvent);
   const scPenalty = getEventSuccessChancePenalty(activeWorldEvent);
 
   useEffect(() => {

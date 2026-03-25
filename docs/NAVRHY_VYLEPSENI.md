@@ -7,33 +7,8 @@
 
 ## 1 MOJE
 
-## 5. Intel síť a mapa
-
-### 5.2 Mapa — Region typ bonus
-
-Regiony různých typů dávají bonus safe housu:
-
-| Typ       | Bonus                                         |
-| --------- | --------------------------------------------- |
-| capital   | +1 influence/tick                             |
-| financial | +2 money/tick                                 |
-| tech      | +2 intel/tick                                 |
-| port      | Logistics mise reward × 1.3                   |
-| military  | Blackops mise reward × 1.3, alert decay −0.05 |
-| border    | Přesun agentů −30% cena                       |
-
----
-
 ## 7. Progresní systém — pozdní hra
 
-### 7.1 Pátý rank: Director
-
-Po Agency Rank 10 (viz 4.1) se odemkne 5. rank **Ředitel** (`director`). Pouze 1 agent může mít tento rank najednou (globálně). Ředitel:
-
-- Salary × 3.0
-- Stat bonus × 1.5 oproti veteránovi
-- Pasivní efekt: všichni agenti ve stejném safe house +5% success chance
-- Speciální schopnost dle divize (viz Veteran Perks, ale silnější)
 
 ### 7.2 Globální influence projekty (Grand Operations)
 

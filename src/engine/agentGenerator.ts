@@ -21,6 +21,7 @@ export const RANK_ORDER: AgentRank[] = [
   'operative',
   'specialist',
   'veteran',
+  'director',
 ];
 
 /** XP required to rank up from each rank.
@@ -30,7 +31,8 @@ export const XP_TO_RANK: Record<AgentRank, number> = {
   recruit: 400,
   operative: 1000,
   specialist: 2000,
-  veteran: Infinity, // max rank
+  veteran: 4000,
+  director: Infinity, // max rank
 };
 
 /** Healing time in seconds per injury severity level. */
@@ -199,6 +201,7 @@ function _buildOffer(
     operative: 1.6,
     specialist: 2.4,
     veteran: 3.5,
+    director: 5.0,
   };
 
   return {
@@ -216,13 +219,21 @@ function _buildOffer(
 // Rank-up helpers
 // ─────────────────────────────────────────────
 
-export function canRankUp(agent: Agent): boolean {
+/**
+ * Returns true if the agent can rank up.
+ * For the Director rank, `currentDirectorCount` must be 0 — only 1 Director globally.
+ */
+export function canRankUp(agent: Agent, currentDirectorCount = 0): boolean {
   const currentIdx = RANK_ORDER.indexOf(agent.rank);
-  return currentIdx < RANK_ORDER.length - 1 && agent.xp >= agent.xpToNextRank;
+  if (currentIdx >= RANK_ORDER.length - 1) return false;
+  if (agent.xp < agent.xpToNextRank) return false;
+  const nextRank = RANK_ORDER[currentIdx + 1];
+  if (nextRank === 'director' && currentDirectorCount > 0) return false;
+  return true;
 }
 
-export function rankUp(agent: Agent): Agent {
-  if (!canRankUp(agent)) return agent;
+export function rankUp(agent: Agent, currentDirectorCount = 0): Agent {
+  if (!canRankUp(agent, currentDirectorCount)) return agent;
 
   const currentIdx = RANK_ORDER.indexOf(agent.rank);
   const newRank = RANK_ORDER[currentIdx + 1];
@@ -236,7 +247,9 @@ export function rankUp(agent: Agent): Agent {
     baseStats: newStats,
     stats: applyEquipmentBonuses(newStats, agent.equipment, newRank),
     nickname:
-      newRank === 'veteran' ? generateNickname(agent.id) : agent.nickname,
+      newRank === 'veteran' || newRank === 'director'
+        ? generateNickname(agent.id)
+        : agent.nickname,
   };
 }
 
@@ -256,6 +269,7 @@ const RANK_NUM: Record<AgentRank, number> = {
   operative: 1,
   specialist: 2,
   veteran: 3,
+  director: 4,
 };
 
 /** Recalculate effective stats by adding equipment bonuses on top of baseStats.

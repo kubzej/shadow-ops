@@ -20,6 +20,7 @@ export const RANK_LABEL: Record<AgentRank, string> = {
   operative: 'Agent',
   specialist: 'Specialista',
   veteran: 'Veterán',
+  director: 'Ředitel',
 };
 
 export const RANK_STARS: Record<AgentRank, number> = {
@@ -27,6 +28,7 @@ export const RANK_STARS: Record<AgentRank, number> = {
   operative: 2,
   specialist: 3,
   veteran: 4,
+  director: 5,
 };
 
 export const RANK_NUM: Record<AgentRank, number> = {
@@ -34,6 +36,7 @@ export const RANK_NUM: Record<AgentRank, number> = {
   operative: 1,
   specialist: 2,
   veteran: 3,
+  director: 4,
 };
 
 export const STATUS_META: Record<
