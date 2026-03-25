@@ -112,6 +112,7 @@ const CATEGORY_STAT_WEIGHTS: Record<
   finance: { stealth: 0.2, combat: 0.05, intel: 0.35, tech: 0.4 },
   logistics: { stealth: 0.3, combat: 0.2, intel: 0.25, tech: 0.25 },
   blackops: { stealth: 0.3, combat: 0.45, intel: 0.15, tech: 0.1 },
+  counter: { stealth: 0.25, combat: 0.25, intel: 0.3, tech: 0.2 },
 };
 
 // ─────────────────────────────────────────────

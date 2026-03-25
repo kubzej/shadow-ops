@@ -31,6 +31,11 @@ import {
   FLASH_MISSION_MIN_TIER,
   FLASH_MISSION_SHADOW_BONUS,
 } from '../engine/missionGenerator';
+import {
+  applyRivalOperation,
+  notifyRival,
+  RIVAL_EVENT_META,
+} from '../engine/rival';
 import { createRng } from '../utils/rng';
 import { useGameStore } from './gameStore';
 import { useUIStore } from './uiStore';
@@ -77,6 +82,7 @@ export interface CompletedMissionResult {
   }>;
   killedAgent?: { id: string; name: string };
   lostEquipment?: Array<{ id: string; name: string }>;
+  rivalOutcome?: { neutralized: boolean; eventLabel: string; summary: string };
 }
 
 interface MissionStore {
@@ -228,11 +234,18 @@ export const useMissionStore = create<MissionStore>()(
       equippedIds = [],
       approach = 'standard',
     ) => {
+      const regionForCost = await db.regions.get(mission.regionId);
+      const rivalLeakExtraCost =
+        regionForCost?.rivalLeakUntil &&
+        regionForCost.rivalLeakUntil > Date.now()
+          ? 3
+          : 0;
+      const effectiveIntelCost = (mission.intelCost ?? 0) + rivalLeakExtraCost;
+
       // Check intel affordability before touching DB
       if (
-        mission.intelCost &&
-        mission.intelCost > 0 &&
-        !useGameStore.getState().canAfford({ intel: mission.intelCost })
+        effectiveIntelCost > 0 &&
+        !useGameStore.getState().canAfford({ intel: effectiveIntelCost })
       ) {
         return;
       }
@@ -287,8 +300,8 @@ export const useMissionStore = create<MissionStore>()(
       );
 
       // Deduct intel only after DB transaction succeeded
-      if (mission.intelCost && mission.intelCost > 0) {
-        useGameStore.getState().spendCurrencies({ intel: mission.intelCost });
+      if (effectiveIntelCost > 0) {
+        useGameStore.getState().spendCurrencies({ intel: effectiveIntelCost });
       }
 
       // Update store
@@ -719,6 +732,46 @@ export const useMissionStore = create<MissionStore>()(
         gameStore.incrementStat('agents');
       }
 
+      let rivalOutcome: CompletedMissionResult['rivalOutcome'];
+
+      if (mission.isCounterOp && mission.rivalOperationId) {
+        const rival = useGameStore.getState().activeRivalOperation;
+        if (rival && rival.id === mission.rivalOperationId) {
+          const eventMeta = RIVAL_EVENT_META[rival.eventType];
+          if (result === 'success') {
+            rivalOutcome = {
+              neutralized: true,
+              eventLabel: eventMeta.label,
+              summary: 'Rival operace byla zablokována.',
+            };
+            useGameStore
+              .getState()
+              .setRivalOperation(
+                null,
+                useGameStore.getState().nextRivalOperationAt,
+              );
+            notifyRival(
+              'success',
+              'Counter-Op úspěšná. Rival operace byla zablokována.',
+            );
+          } else {
+            const summary = await applyRivalOperation(rival);
+            rivalOutcome = {
+              neutralized: false,
+              eventLabel: eventMeta.label,
+              summary,
+            };
+            useGameStore
+              .getState()
+              .setRivalOperation(
+                null,
+                useGameStore.getState().nextRivalOperationAt,
+              );
+            notifyRival('error', summary);
+          }
+        }
+      }
+
       const completedResult: CompletedMissionResult = {
         activeMission,
         mission,
@@ -730,6 +783,7 @@ export const useMissionStore = create<MissionStore>()(
         rankedUpAgents,
         killedAgent,
         lostEquipment,
+        rivalOutcome,
       };
 
       set((s) => {
@@ -822,6 +876,93 @@ export const useMissionStore = create<MissionStore>()(
           });
         }
 
+        // Resolve expired Counter-Ops and apply consequences
+        const expiredCounterMissions = await db.missions
+          .filter((m) => !!m.isCounterOp && !!m.expiresAt && m.expiresAt <= now)
+          .toArray();
+        for (const mission of expiredCounterMissions) {
+          const inProgress = await db.activeMissions
+            .filter((a) => a.missionId === mission.id && !a.collected)
+            .first();
+          if (inProgress) continue;
+
+          const region = await db.regions.get(mission.regionId);
+          if (region) {
+            const nextIds = region.availableMissionIds.filter(
+              (id) => id !== mission.id,
+            );
+            await db.regions.update(region.id, {
+              availableMissionIds: nextIds,
+            });
+          }
+
+          const sh = await db.safeHouses.get(mission.regionId);
+          if (sh && sh.modules.length > 0) {
+            const removed =
+              sh.modules[Math.floor(Math.random() * sh.modules.length)];
+            await db.safeHouses.update(sh.id, {
+              modules: sh.modules.filter((m) => m !== removed),
+            });
+            useUIStore
+              .getState()
+              .showToast(
+                'error',
+                `Counter-Op vypršela: ztracen modul ${removed}.`,
+              );
+          } else {
+            useUIStore
+              .getState()
+              .showToast(
+                'warning',
+                'Counter-Op vypršela: žádný modul ke ztrátě.',
+              );
+          }
+
+          if (mission.rivalOperationId) {
+            const rival = useGameStore.getState().activeRivalOperation;
+            if (rival && rival.id === mission.rivalOperationId) {
+              const summary = await applyRivalOperation(rival);
+              useGameStore
+                .getState()
+                .setRivalOperation(
+                  null,
+                  useGameStore.getState().nextRivalOperationAt,
+                );
+              notifyRival('error', summary);
+            }
+          }
+
+          await db.missions.delete(mission.id);
+        }
+
+        // Global cleanup for expired non-counter missions (incl. Flash/Quick)
+        // so they disappear even when region-specific checkExpirations is not running.
+        const expiredRegularMissions = await db.missions
+          .filter((m) => !m.isCounterOp && !!m.expiresAt && m.expiresAt <= now)
+          .toArray();
+        if (expiredRegularMissions.length > 0) {
+          const missionIdsInProgress = new Set(
+            (await db.activeMissions.filter((a) => !a.collected).toArray()).map(
+              (a) => a.missionId,
+            ),
+          );
+
+          for (const mission of expiredRegularMissions) {
+            // Keep mission definition while active mission is still running/collectable
+            if (missionIdsInProgress.has(mission.id)) continue;
+
+            const region = await db.regions.get(mission.regionId);
+            if (region) {
+              await db.regions.update(region.id, {
+                availableMissionIds: region.availableMissionIds.filter(
+                  (id) => id !== mission.id,
+                ),
+              });
+            }
+            await db.missions.delete(mission.id);
+          }
+        }
+
         // Flash Operation spawn (debounced to 30s)
         if (now - _lastFlashCheck >= 30_000) {
           _lastFlashCheck = now;
@@ -860,7 +1001,9 @@ export const useMissionStore = create<MissionStore>()(
       ) as Mission[];
 
       // Remove expired
-      const expired = missions.filter((m) => m.expiresAt && m.expiresAt < now);
+      const expired = missions.filter(
+        (m) => !m.isCounterOp && m.expiresAt && m.expiresAt < now,
+      );
       const valid = missions.filter((m) => !m.expiresAt || m.expiresAt >= now);
 
       if (expired.length > 0) {

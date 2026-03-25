@@ -1,5 +1,43 @@
 # Shadow Ops — Herní mechaniky
 
+## Aktualizace: Counter-Ops + Rival
+
+### Counter-Ops
+
+- Nová kategorie mise: `counter` (open, bez division locku).
+- Spawn pravidla:
+  - automaticky při `alertLevel >= 2.5` (pokud region nemá aktivní counter misi),
+  - nebo šance 10 % per tick při `alertLevel >= 2.0`.
+- Counter mise má dispatch window 20 minut (`expiresAt`).
+- Pokud vyprší:
+  - safe house ztratí 1 náhodný modul,
+  - pokud modul neexistuje, zobrazí se pouze toast.
+
+### Rival operations
+
+- Rival operace se plánují v intervalu 30–45 minut.
+- Cíl: náhodný owned region s `alertLevel >= 1.5`.
+- Rival operation je možné zablokovat Counter-Op misí:
+  - dispatch Counter-Op = rival event zůstává pending,
+  - success Counter-Op = rival event se neaplikuje,
+  - partial/failure/catastrophe/expiry = rival event se aplikuje.
+
+### Rival eventy (MVP)
+
+- `asset_compromise`: náhodný agent v regionu je degradován o 1 rank a dostane XP reset.
+- `intel_theft`: ztráta 15–30 intel (clamp na 0).
+- `sabotage`: náhodný modul je nefunkční 10 min.
+- `agent_recruitment`: nejslabší agent je ztracen (`dead`) a equipment mizí.
+- `disinformation`: alert v regionu +0.5 (cap 3.0).
+- `rival_leak`: dočasně +3 intel cost pro mise v regionu (15 min).
+- `burned_contracts`: dočasně horší recruitment kvalita v regionu (10 min).
+- `safe_house_swap`: náhodný available agent je přesunut do jiného owned safe housu.
+
+### Rival eskalace
+
+- `rivalAggressionLevel = floor(totalMissionsCompleted / 25)`.
+- Při levelu 3+ dostávají rescue mise +1 difficulty (max 5).
+
 ---
 
 ## Měny (4 typy)
@@ -266,7 +304,7 @@ intel = (15   + 6×distance   + country.baseAlertLevel×2)  × scaleMult
 
 Např. vzdálenost 1: 90s, vzdálenost 3: 150s, vzdálenost 5: 210s.
 
-Po dokončení výstavby: generuje se recruitment pool + 4 mise pro nový region.
+Po dokončení výstavby: generuje se recruitment pool + 6 misí pro nový region.
 
 ---
 

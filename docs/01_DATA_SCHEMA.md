@@ -2,6 +2,22 @@
 
 Všechny typy jsou definovány v `src/db/schema.ts`.
 
+## Aktualizace: Rival + Counter-Ops
+
+- `GameState` nově obsahuje rival stav:
+  - `rivalName?: string`
+  - `nextRivalOperationAt?: number`
+  - `activeRivalOperation?: ActiveRivalOperation`
+  - `rivalAggressionLevel?: number`
+- `SafeHouse` nově obsahuje `disabledModules?: Array<{ moduleId; until; reason: 'rival_sabotage' }>`
+- `RegionState` nově obsahuje časově omezené rival efekty:
+  - `rivalLeakUntil?: number`
+  - `burnedContractsUntil?: number`
+- `Mission` nově obsahuje:
+  - `isCounterOp?: boolean`
+  - `rivalOperationId?: string`
+- Přidán typ `RivalEventType` + `ActiveRivalOperation`.
+
 ---
 
 ## GameState (singleton, id = 1)

@@ -127,6 +127,8 @@ export default function MissionsScreen() {
   }
 
   const pendingResult = completedQueue[0] ?? null;
+  const counterMissions = availableMissions.filter((m) => m.isCounterOp);
+  const regularMissions = availableMissions.filter((m) => !m.isCounterOp);
 
   return (
     <div
@@ -206,7 +208,26 @@ export default function MissionsScreen() {
             </div>
           ) : (
             <div className="flex flex-col gap-3">
-              {availableMissions.map((m) => (
+              {counterMissions.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  <p
+                    className="text-[11px] font-medium tracking-widest uppercase"
+                    style={{ color: C.yellow }}
+                  >
+                    Counter-Ops ({counterMissions.length})
+                  </p>
+                  {counterMissions.map((m) => (
+                    <MissionCard
+                      key={m.id}
+                      mission={m}
+                      onStart={setSelectedMission}
+                      regionAgents={regionAgents}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {regularMissions.map((m) => (
                 <MissionCard
                   key={m.id}
                   mission={m}

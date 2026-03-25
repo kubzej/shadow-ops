@@ -149,7 +149,7 @@ Pool:      recruitment pool pro startovní safe house, 3 nabídky, refresh za 5 
 
 ```
 MIN_MISSIONS_PER_REGION        = 3
-MAX_MISSIONS_PER_REGION        = 4
+MAX_MISSIONS_PER_REGION        = 6
 MISSION_REGEN_INTERVAL_MS      = 20 min
 MISSION_EXPIRY_MS (diff≥3)     = 30 min × difficulty
 MISSION_EXPIRY_MS (diff<3)     = 4 hodiny

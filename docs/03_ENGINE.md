@@ -2,6 +2,42 @@
 
 Všechny výpočty jsou deterministické (seedovaný RNG přes `createRng()` z `src/utils/rng.ts`).
 
+## Aktualizace: Rival + Counter engine
+
+### missionGenerator.ts
+
+- Přidána `generateCounterOp(regionId, alertLevel, rivalOperationId?)`.
+- Přidána konstanta `COUNTER_OP_EXPIRY_MS = 20 min`.
+- Counter mise má `isCounterOp=true`, `category='counter'`, vlastní reward/penalty profil.
+
+### missionResolver.ts
+
+- `CATEGORY_STAT_WEIGHTS` rozšířeno o `counter`.
+
+### rival.ts (nové helpery)
+
+- `pickRivalEventType()`
+- `createRivalOperation(regionId, eventType)`
+- `nextRivalOperationAt(from)`
+- `applyRivalOperation(op)`
+
+`applyRivalOperation()` pokrývá:
+
+- asset compromise (demote + XP reset),
+- intel theft,
+- sabotage (dočasně nefunkční modul),
+- agent recruitment,
+- disinformation,
+- rival leak,
+- burned contracts,
+- safe house swap.
+
+### usePassiveIncome scheduler
+
+- Rival scheduler běží v 30s ticku.
+- Vytváří pending rival operation, generuje counter misi, aplikuje rival event při timeoutu.
+- Současně řeší auto-spawn counter misí podle alert thresholdů.
+
 ---
 
 ## missionResolver.ts

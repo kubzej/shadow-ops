@@ -10,14 +10,16 @@ import {
   Settings,
   X,
   Zap,
+  ShieldAlert,
 } from 'lucide-react';
 import { useGameStore } from '../store/gameStore';
 import { useUIStore } from '../store/uiStore';
 import { db, activateSlot } from '../db/db';
 import { loadGame } from '../engine/initializeGame';
 import { seedDemoDb } from '../demo/seed';
-import { C, cardBase, DIVISION_COLOR } from '../styles/tokens';
+import { C, cardBase, DIVISION_COLOR, btn } from '../styles/tokens';
 import { WORLD_EVENTS } from '../data/worldEvents';
+import { generateCounterOp } from '../engine/missionGenerator';
 
 // ─────────────────────────────────────────────
 // Exit demo helper
@@ -233,6 +235,9 @@ export default function DemoScreen() {
   const bossName = useGameStore((s) => s.bossName);
   const currencies = useGameStore((s) => s.currencies);
   const totalMissionsCompleted = useGameStore((s) => s.totalMissionsCompleted);
+  const rivalName = useGameStore((s) => s.rivalName);
+  const activeRivalOperation = useGameStore((s) => s.activeRivalOperation);
+  const rivalAggressionLevel = useGameStore((s) => s.rivalAggressionLevel);
 
   const [agentCount, setAgentCount] = useState(0);
   const [showDesign, setShowDesign] = useState(false);
@@ -245,6 +250,30 @@ export default function DemoScreen() {
       .count()
       .then(setAgentCount);
   }, []);
+
+  async function ensureCounterOpAndNavigate() {
+    if (!activeRivalOperation) return;
+    const region = await db.regions.get('amsterdam');
+    if (!region) return;
+    const existing = await db.missions
+      .where('regionId')
+      .equals('amsterdam')
+      .filter((m) => !!m.isCounterOp)
+      .toArray();
+    if (existing.length === 0) {
+      const counterOp = generateCounterOp(
+        'amsterdam',
+        1.2,
+        activeRivalOperation.id,
+      );
+      await db.missions.add(counterOp);
+      await db.regions.update('amsterdam', {
+        availableMissionIds: [...region.availableMissionIds, counterOp.id],
+      });
+    }
+    useUIStore.getState().selectRegion('amsterdam');
+    navigate('/missions');
+  }
 
   async function handleExit() {
     setExiting(true);
@@ -393,6 +422,49 @@ export default function DemoScreen() {
               </span>
               <span className="text-sm font-semibold">{agentCount}</span>
             </div>
+            <div
+              className="flex items-center justify-between pt-2"
+              style={{ borderTop: `1px solid ${C.borderSubtle}` }}
+            >
+              <span className="text-xs" style={{ color: C.textMuted }}>
+                Rival
+              </span>
+              <span className="text-sm font-semibold">{rivalName || '—'}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs" style={{ color: C.textMuted }}>
+                Rival aggro
+              </span>
+              <span className="text-sm font-semibold">
+                {rivalAggressionLevel}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs" style={{ color: C.textMuted }}>
+                Aktivní rival op
+              </span>
+              <span
+                className="text-xs font-semibold"
+                style={{ color: activeRivalOperation ? C.red : C.textMuted }}
+              >
+                {activeRivalOperation
+                  ? activeRivalOperation.eventType
+                  : 'Žádná'}
+              </span>
+            </div>
+            {activeRivalOperation && (
+              <button
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold mt-1"
+                style={btn.action(C.yellow)}
+                onClick={ensureCounterOpAndNavigate}
+              >
+                <div className="flex items-center gap-2">
+                  <ShieldAlert size={13} />
+                  <span>Zobrazit Counter-Op v Amsterdamu</span>
+                </div>
+                <span style={{ color: C.yellow }}>→</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -426,8 +498,10 @@ export default function DemoScreen() {
               '6 agentů v Londýně (volný, zraněný, na misi, plná výbava, veterán se serií, rank-up ready)',
               '4 agenti v Amsterdamu (specialist zraněný, agent zajat, veterán s výbavou, cestující)',
               'Berlin ve výstavbě',
-              'Záchranná mise aktivní',
+              'Záchranná mise aktivní (Londýn)',
               'Mise se dokončí za ~30s — spustí modal sbírání',
+              'Quick/Flash mise v Amsterdamu (časovač ~3.5 min)',
+              'Counter-Op mise v Amsterdamu (rival hrozba: Dezinformace)',
               'Všechny divize odemčeny',
             ].map((line, i) => (
               <div key={i} className="flex items-start gap-2">

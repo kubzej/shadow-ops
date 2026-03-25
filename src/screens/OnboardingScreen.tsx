@@ -43,6 +43,7 @@ export default function OnboardingScreen() {
 
   const [agencyName, setAgencyName] = useState('');
   const [bossName, setBossName] = useState('');
+  const [rivalName, setRivalName] = useState('NEXUS');
   const [logoId, setLogoId] = useState(DEFAULT_LOGO_ID);
   const [startCity, setStartCity] = useState<string | null>(null);
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
@@ -53,7 +54,8 @@ export default function OnboardingScreen() {
 
   // ── Validation ──────────────────────────────
   const nameValid = (v: string) => v.trim().length >= 2;
-  const step1Valid = nameValid(agencyName) && nameValid(bossName);
+  const step1Valid =
+    nameValid(agencyName) && nameValid(bossName) && nameValid(rivalName);
 
   // ── Submit ──────────────────────────────────
   async function handleStart() {
@@ -65,6 +67,7 @@ export default function OnboardingScreen() {
       await initializeGame(
         agencyName.trim(),
         bossName.trim(),
+        rivalName.trim(),
         startCity,
         logoId,
         slotId,
@@ -160,6 +163,32 @@ export default function OnboardingScreen() {
                 }}
               />
               {bossName.length > 0 && !nameValid(bossName) && (
+                <p className="text-xs mt-1" style={{ color: '#ef4444' }}>
+                  Minimálně 2 znaky
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label
+                className="block text-xs font-medium mb-2 tracking-widest uppercase"
+                style={{ color: '#888' }}
+              >
+                Jméno rival agentury
+              </label>
+              <input
+                type="text"
+                value={rivalName}
+                onChange={(e) => setRivalName(e.target.value)}
+                placeholder="např. NEXUS, CIPHER, HELIX..."
+                maxLength={32}
+                className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-colors"
+                style={{
+                  background: C.bgSurface,
+                  color: C.textPrimary,
+                }}
+              />
+              {rivalName.length > 0 && !nameValid(rivalName) && (
                 <p className="text-xs mt-1" style={{ color: '#ef4444' }}>
                   Minimálně 2 znaky
                 </p>
@@ -332,6 +361,7 @@ export default function OnboardingScreen() {
               </div>
               <Row label="Agentura" value={agencyName} />
               <Row label="Ředitel" value={bossName} />
+              <Row label="Rival" value={rivalName} />
               <Row
                 label="Základna"
                 value={START_CITIES.find((c) => c.id === startCity)?.name ?? ''}

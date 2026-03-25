@@ -2,6 +2,27 @@
 
 Všechny storyy používají **Zustand + immer**. Immer umožňuje mutovat stav přímo ve `set()`.
 
+## Aktualizace: Rival + Counter
+
+### gameStore
+
+- Přidaný rival state:
+  - `rivalName`
+  - `nextRivalOperationAt`
+  - `activeRivalOperation`
+  - `rivalAggressionLevel`
+- Přidaná akce: `setRivalOperation(op, nextAt?)`
+- `incrementMissionCompleted()` nyní zároveň přepočítává `rivalAggressionLevel`.
+
+### missionStore
+
+- `dispatch()` nově zohledňuje `rivalLeakUntil` (+3 intel cost v regionu).
+- `collectResult()` pro Counter-Op:
+  - success -> zruší pending rival operation,
+  - ne-success -> aplikuje pending rival operation.
+- `tickMissions()` řeší expirace Counter-Ops (ztráta modulu / toast).
+- `checkExpirations()` neodstraňuje Counter-Ops stejnou cestou jako běžné mise.
+
 ---
 
 ## gameStore.ts — `useGameStore`

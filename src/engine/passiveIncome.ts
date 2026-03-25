@@ -218,7 +218,14 @@ export function calculateSafeHouseIncome(
   });
 
   // Module bonuses
+  const now = Date.now();
+  const disabledModuleIds = new Set(
+    (safeHouse.disabledModules ?? [])
+      .filter((m) => m.until > now)
+      .map((m) => m.moduleId),
+  );
   for (const modId of safeHouse.modules) {
+    if (disabledModuleIds.has(modId)) continue;
     const effect = MODULE_INCOME_EFFECTS[modId];
     if (!effect) continue;
     income.money += effect.money;

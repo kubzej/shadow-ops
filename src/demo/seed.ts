@@ -4,9 +4,11 @@ import { createAgent, generateRecruitmentPool } from '../engine/agentGenerator';
 import {
   generateMissionsForRegion,
   generateFlashMission,
+  generateCounterOp,
 } from '../engine/missionGenerator';
 import type { DivisionId } from '../data/agentTypes';
 import type { Mission, ActiveMission } from '../db/schema';
+import { createRivalOperation } from '../engine/rival';
 
 export const DEMO_SLOT_ID = '__demo__';
 
@@ -35,6 +37,7 @@ export async function seedDemoDb(force = false): Promise<void> {
     await initializeGame(
       'PHANTOM NETWORK',
       'Director Wolf',
+      'NEXUS',
       'london',
       'eye',
       DEMO_SLOT_ID,
@@ -64,6 +67,12 @@ export async function seedDemoDb(force = false): Promise<void> {
       blackops: 1,
     };
 
+    const demoRivalOperation = createRivalOperation(
+      'amsterdam',
+      'disinformation',
+      now,
+    );
+
     await db.gameState.update(1, {
       money: 999999,
       intel: 9999,
@@ -81,6 +90,10 @@ export async function seedDemoDb(force = false): Promise<void> {
         expiresAt: now + 8 * 60 * 1000,
       },
       nextWorldEventAt: now + 8 * 60 * 1000 + 20 * 60 * 1000,
+      rivalName: 'NEXUS',
+      activeRivalOperation: demoRivalOperation,
+      nextRivalOperationAt: now + 35 * 60 * 1000,
+      rivalAggressionLevel: 3,
     });
 
     // ── 3. Upgrade London safe house ──────────────────────────────────────────
@@ -404,10 +417,18 @@ export async function seedDemoDb(force = false): Promise<void> {
     };
     await db.missions.add(demoFlashWithExpiry);
 
+    const demoCounter = generateCounterOp(
+      'amsterdam',
+      1.2,
+      demoRivalOperation.id,
+    );
+    await db.missions.add(demoCounter);
+
     await db.regions.update('amsterdam', {
       availableMissionIds: [
         ...amsterdamMissions.map((m) => m.id),
         demoFlashWithExpiry.id,
+        demoCounter.id,
       ],
     });
 

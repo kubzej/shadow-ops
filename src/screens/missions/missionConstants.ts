@@ -12,6 +12,7 @@ export const CATEGORY_META: Record<
   finance: { label: 'Finance', color: '#facc15', icon: '💰' },
   logistics: { label: 'Logistika', color: '#94a3b8', icon: '📦' },
   blackops: { label: 'Black Ops', color: '#f43f5e', icon: '🎯' },
+  counter: { label: 'Counter-Op', color: '#facc15', icon: '🛡' },
 };
 
 export const RESULT_META: Record<

@@ -1,5 +1,24 @@
 # Shadow Ops — Screens a UX flow
 
+## Aktualizace: Rival + Counter UX
+
+### MissionsScreen
+
+- Counter mise mají vlastní badge (`COUNTER-OP`) a časový limit.
+- Pokud je counter mise navázaná na pending rival operation, karta zobrazuje kontext "Rival hrozba".
+
+### SafeHouse tab
+
+- Sabotované moduly jsou v seznamu modulů označeny badge "Nefunkční" + countdown.
+- Nejde o odstranění modulu, pouze dočasné vyřazení efektu.
+
+### Toasty
+
+- Rival operation vytvořena
+- Counter-Op úspěšně zablokovala rival event
+- Rival event aplikován
+- Counter-Op vypršela (ztráta modulu / bez modulu)
+
 ---
 
 ## Navigace
@@ -41,12 +60,12 @@ Default route: `/` → redirect na `/map`.
 
 | Krok | Obsah                                                                                            |
 | ---- | ------------------------------------------------------------------------------------------------ |
-| 1    | Textové inputy: jméno agentury + jméno ředitele. Validace: neprázdné.                            |
+| 1    | Textové inputy: jméno agentury + jméno ředitele + jméno rival agentury. Validace: neprázdné.     |
 | 2    | Výběr loga ze 16 SVG variant (`orgLogos.ts`). Grid karet, highlight vybrané.                     |
 | 3    | Výběr startovního města z 11 možností. Každá karta: název, země, typ města.                      |
 | 4    | Shrnutí: název, logo, ředitel, město, startovní zdroje (1500$, 30◈). Tlačítko "Zahájit operaci". |
 
-Po potvrzení kroku 4: `initializeGame(agencyName, bossName, startCityId, logoId, slotId)` → store.loaded=true → appState='game'.
+Po potvrzení kroku 4: `initializeGame(agencyName, bossName, rivalName, startCityId, logoId, slotId)` → store.loaded=true → appState='game'.
 
 ---
 

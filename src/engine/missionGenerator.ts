@@ -31,10 +31,11 @@ const MIN_DURATION = 60;
 
 /** Minimum missions available per region. */
 export const MIN_MISSIONS_PER_REGION = 3;
-export const MAX_MISSIONS_PER_REGION = 4;
+export const MAX_MISSIONS_PER_REGION = 6;
 
 /** One new mission is added per region every this many ms (timed regen). */
 export const MISSION_REGEN_INTERVAL_MS = 20 * 60 * 1000; // 20 minutes
+export const COUNTER_OP_EXPIRY_MS = 20 * 60 * 1000;
 
 /** Default mission expiry: 30 minutes. */
 const MISSION_EXPIRY_MS = 30 * 60 * 1000;
@@ -63,6 +64,7 @@ const CATEGORY_PRIMARY_STAT: Record<MissionCategory, StatKey> = {
   finance: 'tech',
   logistics: 'intel',
   blackops: 'combat',
+  counter: 'intel',
 };
 
 /** Minimum primary-stat threshold per difficulty (0 = no requirement). */
@@ -575,7 +577,7 @@ export function generateFlashMission(
       ? pickRandom(flavorTemplates, rng)
       : '{target} v {region}.';
   const flavor = interpolateFlavor(flavorTemplate, target, regionId);
-  const title = `⚡ ${target.name} — ${region?.name ?? regionId}`;
+  const title = `${target.name} — ${region?.name ?? regionId}`;
 
   return {
     id: randomId(),
@@ -604,6 +606,59 @@ export function generateFlashMission(
     isRescue: false,
     isFlash: true,
     expiresAt: Date.now() + FLASH_MISSION_EXPIRY_MS,
+    createdAt: Date.now(),
+  };
+}
+
+// ─────────────────────────────────────────────
+// Counter-Op generation
+// ─────────────────────────────────────────────
+
+export function generateCounterOp(
+  regionId: string,
+  alertLevel: number,
+  rivalOperationId?: string,
+): Mission {
+  const region = REGION_MAP.get(regionId);
+  const difficulty = Math.min(5, Math.max(2, Math.round(alertLevel + 1.5))) as
+    | 2
+    | 3
+    | 4
+    | 5;
+  const baseSuccessChance = Math.max(0.15, 0.78 - (difficulty - 2) * 0.1);
+  const rewards: MissionRewards = {
+    money: Math.round(120 * difficulty),
+    intel: Math.round(6 + difficulty * 2),
+    shadow: Math.round(2 + difficulty),
+    influence: Math.round(3 + difficulty),
+    xp: 100 + difficulty * 20,
+  };
+
+  return {
+    id: randomId(),
+    regionId,
+    category: 'counter',
+    targetId: '__counter__',
+    title: `Rival Counter-Op — ${region?.name ?? regionId}`,
+    flavor:
+      'Rival připravuje operaci v regionu. Neutralizujte hrozbu dřív, než udeří.',
+    difficulty,
+    minAgents: 1,
+    maxAgents: 3,
+    baseSuccessChance,
+    baseDuration: BASE_DURATION[Math.min(5, difficulty + 1)] ?? 480,
+    rewards,
+    failurePenalty: {
+      money: -150,
+      intel: -4,
+      shadow: 0,
+      influence: -2,
+      xp: 15,
+    },
+    alertGain: 0.2,
+    isCounterOp: true,
+    rivalOperationId,
+    expiresAt: Date.now() + COUNTER_OP_EXPIRY_MS,
     createdAt: Date.now(),
   };
 }

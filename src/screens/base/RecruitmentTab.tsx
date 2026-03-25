@@ -49,10 +49,13 @@ export function RecruitmentTab() {
       if (pool.refreshesAt < now) {
         const sh = shs.find((s) => s.id === pool.safeHouseId);
         if (sh) {
+          const region = await db.regions.get(sh.id);
+          const burnedContractsActive =
+            !!region?.burnedContractsUntil && region.burnedContractsUntil > now;
           const newPool = generateRecruitmentPool(
             sh.id,
             unlockedDivisions as DivisionId[],
-            sh.level,
+            burnedContractsActive ? Math.max(1, sh.level - 1) : sh.level,
             3,
           );
           await db.recruitmentPools.put(newPool);
@@ -124,10 +127,14 @@ export function RecruitmentTab() {
     if (!spendCurrencies({ money: RECRUITMENT_REFRESH_COST.money })) return;
     const sh = safeHouses.find((s) => s.id === shId);
     if (!sh) return;
+    const region = await db.regions.get(sh.id);
+    const burnedContractsActive =
+      !!region?.burnedContractsUntil &&
+      region.burnedContractsUntil > Date.now();
     const p = generateRecruitmentPool(
       shId,
       unlockedDivisions as DivisionId[],
-      sh.level,
+      burnedContractsActive ? Math.max(1, sh.level - 1) : sh.level,
       3,
     );
     await db.recruitmentPools.put(p);

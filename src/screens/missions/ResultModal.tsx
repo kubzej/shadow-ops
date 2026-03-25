@@ -10,6 +10,8 @@ import {
   Star,
   XCircle,
   Zap,
+  ShieldCheck,
+  ShieldOff,
 } from 'lucide-react';
 import { C, modalSheet, modalOverlay } from '../../styles/tokens';
 import type { CompletedMissionResult } from '../../store/missionStore';
@@ -317,6 +319,42 @@ export function ResultModal({
               ))}
               <p className="text-xs" style={{ color: '#888' }}>
                 Prodáno za 30 % hodnoty.
+              </p>
+            </div>
+          )}
+
+          {/* Rival Counter-Op outcome */}
+          {result.rivalOutcome && (
+            <div
+              className="rounded-xl p-3 flex flex-col gap-2"
+              style={{
+                background: result.rivalOutcome.neutralized
+                  ? `${C.green}10`
+                  : `${C.red}10`,
+              }}
+            >
+              <div className="flex items-center gap-2">
+                {result.rivalOutcome.neutralized ? (
+                  <ShieldCheck size={14} color={C.green} />
+                ) : (
+                  <ShieldOff size={14} color={C.red} />
+                )}
+                <p
+                  className="text-xs font-medium tracking-widest uppercase"
+                  style={{
+                    color: result.rivalOutcome.neutralized ? C.green : C.red,
+                  }}
+                >
+                  {result.rivalOutcome.neutralized
+                    ? 'Rival neutralizován'
+                    : 'Rival akce provedena'}
+                </p>
+              </div>
+              <p className="text-xs" style={{ color: C.textSecondary }}>
+                {result.rivalOutcome.eventLabel}
+              </p>
+              <p className="text-xs" style={{ color: C.textMuted }}>
+                {result.rivalOutcome.summary}
               </p>
             </div>
           )}

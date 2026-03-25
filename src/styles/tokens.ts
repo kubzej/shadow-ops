@@ -158,6 +158,7 @@ export const CATEGORY_META: Record<
   finance: { label: 'Finance', color: C.divFinance, icon: '💰' },
   logistics: { label: 'Logistika', color: C.divLogistics, icon: '📦' },
   blackops: { label: 'Black Ops', color: C.rose, icon: '🎯' },
+  counter: { label: 'Counter-Op', color: C.yellow, icon: '🛡' },
 };
 
 // ─── VÝSLEDEK MISE ────────────────────────────────────────────────────────────

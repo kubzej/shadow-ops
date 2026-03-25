@@ -1,6 +1,25 @@
 import type { DivisionId, AgentRank } from '../data/agentTypes';
 import type { WorldEventId } from '../data/worldEvents';
 
+export type RivalEventType =
+  | 'asset_compromise'
+  | 'intel_theft'
+  | 'sabotage'
+  | 'agent_recruitment'
+  | 'disinformation'
+  | 'rival_leak'
+  | 'burned_contracts'
+  | 'safe_house_swap';
+
+export interface ActiveRivalOperation {
+  id: string;
+  regionId: string;
+  eventType: RivalEventType;
+  createdAt: number;
+  expiresAt: number;
+  blockedByCounterMissionId?: string;
+}
+
 // ============ CORE GAME STATE ============
 export interface GameState {
   id: 1; // singleton
@@ -30,6 +49,11 @@ export interface GameState {
   // World Events
   activeWorldEvent?: ActiveWorldEvent;
   nextWorldEventAt?: number;
+  // Rival
+  rivalName?: string;
+  nextRivalOperationAt?: number;
+  activeRivalOperation?: ActiveRivalOperation;
+  rivalAggressionLevel?: number;
 }
 
 // ============ SAFE HOUSE ============
@@ -45,6 +69,11 @@ export interface SafeHouse {
   upgradeCompletesAt?: number; // timestamp
   constructionInProgress?: boolean;
   constructionCompletesAt?: number; // timestamp (for new safe houses)
+  disabledModules?: Array<{
+    moduleId: string;
+    until: number;
+    reason: 'rival_sabotage';
+  }>;
   createdAt: number;
 }
 
@@ -115,6 +144,8 @@ export interface RegionState {
   missionTier?: number;
   /** Timestamp when the next Flash Operation should spawn for this region. */
   nextFlashMissionAt?: number;
+  rivalLeakUntil?: number;
+  burnedContractsUntil?: number;
 }
 
 // ============ MISSION ============
@@ -154,6 +185,8 @@ export interface Mission {
   isRescue?: boolean;
   capturedAgentId?: string; // set on rescue missions — agent to free on success/partial
   isFlash?: boolean; // Flash Operation — 5 min dispatch window, ×1.5 rewards + guaranteed shadow bonus
+  isCounterOp?: boolean;
+  rivalOperationId?: string;
   expiresAt?: number; // timestamp
   createdAt: number;
 }

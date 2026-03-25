@@ -542,6 +542,9 @@ export function SafeHouseTab() {
                   <div className="flex flex-col gap-1 mb-2">
                     {sh.modules.map((mId) => {
                       const mod = MODULE_CATALOG.find((m) => m.id === mId);
+                      const disabledUntil = (sh.disabledModules ?? []).find(
+                        (m) => m.moduleId === mId && m.until > Date.now(),
+                      )?.until;
                       const isConfirming =
                         confirmDemolish?.shId === sh.id &&
                         confirmDemolish?.moduleId === mId;
@@ -572,6 +575,24 @@ export function SafeHouseTab() {
                             >
                               {mod?.name ?? mId}
                             </span>
+                            {disabledUntil && (
+                              <span
+                                className="text-[10px] inline-flex items-center px-1.5 py-0.5 rounded mt-0.5"
+                                style={{
+                                  background: `${C.divExtraction}22`,
+                                  color: C.divExtraction,
+                                }}
+                              >
+                                Nefunkční ~
+                                {Math.max(
+                                  1,
+                                  Math.ceil(
+                                    (disabledUntil - Date.now()) / 60000,
+                                  ),
+                                )}{' '}
+                                min
+                              </span>
+                            )}
                             {mod?.description && (
                               <span
                                 className="text-[10px] block"

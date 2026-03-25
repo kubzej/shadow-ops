@@ -16,7 +16,7 @@ import type { Agent, AgentStats } from '../db/schema';
 import { randomId } from '../utils/rng';
 import { EQUIPMENT_CATALOG } from '../data/equipmentCatalog';
 
-const RANK_ORDER: AgentRank[] = [
+export const RANK_ORDER: AgentRank[] = [
   'recruit',
   'operative',
   'specialist',
@@ -237,6 +237,17 @@ export function rankUp(agent: Agent): Agent {
     stats: applyEquipmentBonuses(newStats, agent.equipment, newRank),
     nickname:
       newRank === 'veteran' ? generateNickname(agent.id) : agent.nickname,
+  };
+}
+
+export function demoteRank(agent: Agent): Agent {
+  const currentIdx = RANK_ORDER.indexOf(agent.rank);
+  const newRank = currentIdx > 0 ? RANK_ORDER[currentIdx - 1] : 'recruit';
+  return {
+    ...agent,
+    rank: newRank,
+    xp: 0,
+    xpToNextRank: XP_TO_RANK[newRank],
   };
 }
 

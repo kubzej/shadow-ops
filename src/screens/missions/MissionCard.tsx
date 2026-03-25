@@ -12,7 +12,6 @@ import {
   Users,
   Zap,
   ChevronRight,
-  Ban,
 } from 'lucide-react';
 import { C, cardBase } from '../../styles/tokens';
 import type { Agent, Mission } from '../../db/schema';
@@ -28,7 +27,7 @@ import {
   isCategoryBlockedByEvent,
   getEventDef,
 } from '../../engine/worldEvents';
-import { WORLD_EVENTS } from '../../data/worldEvents';
+import { RIVAL_EVENT_META } from '../../engine/rival';
 
 export function MissionCard({
   mission,
@@ -42,9 +41,16 @@ export function MissionCard({
   const meta = CATEGORY_META[mission.category] ?? CATEGORY_META.surveillance;
   const isLocked = !!mission.lockedByDivision;
   const activeWorldEvent = useGameStore((s) => s.activeWorldEvent);
+  const activeRivalOperation = useGameStore((s) => s.activeRivalOperation);
   const isEventBlocked =
     !isLocked && isCategoryBlockedByEvent(mission.category, activeWorldEvent);
   const eventDef = getEventDef(activeWorldEvent);
+  const linkedRivalEvent =
+    mission.isCounterOp &&
+    mission.rivalOperationId &&
+    activeRivalOperation?.id === mission.rivalOperationId
+      ? RIVAL_EVENT_META[activeRivalOperation.eventType]
+      : null;
 
   // Build reward modifier label for this mission's category
   let eventRewardLabel: string | null = null;
@@ -99,12 +105,55 @@ export function MissionCard({
             <div
               className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded mb-1"
               style={{
-                background: '#ef444422',
-                color: '#ef4444',
+                background: `${C.red}22`,
+                color: C.red,
               }}
             >
               🚨 ZÁCHRANNÁ MISE
             </div>
+          )}
+          {mission.isFlash && (
+            <div
+              className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded mb-1 ml-1"
+              style={{
+                background: `${C.yellow}22`,
+                color: C.yellow,
+              }}
+            >
+              <Zap size={9} />
+              QUICK MISE
+            </div>
+          )}
+          {mission.isCounterOp && (
+            <div
+              className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded mb-1"
+              style={{
+                background: `${C.yellow}22`,
+                color: C.yellow,
+              }}
+            >
+              🛡 COUNTER-OP
+            </div>
+          )}
+          {mission.isCounterOp && mission.rivalOperationId && (
+            <div
+              className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded mb-1 ml-1"
+              style={{
+                background: `${C.divExtraction}22`,
+                color: C.divExtraction,
+              }}
+            >
+              Rival hrozba
+              {linkedRivalEvent ? `: ${linkedRivalEvent.label}` : ''}
+            </div>
+          )}
+          {linkedRivalEvent && (
+            <p
+              className="text-[11px] mt-0.5"
+              style={{ color: C.textSecondary }}
+            >
+              {linkedRivalEvent.description}
+            </p>
           )}
           <p
             className="text-sm font-medium leading-tight"

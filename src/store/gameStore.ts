@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import type { DivisionId } from '../data/agentTypes';
-import type { ActiveWorldEvent } from '../db/schema';
+import type { ActiveRivalOperation, ActiveWorldEvent } from '../db/schema';
 import { db } from '../db/db';
 import { metaDb } from '../db/saveSlots';
 
@@ -43,6 +43,12 @@ interface GameStore {
   activeWorldEvent: ActiveWorldEvent | null;
   nextWorldEventAt: number;
 
+  // ── Rival ─────────────────────────────────────
+  rivalName: string;
+  nextRivalOperationAt: number;
+  activeRivalOperation: ActiveRivalOperation | null;
+  rivalAggressionLevel: number;
+
   // ── Actions ───────────────────────────────────
   setLoaded: (meta: {
     agencyName: string;
@@ -61,6 +67,10 @@ interface GameStore {
     totalExpansions: number;
     activeWorldEvent?: ActiveWorldEvent | null;
     nextWorldEventAt?: number;
+    rivalName?: string;
+    nextRivalOperationAt?: number;
+    activeRivalOperation?: ActiveRivalOperation | null;
+    rivalAggressionLevel?: number;
   }) => void;
 
   addCurrencies: (delta: Partial<Currencies>) => void;
@@ -77,6 +87,7 @@ interface GameStore {
   getPlayTimeSecs: () => number;
   /** Set (or clear) the active world event and optionally schedule the next one. */
   setWorldEvent: (event: ActiveWorldEvent | null, nextAt?: number) => void;
+  setRivalOperation: (op: ActiveRivalOperation | null, nextAt?: number) => void;
   reset: () => void;
   _persist: () => void;
 }
@@ -100,6 +111,10 @@ export const useGameStore = create<GameStore>()(
     totalExpansions: 0,
     activeWorldEvent: null,
     nextWorldEventAt: 0,
+    rivalName: '',
+    nextRivalOperationAt: 0,
+    activeRivalOperation: null,
+    rivalAggressionLevel: 0,
 
     // ── Actions ────────────────────────────────
     setLoaded: (meta) =>
@@ -120,6 +135,12 @@ export const useGameStore = create<GameStore>()(
         state.totalExpansions = meta.totalExpansions;
         state.activeWorldEvent = meta.activeWorldEvent ?? null;
         state.nextWorldEventAt = meta.nextWorldEventAt ?? 0;
+        state.rivalName = meta.rivalName ?? '';
+        state.nextRivalOperationAt = meta.nextRivalOperationAt ?? 0;
+        state.activeRivalOperation = meta.activeRivalOperation ?? null;
+        state.rivalAggressionLevel =
+          meta.rivalAggressionLevel ??
+          Math.floor((meta.totalMissionsCompleted ?? 0) / 25);
         // Reset session tracking for this load
         _loadedPlayTime = meta.totalPlayTime ?? 0;
         _sessionStartedAt = Date.now();
@@ -208,6 +229,9 @@ export const useGameStore = create<GameStore>()(
     incrementMissionCompleted: () => {
       set((state) => {
         state.totalMissionsCompleted++;
+        state.rivalAggressionLevel = Math.floor(
+          state.totalMissionsCompleted / 25,
+        );
       });
       get()._persist();
     },
@@ -231,12 +255,23 @@ export const useGameStore = create<GameStore>()(
         state.totalExpansions = 0;
         state.activeWorldEvent = null;
         state.nextWorldEventAt = 0;
+        state.rivalName = '';
+        state.nextRivalOperationAt = 0;
+        state.activeRivalOperation = null;
+        state.rivalAggressionLevel = 0;
       });
     },
     setWorldEvent: (event, nextAt) => {
       set((state) => {
         state.activeWorldEvent = event;
         if (nextAt !== undefined) state.nextWorldEventAt = nextAt;
+      });
+      get()._persist();
+    },
+    setRivalOperation: (op, nextAt) => {
+      set((state) => {
+        state.activeRivalOperation = op;
+        if (nextAt !== undefined) state.nextRivalOperationAt = nextAt;
       });
       get()._persist();
     },
@@ -266,6 +301,10 @@ export const useGameStore = create<GameStore>()(
         totalExpansions: s.totalExpansions,
         activeWorldEvent: s.activeWorldEvent ?? undefined,
         nextWorldEventAt: s.nextWorldEventAt,
+        rivalName: s.rivalName,
+        nextRivalOperationAt: s.nextRivalOperationAt,
+        activeRivalOperation: s.activeRivalOperation ?? undefined,
+        rivalAggressionLevel: s.rivalAggressionLevel,
       });
       // Keep meta snapshot in sync for the slot picker display
       const slotId = localStorage.getItem('shadow-ops-active-slot');
