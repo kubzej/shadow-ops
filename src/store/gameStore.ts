@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import type { DivisionId } from '../data/agentTypes';
+import type { ActiveWorldEvent } from '../db/schema';
 import { db } from '../db/db';
 import { metaDb } from '../db/saveSlots';
 
@@ -38,6 +39,10 @@ interface GameStore {
   totalAgentsLost: number;
   totalExpansions: number;
 
+  // ── World Events ──────────────────────────────
+  activeWorldEvent: ActiveWorldEvent | null;
+  nextWorldEventAt: number;
+
   // ── Actions ───────────────────────────────────
   setLoaded: (meta: {
     agencyName: string;
@@ -54,6 +59,8 @@ interface GameStore {
     totalMissionsAttempted: number;
     totalAgentsLost: number;
     totalExpansions: number;
+    activeWorldEvent?: ActiveWorldEvent | null;
+    nextWorldEventAt?: number;
   }) => void;
 
   addCurrencies: (delta: Partial<Currencies>) => void;
@@ -68,6 +75,8 @@ interface GameStore {
   incrementMissionAttempted: () => void;
   incrementMissionCompleted: () => void;
   getPlayTimeSecs: () => number;
+  /** Set (or clear) the active world event and optionally schedule the next one. */
+  setWorldEvent: (event: ActiveWorldEvent | null, nextAt?: number) => void;
   reset: () => void;
   _persist: () => void;
 }
@@ -89,6 +98,8 @@ export const useGameStore = create<GameStore>()(
     totalMissionsAttempted: 0,
     totalAgentsLost: 0,
     totalExpansions: 0,
+    activeWorldEvent: null,
+    nextWorldEventAt: 0,
 
     // ── Actions ────────────────────────────────
     setLoaded: (meta) =>
@@ -107,6 +118,8 @@ export const useGameStore = create<GameStore>()(
         state.totalMissionsAttempted = meta.totalMissionsAttempted;
         state.totalAgentsLost = meta.totalAgentsLost;
         state.totalExpansions = meta.totalExpansions;
+        state.activeWorldEvent = meta.activeWorldEvent ?? null;
+        state.nextWorldEventAt = meta.nextWorldEventAt ?? 0;
         // Reset session tracking for this load
         _loadedPlayTime = meta.totalPlayTime ?? 0;
         _sessionStartedAt = Date.now();
@@ -216,7 +229,16 @@ export const useGameStore = create<GameStore>()(
         state.totalMissionsAttempted = 0;
         state.totalAgentsLost = 0;
         state.totalExpansions = 0;
+        state.activeWorldEvent = null;
+        state.nextWorldEventAt = 0;
       });
+    },
+    setWorldEvent: (event, nextAt) => {
+      set((state) => {
+        state.activeWorldEvent = event;
+        if (nextAt !== undefined) state.nextWorldEventAt = nextAt;
+      });
+      get()._persist();
     },
     _persist: () => {
       const s = get();
@@ -242,6 +264,8 @@ export const useGameStore = create<GameStore>()(
         totalMissionsAttempted: s.totalMissionsAttempted,
         totalAgentsLost: s.totalAgentsLost,
         totalExpansions: s.totalExpansions,
+        activeWorldEvent: s.activeWorldEvent ?? undefined,
+        nextWorldEventAt: s.nextWorldEventAt,
       });
       // Keep meta snapshot in sync for the slot picker display
       const slotId = localStorage.getItem('shadow-ops-active-slot');

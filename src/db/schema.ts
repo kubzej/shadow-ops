@@ -1,4 +1,5 @@
 import type { DivisionId, AgentRank } from '../data/agentTypes';
+import type { WorldEventId } from '../data/worldEvents';
 
 // ============ CORE GAME STATE ============
 export interface GameState {
@@ -26,6 +27,9 @@ export interface GameState {
   totalMissionsAttempted: number;
   totalAgentsLost: number;
   totalExpansions: number;
+  // World Events
+  activeWorldEvent?: ActiveWorldEvent;
+  nextWorldEventAt?: number;
 }
 
 // ============ SAFE HOUSE ============
@@ -198,6 +202,13 @@ export interface BlackMarket {
   id: 1;
   listings: BlackMarketListing[];
   refreshesAt: number;
+}
+
+// ============ WORLD EVENTS ============
+export interface ActiveWorldEvent {
+  eventId: WorldEventId;
+  startedAt: number;
+  expiresAt: number;
 }
 
 // ============ MISSION LOG ============

@@ -34,6 +34,13 @@ import {
 import { createRng } from '../utils/rng';
 import { useGameStore } from './gameStore';
 import { useUIStore } from './uiStore';
+import {
+  applyEventRewards,
+  getEventAlertGainMult,
+  getEventSuccessChancePenalty,
+  isCategoryBlockedByEvent,
+  getEventDef,
+} from '../engine/worldEvents';
 import { randomId } from '../utils/rng';
 import { EQUIPMENT_CATALOG } from '../data/equipmentCatalog';
 
@@ -230,6 +237,19 @@ export const useMissionStore = create<MissionStore>()(
         return;
       }
 
+      // Check if a world event is blocking this mission category
+      const currentEvent = useGameStore.getState().activeWorldEvent;
+      if (isCategoryBlockedByEvent(mission.category, currentEvent)) {
+        const eventDef = getEventDef(currentEvent);
+        useUIStore
+          .getState()
+          .showToast(
+            'warning',
+            `${eventDef?.name ?? 'Globální událost'}: kategorie mise není dostupná`,
+          );
+        return;
+      }
+
       // Read current alert level for the region before dispatching
       const region = await db.regions.get(mission.regionId);
       const alertLevel = region?.alertLevel ?? 0;
@@ -292,10 +312,33 @@ export const useMissionStore = create<MissionStore>()(
       const mission = await db.missions.get(activeMission.missionId);
       if (!mission) return null;
 
-      const { result, rewards, alertGain } = resolveMission(
-        activeMission,
-        mission,
+      // Apply world event modifiers
+      const activeEvent = useGameStore.getState().activeWorldEvent;
+      const scPenalty = getEventSuccessChancePenalty(activeEvent);
+      const missionToResolve =
+        scPenalty > 0
+          ? {
+              ...activeMission,
+              successChance: Math.max(
+                0.05,
+                activeMission.successChance - scPenalty,
+              ),
+            }
+          : activeMission;
+
+      const {
+        result,
+        rewards: rawRewards,
+        alertGain: rawAlertGain,
+      } = resolveMission(missionToResolve, mission);
+
+      // Apply event reward multipliers and alert gain multiplier
+      const rewards = applyEventRewards(
+        rawRewards,
+        mission.category,
+        activeEvent,
       );
+      const alertGain = rawAlertGain * getEventAlertGainMult(activeEvent);
 
       // Fetch agents — if none found (DB corruption), abort to avoid stuck on_mission state
       const agents = (await db.agents.bulkGet(activeMission.agentIds)).filter(

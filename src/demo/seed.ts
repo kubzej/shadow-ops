@@ -74,6 +74,13 @@ export async function seedDemoDb(force = false): Promise<void> {
       divisionLevels,
       totalMissionsCompleted: 47,
       totalMissionsAttempted: 55,
+      // Demo: start with Media Frenzy active so the CurrenciesBar badge is visible
+      activeWorldEvent: {
+        eventId: 'media_frenzy',
+        startedAt: now,
+        expiresAt: now + 8 * 60 * 1000,
+      },
+      nextWorldEventAt: now + 8 * 60 * 1000 + 20 * 60 * 1000,
     });
 
     // ── 3. Upgrade London safe house ──────────────────────────────────────────

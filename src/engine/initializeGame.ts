@@ -210,6 +210,8 @@ export async function loadGame(): Promise<boolean> {
     totalMissionsAttempted: state.totalMissionsAttempted,
     totalAgentsLost: state.totalAgentsLost,
     totalExpansions: state.totalExpansions,
+    activeWorldEvent: state.activeWorldEvent ?? null,
+    nextWorldEventAt: state.nextWorldEventAt ?? 0,
   });
 
   return true;

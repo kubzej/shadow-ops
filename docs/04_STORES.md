@@ -29,27 +29,32 @@ interface GameStore {
   totalMissionsAttempted: number;
   totalAgentsLost: number;
   totalExpansions: number;
+
+  // World Events
+  activeWorldEvent: ActiveWorldEvent | null; // null = žádný aktivní event
+  nextWorldEventAt: number; // timestamp; 0 = než inic. (první event běží za 5 min)
 }
 ```
 
 ### Akce
 
-| Akce                          | Popis                                                                        |
-| ----------------------------- | ---------------------------------------------------------------------------- |
-| `setLoaded(meta)`             | Naplní store daty z DB, resetuje session tracking                            |
-| `addCurrencies(delta)`        | Přičte delta ke každé měně (floor 0), volá `_persist()`                      |
-| `spendCurrencies(cost)`       | Odečte cost pokud canAfford(), vrátí boolean, volá `_persist()`              |
-| `canAfford(cost)`             | Ověří bez mutace                                                             |
-| `unlockDivision(id)`          | Přidá do unlockedDivisions, nastaví divisionLevels[id]=1                     |
-| `upgradeDivision(id)`         | Incrementuje divisionLevels[id] (max 3)                                      |
-| `unlockBlackMarket()`         | Nastaví blackMarketUnlocked=true                                             |
-| `incrementStat('agents')`     | totalAgentsLost++                                                            |
-| `incrementStat('expansions')` | totalExpansions++                                                            |
-| `incrementMissionAttempted()` | totalMissionsAttempted++                                                     |
-| `incrementMissionCompleted()` | totalMissionsCompleted++                                                     |
-| `getPlayTimeSecs()`           | `_loadedPlayTime + (now - _sessionStartedAt) / 1000` (session-level counter) |
-| `reset()`                     | Vynuluje všechen state (pro novou hru / slot switch)                         |
-| `_persist()`                  | Uloží do `db.gameState` + aktualizuje `metaDb.slots` snapshot                |
+| Akce                            | Popis                                                                                              |
+| ------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `setLoaded(meta)`               | Naplní store daty z DB, resetuje session tracking                                                  |
+| `addCurrencies(delta)`          | Přičte delta ke každé měně (floor 0), volá `_persist()`                                            |
+| `spendCurrencies(cost)`         | Odečte cost pokud canAfford(), vrátí boolean, volá `_persist()`                                    |
+| `canAfford(cost)`               | Ověří bez mutace                                                                                   |
+| `unlockDivision(id)`            | Přidá do unlockedDivisions, nastaví divisionLevels[id]=1                                           |
+| `upgradeDivision(id)`           | Incrementuje divisionLevels[id] (max 3)                                                            |
+| `unlockBlackMarket()`           | Nastaví blackMarketUnlocked=true                                                                   |
+| `incrementStat('agents')`       | totalAgentsLost++                                                                                  |
+| `incrementStat('expansions')`   | totalExpansions++                                                                                  |
+| `incrementMissionAttempted()`   | totalMissionsAttempted++                                                                           |
+| `incrementMissionCompleted()`   | totalMissionsCompleted++                                                                           |
+| `getPlayTimeSecs()`             | `_loadedPlayTime + (now - _sessionStartedAt) / 1000` (session-level counter)                       |
+| `setWorldEvent(event, nextAt?)` | Nastaví nebo vymaže aktivní event; volitelně plánuje další (`nextWorldEventAt`); volá `_persist()` |
+| `reset()`                       | Vynuluje všechen state (pro novou hru / slot switch)                                               |
+| `_persist()`                    | Uloží do `db.gameState` + aktualizuje `metaDb.slots` snapshot                                      |
 
 ### `_persist()` detail
 

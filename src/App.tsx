@@ -203,7 +203,7 @@ function ToastContainer() {
   return (
     <div
       className="fixed left-0 right-0 flex flex-col gap-1.5 pointer-events-none"
-      style={{ bottom: '4.5rem', zIndex: 100, padding: '0 12px' }}
+      style={{ top: '4.5rem', zIndex: 100, padding: '0 12px' }}
     >
       {toasts.map((t) => (
         <div

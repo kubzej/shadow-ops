@@ -12,6 +12,7 @@ import {
   Users,
   Zap,
   ChevronRight,
+  Ban,
 } from 'lucide-react';
 import { C, cardBase } from '../../styles/tokens';
 import type { Agent, Mission } from '../../db/schema';
@@ -22,6 +23,12 @@ import { formatDuration } from '../../hooks/useMissionTimer';
 import { CATEGORY_META, STAT_LABELS } from './missionConstants';
 import { Countdown, FlashCountdown } from './Countdown';
 import { difficultyDots, rewardLine } from './missionHelpers';
+import { useGameStore } from '../../store/gameStore';
+import {
+  isCategoryBlockedByEvent,
+  getEventDef,
+} from '../../engine/worldEvents';
+import { WORLD_EVENTS } from '../../data/worldEvents';
 
 export function MissionCard({
   mission,
@@ -34,17 +41,49 @@ export function MissionCard({
 }) {
   const meta = CATEGORY_META[mission.category] ?? CATEGORY_META.surveillance;
   const isLocked = !!mission.lockedByDivision;
+  const activeWorldEvent = useGameStore((s) => s.activeWorldEvent);
+  const isEventBlocked =
+    !isLocked && isCategoryBlockedByEvent(mission.category, activeWorldEvent);
+  const eventDef = getEventDef(activeWorldEvent);
+
+  // Build reward modifier label for this mission's category
+  let eventRewardLabel: string | null = null;
+  if (eventDef && activeWorldEvent) {
+    if (eventDef.influenceRewardMult !== undefined)
+      eventRewardLabel = `Vliv ×${eventDef.influenceRewardMult}`;
+    else if (eventDef.intelRewardMult !== undefined)
+      eventRewardLabel = `Intel ×${eventDef.intelRewardMult}`;
+    else if (eventDef.moneyRewardMult !== undefined)
+      eventRewardLabel = `Peníze ×${eventDef.moneyRewardMult}`;
+    else if (
+      eventDef.financeRewardMult !== undefined &&
+      mission.category === 'finance'
+    )
+      eventRewardLabel = `Finance ×${eventDef.financeRewardMult}`;
+    else if (
+      eventDef.armsDealShadowMult !== undefined &&
+      (mission.category === 'extraction' || mission.category === 'blackops')
+    )
+      eventRewardLabel = `Shadow ×${eventDef.armsDealShadowMult}`;
+    else if (eventDef.allRewardsMult !== undefined)
+      eventRewardLabel = `Odměny ×${eventDef.allRewardsMult}`;
+    else if (eventDef.successChancePenalty !== undefined)
+      eventRewardLabel = `Úspěch −${Math.round(eventDef.successChancePenalty * 100)} %`;
+    else if (eventDef.alertGainMult !== undefined)
+      eventRewardLabel = `Alert ×${eventDef.alertGainMult}`;
+  }
+
   const eligibleCount = regionAgents.filter(
     (a) =>
       a.status === 'available' && checkAgentEligibility(a, mission).eligible,
   ).length;
   const freeCount = regionAgents.filter((a) => a.status === 'available').length;
-  const canStart = !isLocked && eligibleCount > 0;
+  const canStart = !isLocked && !isEventBlocked && eligibleCount > 0;
 
   return (
     <div
       className="rounded-xl p-3 flex flex-col gap-2.5"
-      style={{ ...cardBase, opacity: isLocked ? 0.6 : 1 }}
+      style={{ ...cardBase, opacity: isLocked || isEventBlocked ? 0.7 : 1 }}
     >
       {/* Top row */}
       <div className="flex items-start gap-2">
@@ -200,6 +239,20 @@ export function MissionCard({
           ) : null;
         })()}
 
+      {/* Event reward badge */}
+      {eventRewardLabel && !isEventBlocked && (
+        <div
+          className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded self-start"
+          style={{
+            background: `${eventDef!.positive ? C.green : C.red}18`,
+            color: eventDef!.positive ? C.green : C.red,
+          }}
+        >
+          <Zap size={9} />
+          {eventRewardLabel}
+        </div>
+      )}
+
       {/* Flash expiry */}
       {mission.isFlash && mission.expiresAt && (
         <div
@@ -223,7 +276,18 @@ export function MissionCard({
       )}
 
       {/* Start button */}
-      {isLocked ? (
+      {isEventBlocked ? (
+        <div
+          className="w-full py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5"
+          style={{ background: C.bgSurface2, color: '#888' }}
+        >
+          <Lock size={12} />
+          Blokováno:{' '}
+          <span style={{ color: '#aaa', fontWeight: 600 }}>
+            {eventDef?.name ?? 'Globální událost'}
+          </span>
+        </div>
+      ) : isLocked ? (
         <div
           className="w-full py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5"
           style={{ background: C.bgSurface2, color: '#888' }}

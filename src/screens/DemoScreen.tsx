@@ -9,6 +9,7 @@ import {
   Building2,
   Settings,
   X,
+  Zap,
 } from 'lucide-react';
 import { useGameStore } from '../store/gameStore';
 import { useUIStore } from '../store/uiStore';
@@ -16,6 +17,7 @@ import { db, activateSlot } from '../db/db';
 import { loadGame } from '../engine/initializeGame';
 import { seedDemoDb } from '../demo/seed';
 import { C, cardBase, DIVISION_COLOR } from '../styles/tokens';
+import { WORLD_EVENTS } from '../data/worldEvents';
 
 // ─────────────────────────────────────────────
 // Exit demo helper
@@ -114,6 +116,110 @@ function StatusBadge({ status }: { status: string }) {
     >
       {STATUS_LABELS[status] ?? status}
     </span>
+  );
+}
+
+// ─────────────────────────────────────────────
+// World Event Controls
+// ─────────────────────────────────────────────
+
+function WorldEventControls() {
+  const activeWorldEvent = useGameStore((s) => s.activeWorldEvent);
+  const setWorldEvent = useGameStore((s) => s.setWorldEvent);
+  const now = Date.now();
+
+  function activateEvent(eventId: string) {
+    const def = WORLD_EVENTS.find((e) => e.id === eventId);
+    if (!def) return;
+    setWorldEvent(
+      { eventId: def.id, startedAt: now, expiresAt: now + def.durationMs },
+      now + def.durationMs + 20 * 60 * 1000,
+    );
+  }
+
+  return (
+    <div>
+      <p
+        className="text-xs font-medium tracking-widest uppercase mb-3"
+        style={{ color: C.textSecondary }}
+      >
+        Globální události
+      </p>
+      <div className="rounded-xl p-3 flex flex-col gap-2" style={cardBase}>
+        {/* Active event info */}
+        {activeWorldEvent ? (
+          <div
+            className="flex items-center justify-between px-2 py-1.5 rounded-lg"
+            style={{
+              background: `${C.green}14`,
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <Zap size={12} color={C.green} />
+              <span
+                className="text-xs font-semibold"
+                style={{ color: C.green }}
+              >
+                {WORLD_EVENTS.find((e) => e.id === activeWorldEvent.eventId)
+                  ?.name ?? activeWorldEvent.eventId}
+              </span>
+            </div>
+            <button
+              className="text-xs px-2 py-0.5 rounded-md"
+              style={{
+                background: `${C.red}18`,
+                color: C.red,
+                cursor: 'pointer',
+              }}
+              onClick={() => setWorldEvent(null, Date.now())}
+            >
+              Ukončit
+            </button>
+          </div>
+        ) : (
+          <p className="text-xs px-2" style={{ color: C.textMuted }}>
+            Žádná aktivní událost
+          </p>
+        )}
+        {/* Event buttons */}
+        <div className="grid grid-cols-2 gap-1.5">
+          {WORLD_EVENTS.map((def) => {
+            const isActive = activeWorldEvent?.eventId === def.id;
+            const color = def.positive ? C.green : C.red;
+            return (
+              <button
+                key={def.id}
+                disabled={isActive}
+                className="text-left px-2.5 py-2 rounded-lg"
+                style={{
+                  background: isActive ? `${color}20` : C.bgSurface2,
+                  color: isActive ? color : C.textSecondary,
+                  cursor: isActive ? 'default' : 'pointer',
+                  border: `1px solid ${isActive ? color : 'transparent'}30`,
+                }}
+                onClick={() => activateEvent(def.id)}
+              >
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <div
+                    className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                    style={{ background: color }}
+                  />
+                  <span className="text-xs font-semibold truncate">
+                    {def.name}
+                  </span>
+                </div>
+                <span
+                  className="text-[10px] leading-tight line-clamp-2"
+                  style={{ color: C.textMuted }}
+                >
+                  {def.description}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -336,6 +442,9 @@ export default function DemoScreen() {
             ))}
           </div>
         </div>
+
+        {/* ── Globální události ────────────────────────────────────────── */}
+        <WorldEventControls />
 
         {/* ── Design systém ────────────────────────────────────────────── */}
         <div>

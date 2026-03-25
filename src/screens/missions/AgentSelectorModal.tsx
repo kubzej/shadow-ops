@@ -16,6 +16,10 @@ import { useGameStore } from '../../store/gameStore';
 import { CATEGORY_META, STAT_LABELS } from './missionConstants';
 import { AgentRow } from './AgentRow';
 import { chanceColor } from './missionHelpers';
+import {
+  getEventDef,
+  getEventSuccessChancePenalty,
+} from '../../engine/worldEvents';
 
 export function AgentSelectorModal({
   mission,
@@ -31,6 +35,9 @@ export function AgentSelectorModal({
   const [regionAlertLevel, setRegionAlertLevel] = useState(0);
   const [approach, setApproach] = useState<MissionApproach>('standard');
   const currencies = useGameStore((s) => s.currencies);
+  const activeWorldEvent = useGameStore((s) => s.activeWorldEvent);
+  const eventDef = getEventDef(activeWorldEvent);
+  const scPenalty = getEventSuccessChancePenalty(activeWorldEvent);
 
   useEffect(() => {
     db.regions.get(mission.regionId).then((r) => {
@@ -61,13 +68,14 @@ export function AgentSelectorModal({
 
   const successChance = useMemo(() => {
     if (selectedAgents.length === 0) return null;
-    return calculateSuccessChance(
+    const raw = calculateSuccessChance(
       selectedAgents,
       mission,
       regionAlertLevel,
       approach,
     );
-  }, [selectedAgents, mission, regionAlertLevel, approach]);
+    return Math.max(0.05, raw - scPenalty);
+  }, [selectedAgents, mission, regionAlertLevel, approach, scPenalty]);
 
   const teamEligible = useMemo(
     () => checkTeamEligibility(selectedAgents, mission),
