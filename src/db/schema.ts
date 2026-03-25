@@ -1,6 +1,50 @@
 import type { DivisionId, AgentRank } from '../data/agentTypes';
 import type { WorldEventId } from '../data/worldEvents';
 
+// ============ ACHIEVEMENT COUNTERS ============
+/**
+ * Countery potřebné pro vyhodnocení achievementů, které nelze odvodit z ostatních
+ * herních statistik. Persistovány jako součást GameState.
+ */
+export interface AchievementCounters {
+  totalAgentsRecruited: number;
+  totalFlashMissionsCompleted: number;
+  totalChainMissionsCompleted: number;
+  totalCovertMissionsCompleted: number;
+  totalAggressiveMissionsCompleted: number;
+  totalRescueMissionsCompleted: number;
+  totalCounterOpMissionsCompleted: number;
+  totalNoAlertMissionsCompleted: number;
+  totalModulesInstalled: number;
+  totalRivalOperationsEncountered: number;
+  totalRivalOperationsBlocked: number;
+  totalWorldEventMissionsCompleted: number;
+  /** Počet misí dokončených bez ztráty agenta (resetuje se při ztrátě) */
+  missionsWithoutLoss: number;
+  /** Lifetime počet agentů vychovaných na hodnost Ředitel */
+  totalDirectorsRaised: number;
+  /** Celkové celoherní příjmy (money) — trackovány z addCurrencies */
+  lifetimeMoneyEarned: number;
+  /** Celkové celoherní výdaje (money) — trackovány ze spendCurrencies */
+  lifetimeMoneySpent: number;
+  /** Celkové celoherní příjmy (intel) — trackovány z addCurrencies */
+  lifetimeIntelEarned: number;
+  /** Počet vyléčených zraněných agentů (instant heal) */
+  agentsHealed: number;
+  /** Počet rival operací, které nebyly zablokovány */
+  rivalOpsLetThrough: number;
+  /** Počet rival operací v aktuálním dni */
+  rivalOpsTodayCount: number;
+  /** Login streak (počet po sobě jdoucích dní) */
+  loginStreak: number;
+  /** Timestampy dokončených misí pro check "5 misí za hodinu" (max 20) */
+  missionsCompletedTimestamps?: number[];
+  /** Datum (ISO string YYYY-MM-DD) kdy byly naposled zaznamenány rival operace — pro daily check */
+  rivalOpsTodayDate?: string;
+  /** Datum (ISO string YYYY-MM-DD) posledního přihlášení — pro daily login check */
+  lastLoginDate?: string;
+}
+
 export type RivalEventType =
   | 'asset_compromise'
   | 'intel_theft'
@@ -56,6 +100,9 @@ export interface GameState {
   rivalAggressionLevel?: number;
   // Director rank — only 1 agent globally may hold this rank at a time
   directorAgentId?: string;
+  // Achievements
+  unlockedAchievements?: string[];
+  achievementCounters?: AchievementCounters;
 }
 
 // ============ SAFE HOUSE ============

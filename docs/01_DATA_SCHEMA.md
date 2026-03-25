@@ -2,6 +2,45 @@
 
 Všechny typy jsou definovány v `src/db/schema.ts`.
 
+## Aktualizace: Achievement systém
+
+- `GameState` nově obsahuje:
+  - `unlockedAchievements?: string[]` — pole ID odemčených achievementů
+  - `achievementCounters?: AchievementCounters` — countery pro evaluaci podmínek
+- Přidán typ `AchievementCounters` (viz níže).
+- Katalog achievementů: `src/data/achievements.ts` (50 achievementů, 7 kategorií).
+- Engine: `src/engine/achievementEngine.ts` — trigger funkce volané ze stores a hooků.
+- UI: `src/screens/AchievementsScreen.tsx` — přístupné z MenuScreen.
+
+### AchievementCounters
+
+```typescript
+interface AchievementCounters {
+  totalAgentsRecruited: number;
+  totalFlashMissionsCompleted: number;
+  totalChainMissionsCompleted: number;
+  totalCovertMissionsCompleted: number;
+  totalAggressiveMissionsCompleted: number;
+  totalRescueMissionsCompleted: number;
+  totalCounterOpMissionsCompleted: number;
+  totalNoAlertMissionsCompleted: number;
+  totalModulesInstalled: number;
+  totalRivalOperationsEncountered: number;
+  totalRivalOperationsBlocked: number;
+  totalWorldEventMissionsCompleted: number;
+  missionsWithoutLoss: number; // resetuje se při ztrátě agenta
+  totalDirectorsRaised: number; // lifetime počet agentů povýšených na Ředitele
+  lifetimeMoneyEarned: number; // kumulativní příjmy $ (trackovány z addCurrencies)
+  lifetimeMoneySpent: number; // kumulativní výdaje $ (trackovány ze spendCurrencies)
+  rivalOpsTodayDate?: string; // ISO datum (YYYY-MM-DD) pro daily rival check
+  lastLoginDate?: string; // ISO datum (YYYY-MM-DD) posledního přihlášení
+}
+```
+
+String pole (`rivalOpsTodayDate`, `lastLoginDate`) se nastavují přes `store.setAchievementCounterString(key, value)` — separátní akce v gameStore (nepoužívá `incrementAchievementCounter`).
+
+---
+
 ## Aktualizace: Director rank (pátý rank)
 
 - `GameState` nově obsahuje `directorAgentId?: string` — ID agenta s Director rankem (globálně unikátní).
@@ -63,6 +102,9 @@ interface GameState {
   totalExpansions: number;
   // Director — globálně unikátní rank
   directorAgentId?: string; // ID agenta s Director rankem (max 1 najednou)
+  // Achievementy
+  unlockedAchievements?: string[]; // pole achievement ID
+  achievementCounters?: AchievementCounters; // countery pro evaluaci podmínek
 }
 ```
 

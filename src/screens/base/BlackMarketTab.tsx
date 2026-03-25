@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
+  onExpansionSkipBought,
+  onLegendaryItemAcquired,
+  onAgentFullyEquipped,
+  onAgentRecruited,
+} from '../../engine/achievementEngine';
+import {
   ChevronRight,
   Clock,
   Coins,
@@ -461,6 +467,7 @@ export function BlackMarketTab() {
       setTimeout(() => setNotif(''), 2000);
       return;
     }
+    onExpansionSkipBought();
     const allRegions = await db.regions.toArray();
     const ownedCount = allRegions.filter((r) => r.owned).length;
     const pickedDiv = (unlockedDivisions[0] ?? 'surveillance') as DivisionId;

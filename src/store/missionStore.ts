@@ -51,6 +51,15 @@ import { randomId } from '../utils/rng';
 import { EQUIPMENT_CATALOG } from '../data/equipmentCatalog';
 import { REGION_MAP } from '../data/regions';
 import { MODULE_CATALOG } from '../data/costs';
+import {
+  onMissionCompleted,
+  onAgentRankUp,
+  onAgentLost,
+  onAgentMissionCompleted,
+  onMissionDispatched,
+  onAllCatastrophe,
+  onBlackMarketUnlocked,
+} from '../engine/achievementEngine';
 
 const RESCUE_EQUIPMENT_SELL_REFUND = 0.3;
 
@@ -329,6 +338,7 @@ export const useMissionStore = create<MissionStore>()(
 
       // Track attempt
       useGameStore.getState().incrementMissionAttempted();
+      onMissionDispatched();
     },
 
     // ── Collect (resolve) a result ─────────────
@@ -459,6 +469,7 @@ export const useMissionStore = create<MissionStore>()(
             if (result === 'success' || result === 'partial') {
               updatedAgent.missionsCompleted =
                 (agent.missionsCompleted ?? 0) + 1;
+              onAgentMissionCompleted(updatedAgent.missionsCompleted);
             }
 
             // Streak: increment only on clean success (no injury), reset otherwise
@@ -549,6 +560,7 @@ export const useMissionStore = create<MissionStore>()(
                 newRank: ranked.rank,
                 nickname: ranked.nickname,
               });
+              onAgentRankUp(ranked.rank);
             } else {
               await db.agents.update(agent.id, updatedAgent);
             }
@@ -771,10 +783,12 @@ export const useMissionStore = create<MissionStore>()(
           freshState.totalMissionsCompleted >= 15
         ) {
           freshState.unlockBlackMarket();
+          onBlackMarketUnlocked();
         }
       }
       if (result === 'catastrophe' && !saferoomPreventedCapture) {
         gameStore.incrementStat('agents');
+        onAgentLost(useGameStore.getState().totalAgentsLost);
       }
 
       let rivalOutcome: CompletedMissionResult['rivalOutcome'];
@@ -830,6 +844,46 @@ export const useMissionStore = create<MissionStore>()(
         lostEquipment,
         rivalOutcome,
       };
+
+      // Achievement engine trigger (fire-and-forget, non-blocking)
+      {
+        const freshAgents = (
+          await db.agents.bulkGet(activeMission.agentIds)
+        ).filter(Boolean) as Agent[];
+        const agentStreaks = freshAgents.map((a) => a.missionStreak ?? 0);
+        const gameState = useGameStore.getState();
+        onMissionCompleted({
+          result,
+          difficulty: mission.difficulty,
+          approach: activeMission.approach,
+          alertGain: effectiveAlertGain,
+          isRescue: !!mission.isRescue,
+          isFlash: !!mission.isFlash,
+          isCounterOp: !!mission.isCounterOp,
+          isChain: !!(mission.chainStep && mission.chainStep > 1),
+          activeWorldEvent: !!gameState.activeWorldEvent,
+          wasCounterOpBlocked:
+            !!mission.isCounterOp && result === 'success' && !!rivalOutcome?.neutralized,
+          category: mission.category,
+          agentMissionStreaks: agentStreaks,
+          hadInjuredAgent: agents.some((a) => a.status === 'injured'),
+          successChance: Math.round(missionToResolve.successChance * 100),
+          agentIds: activeMission.agentIds,
+        }).catch(() => {});
+      }
+
+      // Secret: all catastrophe check
+      if (result === 'catastrophe') {
+        const stillActive = await db.activeMissions
+          .filter((am) => !am.result)
+          .count();
+        if (stillActive === 0) {
+          const recentResults = await db.activeMissions
+            .filter((am) => am.result === 'catastrophe' && am.collected)
+            .count();
+          if (recentResults >= 4) onAllCatastrophe();
+        }
+      }
 
       set((s) => {
         s.activeMissions = s.activeMissions.filter(
@@ -888,6 +942,7 @@ export const useMissionStore = create<MissionStore>()(
               rescueMissionId: undefined,
             });
             useGameStore.getState().incrementStat('agents');
+            onAgentLost(useGameStore.getState().totalAgentsLost);
             useUIStore
               .getState()
               .showToast(

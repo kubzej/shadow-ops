@@ -6,8 +6,9 @@ import { createAgent, generateRecruitmentPool } from './agentGenerator';
 import { generateMissionsForRegion } from './missionGenerator';
 import { generateBlackMarketOffer } from './blackMarket';
 import type { DivisionId } from '../data/agentTypes';
-import { useGameStore } from '../store/gameStore';
+import { useGameStore, DEFAULT_ACHIEVEMENT_COUNTERS } from '../store/gameStore';
 import { DEFAULT_LOGO_ID } from '../data/orgLogos';
+import { onGameLoaded } from './achievementEngine';
 // ─────────────────────────────────────────────
 // Starting values
 // ─────────────────────────────────────────────
@@ -102,6 +103,8 @@ export async function initializeGame(
         rivalName,
         nextRivalOperationAt,
         rivalAggressionLevel: 0,
+        unlockedAchievements: [],
+        achievementCounters: { ...DEFAULT_ACHIEVEMENT_COUNTERS },
       };
       await db.gameState.add(gameState);
 
@@ -178,6 +181,8 @@ export async function initializeGame(
     rivalName,
     nextRivalOperationAt,
     rivalAggressionLevel: 0,
+    unlockedAchievements: [],
+    achievementCounters: { ...DEFAULT_ACHIEVEMENT_COUNTERS },
   });
 
   // Write slot metadata for the save picker
@@ -231,7 +236,14 @@ export async function loadGame(): Promise<boolean> {
       state.rivalAggressionLevel ??
       Math.floor(state.totalMissionsCompleted / 25),
     directorAgentId: state.directorAgentId ?? null,
+    unlockedAchievements: state.unlockedAchievements ?? [],
+    achievementCounters: state.achievementCounters ?? {
+      ...DEFAULT_ACHIEVEMENT_COUNTERS,
+    },
   });
+
+  // Achievement trigger: noční sova
+  onGameLoaded();
 
   return true;
 }

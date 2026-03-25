@@ -42,7 +42,8 @@ src/
 │   ├── passiveIncome.ts         # Pasivní příjem per 30s tick + alert decay
 │   ├── mapGenerator.ts          # BFS vzdálenosti, expanzní náklady a časy, query helpers
 │   ├── initializeGame.ts        # initializeGame() (nová hra) + loadGame() (resume)
-│   └── blackMarket.ts           # Generování black market listingů
+│   ├── blackMarket.ts           # Generování black market listingů
+│   └── achievementEngine.ts     # Trigger funkce pro evaluaci a odemykání achievementů
 │
 ├── data/
 │   ├── agentTypes.ts            # AGENT_TYPES (36), DIVISIONS (9), DivisionId, AgentRank
@@ -52,7 +53,8 @@ src/
 │   ├── equipmentCatalog.ts      # EQUIPMENT_CATALOG (vybavení common→legendary)
 │   ├── costs.ts                 # Všechny náklady: safe house, divize, moduly, expanze
 │   ├── names.ts                 # FIRST_NAMES, LAST_NAMES (pro generování jmen agentů)
-│   └── orgLogos.ts              # SVG loga organizace (16 variant)
+│   ├── orgLogos.ts              # SVG loga organizace (16 variant)
+│   └── achievements.ts          # ACHIEVEMENTS katalog (50 achievementů, 7 kategorií)
 │
 ├── screens/
 │   ├── LandingScreen.tsx        # Výběr save slotu (slot picker)
@@ -61,7 +63,8 @@ src/
 │   ├── MissionsScreen.tsx       # Výpis misí, dispatch modal, active missions, collection modal
 │   ├── AgentsScreen.tsx         # Agenti, filter tabu, detail modal, heal
 │   ├── BaseScreen.tsx           # Základna: Nábor / Safe House / Divize / Obchod
-│   └── MenuScreen.tsx           # Stats, reset game, switch save
+│   ├── MenuScreen.tsx           # Stats, reset game, switch save, achievements entry
+│   └── AchievementsScreen.tsx   # Přehled achievementů (inline v MenuScreen)
 │
 ├── components/
 │   ├── BottomNav.tsx            # Spodní navigace (5 tabů s lucide ikonami)

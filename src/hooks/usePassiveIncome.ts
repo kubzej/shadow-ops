@@ -23,6 +23,13 @@ import { useUIStore } from '../store/uiStore';
 import type { DivisionId } from '../data/agentTypes';
 import type { ActiveWorldEvent, Mission } from '../db/schema';
 import { REGION_MAP } from '../data/regions';
+import {
+  onPassiveIncomeTick,
+  onPlayTimeTick,
+  onRivalOperationEncountered,
+  onAlertLevelChanged,
+  checkMaxAlertRegions,
+} from '../engine/achievementEngine';
 
 const TICK_INTERVAL = 30_000; // 30 seconds
 
@@ -164,6 +171,7 @@ export function usePassiveIncome() {
           const eventType = pickRivalEventType();
           const op = createRivalOperation(target.id, eventType, now);
           gameStore.setRivalOperation(op, nextRivalOperationAt(now));
+          onRivalOperationEncountered();
           const targetName =
             REGION_MAP.get(target.id)?.name ?? 'neznámém regionu';
           notifyRival(
@@ -216,7 +224,9 @@ export function usePassiveIncome() {
           shadow: Math.round(income.shadow),
           influence: Math.round(income.influence),
         });
+        onPassiveIncomeTick();
       }
+      onPlayTimeTick();
 
       // Decay alert levels for all regions with elevated alert
       const alertedRegions = await db.regions
@@ -248,6 +258,8 @@ export function usePassiveIncome() {
         );
         if (Math.abs(newAlert - region.alertLevel) > 0.001) {
           await db.regions.update(region.id, { alertLevel: newAlert });
+          onAlertLevelChanged(region.id, newAlert, region.alertLevel).catch(() => {});
+          if (newAlert >= 3.0) checkMaxAlertRegions().catch(() => {});
         }
       }
     }

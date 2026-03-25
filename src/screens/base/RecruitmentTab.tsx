@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { onAgentRecruited } from '../../engine/achievementEngine';
 import { Building2, Coins, RefreshCcw, Users } from 'lucide-react';
 import { C, cardBase, btn } from '../../styles/tokens';
 import { db } from '../../db/db';
@@ -112,6 +113,7 @@ export function RecruitmentTab() {
       missionStreak: 0,
       recruitedAt: now,
     });
+    onAgentRecruited();
 
     const pool = pools.find((p) => p.safeHouseId === shId);
     if (pool)

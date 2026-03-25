@@ -6,6 +6,10 @@ import { REGION_MAP } from '../data/regions';
 import { useGameStore } from '../store/gameStore';
 import { useUIStore } from '../store/uiStore';
 import type { DivisionId } from '../data/agentTypes';
+import {
+  onExpansionCompleted,
+  onSafeHouseUpgraded,
+} from '../engine/achievementEngine';
 
 const TICK_MS = 5_000;
 
@@ -67,6 +71,7 @@ export function useConstructionTicker() {
         );
         await db.recruitmentPools.put(recruitPool);
         incrementStat('expansions');
+        onExpansionCompleted().catch(() => {});
         const regionName = REGION_MAP.get(r.id)?.name ?? 'neznámý region';
         showToast('success', `Expanze dokončena: ${regionName}`);
       }
@@ -82,11 +87,13 @@ export function useConstructionTicker() {
         .toArray();
 
       for (const sh of doneUpgrades) {
+        const newLevel = sh.level + 1;
         await db.safeHouses.update(sh.id, {
-          level: sh.level + 1,
+          level: newLevel,
           upgradeInProgress: false,
           upgradeCompletesAt: undefined,
         });
+        onSafeHouseUpgraded(newLevel);
       }
     }
 

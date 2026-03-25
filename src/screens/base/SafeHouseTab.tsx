@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
+  onModuleInstalled,
+} from '../../engine/achievementEngine';
+import {
   Building2,
   Coins,
   Eye,
@@ -210,6 +213,7 @@ export function SafeHouseTab() {
     await db.safeHouses.update(sh.id, {
       modules: [...sh.modules, moduleId],
     });
+    onModuleInstalled();
     load();
   }
 

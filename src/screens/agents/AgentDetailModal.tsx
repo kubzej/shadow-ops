@@ -37,6 +37,7 @@ import {
   INSTANT_HEAL_COST_PER_SEC,
 } from './agentHelpers';
 import { travelCost, travelDuration } from './travelHelpers';
+import { onAgentHealed } from '../../engine/achievementEngine';
 import { StatBar } from './StatBar';
 import { HealingCountdown, TravelCountdown } from './CountdownTimers';
 import { SAFE_HOUSE_CAPACITY } from '../../data/costs';
@@ -216,6 +217,7 @@ export function AgentDetailModal({
       injuredAt: undefined,
       injuryDescription: undefined,
     });
+    onAgentHealed();
     onAgentUpdated();
     onClose();
   }

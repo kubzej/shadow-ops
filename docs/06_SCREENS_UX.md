@@ -296,8 +296,24 @@ Rotující výběr 6 equipment itemů. Refresh každou hodinu (countdown v hlavi
   - Expanze
   - Playtime (formátováno jako h:mm:ss z `getPlayTimeSecs()`)
 - **Měny:** aktuální stav všech 4 měn
+- **Achievement karta:** počet odemčených / celkem → klik → `AchievementsScreen`
 - **Tlačítko "Přepnout uložení":** `requestSaveSelect()` → App.tsx → landing
 - **Tlačítko "Resetovat hru":** potvrzovací dialog → `db.delete()` → `metaDb.slots.delete()` → `localStorage.removeItem` → `reset()` → appState='onboarding'
+
+---
+
+## AchievementsScreen
+
+Podřízená obrazovka MenuScreen (inline mount, nikoliv route).
+
+- **Header:** název, progress bar (odemčeno / celkem), tlačítko zpět
+- **Category tabs:** horizontálně scrollovatelné chipsové taby: Všechny / Mise / Agenti / Mapa / Základna / Čas hry / Milníky / Tajné
+  - Každý tab zobrazuje počet odemčených v kategorii
+- **Seznam achievementů:**
+  - Odemčený: plná opacity, barevná ikona, název, popis, zelená tečka
+  - Zamčený (ne-hidden): snížená opacity, Lock ikona, název a popis viditelné
+  - Tajný zamčený: Lock ikona, `???` název, generický text místo popisu
+- Achievement nemají žádné herní bonusy — čistě přehledová záležitost
 
 ---
 

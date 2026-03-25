@@ -1,4 +1,5 @@
 import { ShieldCheck } from 'lucide-react';
+import { onDivisionChanged } from '../../engine/achievementEngine';
 import { cardBase, btn } from '../../styles/tokens';
 import { db } from '../../db/db';
 import type { DivisionId } from '../../data/agentTypes';
@@ -40,6 +41,7 @@ export function DivisionsTab() {
     )
       return;
     unlockDivision(id);
+    onDivisionChanged();
 
     // Auto-assign to the current safe house if it has a free slot
     const currentRegionId = selectedRegionId ?? startCityId;
@@ -87,6 +89,7 @@ export function DivisionsTab() {
       })
     )
       upgradeDivision(id);
+    onDivisionChanged();
   }
 
   return (

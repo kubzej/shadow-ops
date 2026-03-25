@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
 import {
+  onAgentFullyEquipped,
+  onLegendaryItemAcquired,
+} from '../../engine/achievementEngine';
+import {
   ChevronRight,
   Clock,
   Coins,
@@ -83,6 +87,9 @@ export function ShopTab() {
     slots[idx] = { equipmentId: eq.id };
     const newStats = applyEquipmentBonuses(agent.baseStats, slots, agent.rank);
     await db.agents.update(agent.id, { equipment: slots, stats: newStats });
+    // Achievement triggers
+    if (eq.rarity === 'legendary') onLegendaryItemAcquired();
+    if (slots.every((s) => s.equipmentId !== null)) onAgentFullyEquipped();
     setNotif(`${eq.name} → ${agent.name}`);
     setBuying(null);
     setTimeout(() => setNotif(''), 2500);

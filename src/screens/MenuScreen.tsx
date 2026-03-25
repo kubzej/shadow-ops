@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import {
   AlertTriangle,
+  Award,
   BarChart3,
+  ChevronRight,
   Clock,
   Coins,
   Eye,
@@ -23,6 +25,8 @@ import { useUIStore } from '../store/uiStore';
 import { db } from '../db/db';
 import { seedDemoDb } from '../demo/seed';
 import { C, cardBase, btn } from '../styles/tokens';
+import { ACHIEVEMENTS } from '../data/achievements';
+import AchievementsScreen from './AchievementsScreen';
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -83,9 +87,12 @@ export default function MenuScreen() {
   const resetStore = useGameStore((s) => s.reset);
   const requestSaveSelect = useUIStore((s) => s.requestSaveSelect);
 
+  const unlockedAchievements = useGameStore((s) => s.unlockedAchievements);
+
   const [agentCount, setAgentCount] = useState(0);
   const [regionCount, setRegionCount] = useState(0);
   const [showReset, setShowReset] = useState(false);
+  const [showAchievements, setShowAchievements] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
   const [playTime, setPlayTime] = useState(
     formatPlayTimeSecs(getPlayTimeSecs()),
@@ -130,6 +137,10 @@ export default function MenuScreen() {
     ]);
     resetStore();
     window.location.reload();
+  }
+
+  if (showAchievements) {
+    return <AchievementsScreen onBack={() => setShowAchievements(false)} />;
   }
 
   return (
@@ -254,6 +265,29 @@ export default function MenuScreen() {
             </div>
           </div>
         </div>
+
+        {/* Achievements */}
+        <button
+          onClick={() => setShowAchievements(true)}
+          className="w-full rounded-xl p-3 flex items-center gap-3"
+          style={cardBase}
+        >
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: `${C.yellow}18` }}
+          >
+            <Award size={18} color={C.yellow} />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="text-sm font-semibold" style={{ color: C.textPrimary }}>
+              Achievements
+            </p>
+            <p className="text-xs" style={{ color: C.textMuted }}>
+              {unlockedAchievements.length} / {ACHIEVEMENTS.length} odemčeno
+            </p>
+          </div>
+          <ChevronRight size={16} color={C.textMuted} />
+        </button>
 
         {/* Switch save */}
         <button
