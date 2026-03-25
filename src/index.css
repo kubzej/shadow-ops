@@ -53,21 +53,6 @@ html, body, #root {
   margin: 0;
 }
 
-/* PWA Safe Area — CSS triedy sú spoľahlivejšie ako inline env() na iOS */
-.pb-safe {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-
-.pt-safe {
-  padding-top: env(safe-area-inset-top, 0px);
-}
-
-/* GameShell main content — priestor pre bottom nav + safe area */
-.main-content-safe {
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
-}
-
 @keyframes flash-blink {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.25; }

@@ -17,6 +17,7 @@ import { useUIStore, type Toast } from './store/uiStore';
 import { usePassiveIncome } from './hooks/usePassiveIncome';
 import { useMissionTimer } from './hooks/useMissionTimer';
 import { useConstructionTicker } from './hooks/useConstructionTicker';
+import { C } from './styles/tokens';
 
 type AppState = 'loading' | 'landing' | 'onboarding' | 'game';
 
@@ -142,9 +143,12 @@ function GameShell() {
   return (
     <div
       className="flex flex-col"
-      style={{ height: '100dvh', background: '#222222' }}
+      style={{ height: '100dvh', background: C.bgBase }}
     >
-      <main className="flex-1 overflow-y-auto main-content-safe">
+      <main
+        className="flex-1 overflow-y-auto"
+        style={{ paddingTop: 'env(safe-area-inset-top)' }}
+      >
         <Routes>
           <Route path="/" element={<Navigate to="/map" replace />} />
           <Route path="/map" element={<MapScreen />} />
