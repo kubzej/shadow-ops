@@ -142,13 +142,13 @@ function GameShell() {
   return (
     <div
       className="flex flex-col"
-      style={{ height: '100%', background: '#222222' }}
+      style={{ height: '100dvh', background: '#222222' }}
     >
       <main
         className="flex-1 overflow-y-auto"
         style={{
           paddingTop: 'env(safe-area-inset-top)',
-          paddingBottom: '4rem',
+          paddingBottom: 'calc(4rem + env(safe-area-inset-bottom))',
         }}
       >
         <Routes>

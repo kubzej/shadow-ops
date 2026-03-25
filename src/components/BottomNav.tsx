@@ -16,6 +16,7 @@ export default function BottomNav() {
       className="fixed bottom-0 left-0 right-0 flex"
       style={{
         background: C.bgBase,
+        paddingBottom: 'env(safe-area-inset-bottom)',
       }}
     >
       {tabs.map(({ to, icon: Icon, label }) => (
