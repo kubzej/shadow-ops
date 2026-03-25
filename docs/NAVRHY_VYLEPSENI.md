@@ -7,18 +7,6 @@
 
 ## 1 MOJE
 
-## 3. Mise — nové typy a mechaniky
-
-### 3.2 Kooperativní mise (Multi-Site Operations)
-
-Mise vyžadující agenty ze **2 různých safe houses** (nová property `requiresMultipleSafeHouses: true`). Oba týmy jsou dispatched simultánně, výsledek je průměr obou success chances ale rewards × 1.8. Pro tuto misi je nutný modul `comms_hub` (nový — viz sekce 5).
-
-## 4. Základna a progrese
-
-### 4.3 Nový modul: Communications Hub
-
-`comms_hub` — Komunikační centrum. Umožňuje **kooperativní mise** z tohoto safe house (viz 3.2). Cena: 6 000 / 50◈ / 20◆. Bez tohoto modulu se kooperativní mise v regionu negenerují.
-
 ## 5. Intel síť a mapa
 
 ### 5.2 Mapa — Region typ bonus
