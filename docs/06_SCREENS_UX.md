@@ -201,6 +201,13 @@ Klik na agenta → bottom sheet.
   - Dostupné divize k přiřazení (pouze odemčené, pokud slot volný); cena `DIVISION_ASSIGN_BASE_COST × sh.index`
   - Po přiřazení: odemkne `lockedByDivision` mise pro tuto divizi, volá `invalidateRegionMissions()`
   - Po odebrání: volá `invalidateRegionMissions()` (regeneruje mise pro region)
+- **Příjmy a výdaje / tick panel** (zobrazí se pokud safe house má aspoň jednu divizi nebo agenta):
+  - Řádek per přiřazenou divizi: příjem s level multiplikátorem + diminishing returns na 2.+ slotu
+  - Řádek per modul s income efektem (server_room, lab, finance_hub, forgery_lab, armory)
+  - Řádek per agenta (salary výdaj)
+  - Řádek upkeep dle levelu safe housu
+  - "Network bonus ×N" badge (zobrazí se jen pokud hráč vlastní 2+ aktivních safe housů) — `getCityBonus(activeSafeHouseCount)` z `engine/passiveIncome.ts`
+  - "Čistý tick" — součet včetně network bonusu; tato hodnota odpovídá tomu, co tick reálně přičte
 - Module sekce:
   - Nainstalované moduly (max 2): jméno, popis, tlačítko "Odebrat"
   - Dostupné moduly k instalaci (pokud < 2): cena, popis, "Instalovat"

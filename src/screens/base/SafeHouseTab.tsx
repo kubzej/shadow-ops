@@ -42,6 +42,7 @@ import { useUIStore } from '../../store/uiStore';
 import {
   calculateSafeHouseIncome,
   calculateSafeHouseBreakdown,
+  getCityBonus,
 } from '../../engine/passiveIncome';
 import { divColor, divName } from './baseHelpers';
 
@@ -115,6 +116,7 @@ export function SafeHouseTab() {
   const [houses, setHouses] = useState<SafeHouse[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [agentsMap, setAgentsMap] = useState<Record<string, Agent[]>>({});
+  const [activeSafeHouseCount, setActiveSafeHouseCount] = useState(1);
   const invalidateRegionMissions = useMissionStore(
     (s) => s.invalidateRegionMissions,
   );
@@ -134,6 +136,9 @@ export function SafeHouseTab() {
     const allShs = await db.safeHouses.toArray();
     const shs = allShs.filter((sh) => sh.id === currentRegionId);
     setHouses(shs);
+    setActiveSafeHouseCount(
+      allShs.filter((sh) => !sh.constructionInProgress).length,
+    );
     const c: Record<string, number> = {};
     const am: Record<string, Agent[]> = {};
     for (const sh of shs) {
@@ -386,7 +391,18 @@ export function SafeHouseTab() {
                   number
                 >;
                 const bd = calculateSafeHouseBreakdown(sh, divLevels, shAgents);
-                const net = calculateSafeHouseIncome(sh, divLevels, shAgents);
+                const baseNet = calculateSafeHouseIncome(
+                  sh,
+                  divLevels,
+                  shAgents,
+                );
+                const cityBonus = getCityBonus(activeSafeHouseCount);
+                const net = {
+                  money: baseNet.money * cityBonus,
+                  intel: baseNet.intel * cityBonus,
+                  shadow: baseNet.shadow * cityBonus,
+                  influence: baseNet.influence * cityBonus,
+                };
 
                 const hasAny =
                   bd.divisions.length > 0 ||
@@ -472,6 +488,26 @@ export function SafeHouseTab() {
                         <CurrencyLine {...bd.upkeep} />
                       </div>
 
+                      {cityBonus > 1.0 && (
+                        <div className="flex items-center justify-between gap-2">
+                          <span
+                            className="text-[11px] truncate"
+                            style={{ color: C.textMuted }}
+                          >
+                            Network bonus
+                          </span>
+                          <span
+                            className="text-xs font-semibold px-1.5 py-0.5 rounded"
+                            style={{
+                              background: `${C.green}18`,
+                              color: C.green,
+                            }}
+                          >
+                            ×{cityBonus.toFixed(1)}
+                          </span>
+                        </div>
+                      )}
+
                       <div
                         className="pt-2 mt-1 flex items-center justify-between gap-2"
                         style={{ borderTop: `1px solid ${C.bgSurface2}` }}
@@ -482,7 +518,12 @@ export function SafeHouseTab() {
                         >
                           Čistý tick
                         </span>
-                        <CurrencyLine {...net} />
+                        <CurrencyLine
+                          money={Math.round(net.money * 10) / 10}
+                          intel={Math.round(net.intel * 10) / 10}
+                          shadow={Math.round(net.shadow * 10) / 10}
+                          influence={Math.round(net.influence * 10) / 10}
+                        />
                       </div>
                     </div>
                   </div>

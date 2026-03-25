@@ -7,13 +7,16 @@ import type { AgentRank } from '../data/agentTypes';
 
 /** Income bonus per tick from each module (modules without income effect are omitted). */
 export const MODULE_INCOME_EFFECTS: Partial<
-  Record<string, { money: number; intel: number; shadow: number; influence: number }>
+  Record<
+    string,
+    { money: number; intel: number; shadow: number; influence: number }
+  >
 > = {
-  server_room:  { money: 0, intel: 3,   shadow: 0,   influence: 0   },
-  lab:          { money: 0, intel: 2,   shadow: 0,   influence: 0   },
-  armory:       { money: 0, intel: 0,   shadow: 0.1, influence: 0   },
-  finance_hub:  { money: 4, intel: 0,   shadow: 0,   influence: 0   },
-  forgery_lab:  { money: 0, intel: 0,   shadow: 0,   influence: 0.3 },
+  server_room: { money: 0, intel: 3, shadow: 0, influence: 0 },
+  lab: { money: 0, intel: 2, shadow: 0, influence: 0 },
+  armory: { money: 0, intel: 0, shadow: 0.1, influence: 0 },
+  finance_hub: { money: 4, intel: 0, shadow: 0, influence: 0 },
+  forgery_lab: { money: 0, intel: 0, shadow: 0, influence: 0.3 },
 };
 
 /** Salary multiplier per rank — senior agents cost more to maintain, but not overwhelmingly so. */
@@ -240,6 +243,13 @@ export function calculateSafeHouseIncome(
   return income;
 }
 
+/** Returns the network bonus multiplier based on active safe house count.
+ * 1 SH → ×1.0 | 3 SH → ×1.2 | 6+ SH → ×1.5 (cap)
+ */
+export function getCityBonus(activeSafeHouseCount: number): number {
+  return Math.min(1.5, 1 + 0.1 * Math.max(0, activeSafeHouseCount - 1));
+}
+
 /**
  * Calculate total passive income per tick across all safe houses.
  * Each additional safe house adds a small bonus multiplier to every
@@ -256,10 +266,7 @@ export function calculatePassiveIncome(
   const activeSafeHouses = safeHouses.filter(
     (sh) => !sh.constructionInProgress,
   );
-  const cityBonus = Math.min(
-    1.5,
-    1 + 0.1 * Math.max(0, activeSafeHouses.length - 1),
-  );
+  const cityBonus = getCityBonus(activeSafeHouses.length);
 
   for (const sh of activeSafeHouses) {
     const shIncome = calculateSafeHouseIncome(sh, divisionLevels, agents);

@@ -7,24 +7,6 @@
 
 ## 1 MOJE
 
-## 2. Agentský systém
-
-### 2.1 Specializace veteránů (Veteran Perks)
-
-Při dosažení ranku **Veterán** si hráč vybere 1 ze 3 nabízených perků specifických pro divizi agenta:
-
-**Příklady perků:**
-
-| Divize       | Perk A                            | Perk B                              | Perk C                             |
-| ------------ | --------------------------------- | ----------------------------------- | ---------------------------------- |
-| Cyber        | `GHOST_PROTOCOL`: −30% alert gain | `OVERCLOCKED`: −20% duration        | `DEEP SCAN`: +15% success          |
-| Extraction   | `CLEAN EXIT`: injury chance −20%  | `EVADE`: escape bez equipment loss  | `IRON WILL`: nikdy critical injury |
-| Blackops     | `SHADOW STEP`: +20% success diff5 | `COLLATERAL DMG`: +50% rewards      | `GHOST`: capture chance −50%       |
-| Surveillance | `NETWORK`: passive intel +1/tick  | `COUNTER-SURVEILLANCE`: decay +0.05 | `ANALYSIS`: chain missions +1 tier |
-| Medical      | `FIELD MEDIC`: heal tým za mise   | `STIMS`: −30% healing time          | `DENIABILITY`: injury text hidden  |
-
-Perk je uložen jako `veteranPerk?: string` na Agent entitě.
-
 ## 3. Mise — nové typy a mechaniky
 
 ### 3.2 Kooperativní mise (Multi-Site Operations)
@@ -42,19 +24,9 @@ if (alertLevel >= 2.5 && !activeCounterOpsInRegion) {
 }
 ```
 
-### 3.4 Sezonní / globální události
+### 3.4 Sezonní / globální události ✅ IMPLEMENTOVÁNO
 
-Každých 30 minut se aktivuje globální event z `WORLD_EVENTS`:
-
-| Název          | Efekt                                                 | Trvání |
-| -------------- | ----------------------------------------------------- | ------ |
-| G8 Summit      | Influence mise +50% reward po dobu 10 min             | 10 min |
-| Market Crash   | Finance mise reward × 2.0, ale alert +0.5 po skončení | 10 min |
-| Cyber Blackout | Cyber mise unavailable ve 3 náhodných regionech       | 5 min  |
-| Shadow War     | Blackops mise se generují 3× častěji                  | 8 min  |
-| Media Frenzy   | Alert decay −50% globálně                             | 10 min |
-
-Event se zobrazuje v `CurrenciesBar` jako blinkující badge s odpočtem.
+Viz `docs/02_GAME_MECHANICS.md` sekce **Globální události**. Implementace zahrnuje 5 pozitivních + 5 negativních eventů s rozšířeným katalogem oproti původnímu návrhu.
 
 ### 3.5 Osobní mise agenta (Agent Personal Missions)
 
@@ -63,17 +35,6 @@ Veterán agenti mají 10% šanci za 24h generovat **osobní misi** — single-ag
 ---
 
 ## 4. Základna a progrese
-
-### 4.2 HQ — centrální základna
-
-Hráče **první safe house** (index=1) dostane speciální status **HQ**. HQ má extra tab v BaseScreen s globálními upgrady (neidentické s moduly):
-
-| Upgrade            | Cena          | Efekt                                                              |
-| ------------------ | ------------- | ------------------------------------------------------------------ |
-| Intel Sítě         | 5 000 / 80◈   | +1 intel slot na každé misi zdarma                                 |
-| Divize HQ          | 10 000 / 150◈ | Divize v HQ poskytují pasivní příjem i z jiných safe houses (−50%) |
-| Globální logistika | 8 000 / 60◈   | Přesun agentů −50% čas                                             |
-| Archiv             | 12 000 / 100◈ | Mission log udrží 200 záznamů místo 50                             |
 
 ### 4.3 Nový modul: Communications Hub
 
@@ -159,10 +120,6 @@ Hidden achievementy, viditelné v MenuScreen po splnění:
 
 ## 8. UX / workflow vylepšení
 
-### 8.1 Quick Dispatch
-
-Na kartě mise tlačítko "⚡ Quick" (vedle Dispatch): automaticky vybere **nejlepší dostupný tým** (optimální dle success chance) a approach a otevře Dispatch Modal předvyplněný. Hráč jen potvrdí. Ušetří čas u rutinních misí.
-
 ### 8.2 Mise filter + sort
 
 Na MissionsScreen toolbar se filtry:
@@ -171,16 +128,7 @@ Na MissionsScreen toolbar se filtry:
 - **Obtížnost** (1★ – 5★ slider)
 - **Sort:** reward / alert gain / time / difficulty
 - **Pouze dostupné** (toggle — skryje locked mise)
-
-### 8.3 Agent comparator
-
-Ve výběru agentů pro dispatch: tlačítko "Porovnat" vedle dvou agentů zobrazí side-by-side stats. Notable diff hodnoty jsou zelené/červené.
-
-### 8.10 Barevné kódování rizika v dispatch modalu
-
-Success chance zobrazena jako filled arc (kruhový progress) s gradientem červená → zelená. Pod 30%: pulsuje červeně + zobrazí warning "Vysoké riziko". Vizuálnější než jen číslo.
-
----
+- Šlo by tedy generovat i více misí možná
 
 ## 9. Nový obsah — vybavení a typy
 
@@ -225,26 +173,6 @@ Nová divize `research` (🔬 cyan `#22d3ee`).
 Unlock: 3 000$ / 50◈ / 20✦. Pasivní příjem: 0 money, 3 intel, 0 shadow, 1 influence.
 
 R&D mise: `prototype_recovery`, `lab_infiltration`, `scientist_extraction`. Reward: unikátní itemy dostupné jen přes R&D mise. Strategicky: R&D divize = způsob jak získávat legendary equipment bez Black Marketu.
-
----
-
-### 10.3 Soft deletion agentů
-
-Místo pevného mazání z DB při `dead` statusu — uložit `deadAt: number`. Dead agenti se zobrazují v MenuScreen → "Padlí agenti" jako připomínka (memorial wall). Lze implementovat jako query `agents.filter(a => a.status === 'dead')`.
-
-### 10.4 Batch generování světových eventů
-
-```typescript
-// V passiveIncome.ts — per 30s tick
-function tickWorldEvents(store) {
-  const now = Date.now();
-  if (now > store.nextWorldEventAt) {
-    const event = pickWeighted(WORLD_EVENTS, rng);
-    applyWorldEvent(event);
-    store.nextWorldEventAt = now + randInt(30 * 60 * 1000, 45 * 60 * 1000);
-  }
-}
-```
 
 ---
 
